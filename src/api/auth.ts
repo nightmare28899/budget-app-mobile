@@ -133,4 +133,9 @@ export const authApi = {
         const { data } = await apiClient.post('/auth/refresh', { refreshToken });
         return data;
     },
+
+    logout: async () => {
+        const { data } = await apiClient.post('/auth/logout');
+        return data;
+    },
 };

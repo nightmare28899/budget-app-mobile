@@ -12,6 +12,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import apiClient from '../api/client';
+import { authApi } from '../api/auth';
 import { reportsApi } from '../api/reports';
 import { extractApiMessage } from '../utils/api';
 import { API_BASE_URL } from '../utils/constants';
@@ -672,6 +673,12 @@ export function useSettings() {
 
                         try {
                             await GoogleSignin.signOut();
+                        } catch {
+                            // Best-effort cleanup only.
+                        }
+
+                        try {
+                            await authApi.logout();
                         } catch {
                             // Best-effort cleanup only.
                         }

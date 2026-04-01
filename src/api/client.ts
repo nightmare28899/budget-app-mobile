@@ -32,7 +32,7 @@ function isAuthRoute(url?: string): boolean {
         return false;
     }
 
-    return /\/auth\/(login|register|refresh)\b/i.test(url);
+    return /\/auth\/(login|register|refresh|logout)\b/i.test(url);
 }
 
 function isFormDataPayload(value: unknown): value is FormData {

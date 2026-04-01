@@ -72,7 +72,7 @@ export function useAuth() {
     const [loading, setLoading] = useState(false);
     const queryClient = useQueryClient();
     const setAuth = useAuthStore((s) => s.setAuth);
-    const { addToQueue, isSyncing, queue } = useOfflineRegistrationStore();
+    const { isSyncing, queue } = useOfflineRegistrationStore();
     const pendingRegistrationsCount = queue.length;
     const { alert } = useAppAlert();
     const { t } = useI18n();
@@ -322,24 +322,10 @@ export function useAuth() {
                     : 'unknown';
 
             if (!err?.response && !parseFailure && internetAccessState === 'offline') {
-                const result = addToQueue({
-                    email: normalizedEmail,
-                    name: trimmedName,
-                    password,
-                    avatar: avatarPayload,
-                });
-
-                if (result.reason === 'duplicate_email') {
-                    alert(
-                        t('auth.registrationPending'),
-                        t('auth.registrationPendingDesc'),
-                    );
-                } else {
-                    alert(
-                        t('auth.savedOffline'),
-                        t('auth.savedOfflineDesc'),
-                    );
-                }
+                alert(
+                    t('auth.registrationFailed'),
+                    getUnreachableApiMessage(t),
+                );
                 return false;
             }
 
