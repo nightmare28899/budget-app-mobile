@@ -10,8 +10,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RootScreenProps } from '../../navigation/types';
-import { useAuthStore } from '../../store/authStore';
 import { formatCurrency, formatDate, formatTime } from '../../utils/format';
+import { getCurrencyLocale } from '../../utils/currency';
 import {
     spacing,
     typography,
@@ -25,10 +25,12 @@ import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { useI18n } from '../../hooks/useI18n';
 import { useExpenseDetail } from '../../hooks/useExpenseDetail';
+import { formatCreditCardLabel } from '../../utils/creditCards';
 import {
     getPaymentMethodOption,
     PAYMENT_METHOD_FALLBACK_ICON,
 } from '../../utils/paymentMethod';
+import { getInstallmentProgress, isInstallmentExpense } from '../../utils/installments';
 
 export function ExpenseDetailScreen({
     route,
@@ -37,7 +39,6 @@ export function ExpenseDetailScreen({
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
     const { id } = route.params;
-    const user = useAuthStore((s) => s.user);
     const insets = useSafeAreaInsets();
     const {
         horizontalPadding,
@@ -45,7 +46,8 @@ export function ExpenseDetailScreen({
         isSmallPhone,
         scaleFont,
     } = useResponsive();
-    const { t } = useI18n();
+    const { t, language } = useI18n();
+    const locale = getCurrencyLocale(language);
 
     const onDeleted = useCallback(() => {
         navigation.goBack();
@@ -56,7 +58,10 @@ export function ExpenseDetailScreen({
     const paymentMethodLabel = paymentMethodOption
         ? (t(paymentMethodOption.labelKey as any) || paymentMethodOption.fallback)
         : t('paymentMethod.none' as any);
+    const creditCardLabel = formatCreditCardLabel(expense?.creditCard);
     const paymentMethodIcon = paymentMethodOption?.icon ?? PAYMENT_METHOD_FALLBACK_ICON;
+    const installmentProgress = getInstallmentProgress(expense);
+    const isInstallment = isInstallmentExpense(expense);
 
     if (isLoading || !expense) {
         return (
@@ -129,8 +134,23 @@ export function ExpenseDetailScreen({
                     <Text style={[styles.title, { fontSize: scaleFont(typography.fontSize.xl) }]}>
                         {expense.title}
                     </Text>
+                    {isInstallment
+                        && installmentProgress.currentInstallment
+                        && installmentProgress.installmentCount ? (
+                            <Text
+                                style={[
+                                    styles.installmentBadge,
+                                    { fontSize: scaleFont(typography.fontSize.sm) },
+                                ]}
+                            >
+                                {t('expense.installmentPositionLabel', {
+                                    current: installmentProgress.currentInstallment,
+                                    count: installmentProgress.installmentCount,
+                                })}
+                            </Text>
+                        ) : null}
                     <Text style={[styles.amount, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>
-                        {formatCurrency(Number(expense.cost), user?.currency)}
+                        {formatCurrency(Number(expense.cost), expense.currency, locale)}
                     </Text>
 
                     <View style={styles.metaContainer}>
@@ -146,12 +166,47 @@ export function ExpenseDetailScreen({
                                 {formatTime(expense.date)}
                             </Text>
                         </View>
+                        {isInstallment && expense.installmentTotalAmount != null ? (
+                            <View style={styles.metaRow}>
+                                <Icon name="albums-outline" size={16} color={colors.textMuted} />
+                                <Text style={[styles.metaText, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                    {t('expense.installmentPlanTotalLabel')}: {' '}
+                                    {formatCurrency(expense.installmentTotalAmount, expense.currency, locale)}
+                                </Text>
+                            </View>
+                        ) : null}
+                        {isInstallment && expense.installmentPurchaseDate ? (
+                            <View style={styles.metaRow}>
+                                <Icon name="bag-handle-outline" size={16} color={colors.textMuted} />
+                                <Text style={[styles.metaText, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                    {t('expense.purchaseDateLabel')}: {' '}
+                                    {formatDate(expense.installmentPurchaseDate, 'dddd, MMMM D, YYYY')}
+                                </Text>
+                            </View>
+                        ) : null}
+                        {isInstallment && expense.installmentFirstPaymentDate ? (
+                            <View style={styles.metaRow}>
+                                <Icon name="repeat-outline" size={16} color={colors.textMuted} />
+                                <Text style={[styles.metaText, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                    {t('expense.firstPaymentDateLabel')}: {' '}
+                                    {formatDate(expense.installmentFirstPaymentDate, 'dddd, MMMM D, YYYY')}
+                                </Text>
+                            </View>
+                        ) : null}
                         <View style={styles.metaRow}>
                             <Icon name={paymentMethodIcon} size={16} color={colors.textMuted} />
                             <Text style={[styles.metaText, { fontSize: scaleFont(typography.fontSize.md) }]}>
                                 {t('paymentMethod.label' as any)}: {paymentMethodLabel}
                             </Text>
                         </View>
+                        {creditCardLabel ? (
+                            <View style={styles.metaRow}>
+                                <Icon name="card-outline" size={16} color={colors.textMuted} />
+                                <Text style={[styles.metaText, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                    {t('creditCards.label')}: {creditCardLabel}
+                                </Text>
+                            </View>
+                        ) : null}
                     </View>
 
                     {expense.note && (
@@ -252,6 +307,11 @@ const createStyles = (colors: any) => StyleSheet.create({
         fontWeight: typography.fontWeight.bold,
         color: colors.textPrimary,
         marginBottom: spacing.sm,
+    },
+    installmentBadge: {
+        color: colors.primaryLight,
+        fontWeight: typography.fontWeight.semibold,
+        marginBottom: spacing.xs,
     },
     amount: {
         fontSize: typography.fontSize['3xl'],

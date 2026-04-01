@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { subscriptionsApi } from '../../api/subscriptions';
-import { useAuthStore } from '../../store/authStore';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { useI18n } from '../../hooks/useI18n';
 import { toNum } from '../../utils/number';
@@ -10,12 +9,25 @@ import {
     listUpcomingSubscriptions,
     toSubscriptionManagerItems,
 } from './subscriptionManager';
+import { aggregateCurrencyTotals } from '../../utils/currency';
+import { extractApiMessage, extractPremiumRequiredError } from '../../utils/api';
 
 export function useSubscriptionManager() {
     const queryClient = useQueryClient();
-    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const { alert } = useAppAlert();
     const { t } = useI18n();
+
+    const handleMutationError = (payload: unknown, fallbackMessage: string) => {
+        const premiumError = extractPremiumRequiredError(payload);
+        if (premiumError) {
+            return;
+        }
+
+        alert(
+            t('common.error'),
+            extractApiMessage(payload) || fallbackMessage,
+        );
+    };
 
     const {
         data: allSubscriptions = [],
@@ -25,7 +37,6 @@ export function useSubscriptionManager() {
     } = useQuery({
         queryKey: ['subscriptions', 'list'],
         queryFn: subscriptionsApi.getAll,
-        enabled: isAuthenticated,
     });
 
     const {
@@ -36,7 +47,6 @@ export function useSubscriptionManager() {
     } = useQuery({
         queryKey: ['subscriptions', 'projection'],
         queryFn: subscriptionsApi.getProjection,
-        enabled: isAuthenticated,
     });
 
     const createMutation = useMutation({
@@ -47,8 +57,8 @@ export function useSubscriptionManager() {
             queryClient.invalidateQueries({ queryKey: ['history'] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
         },
-        onError: () => {
-            alert(t('common.error'), t('subscriptions.failedCreate'));
+        onError: (error: any) => {
+            handleMutationError(error?.response?.data, t('subscriptions.failedCreate'));
         },
     });
 
@@ -59,8 +69,8 @@ export function useSubscriptionManager() {
             queryClient.invalidateQueries({ queryKey: ['history'] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
         },
-        onError: () => {
-            alert(t('common.error'), t('subscriptions.failedRemove'));
+        onError: (error: any) => {
+            handleMutationError(error?.response?.data, t('subscriptions.failedRemove'));
         },
     });
 
@@ -72,8 +82,8 @@ export function useSubscriptionManager() {
             queryClient.invalidateQueries({ queryKey: ['history'] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
         },
-        onError: () => {
-            alert(t('common.error'), t('subscriptions.failedUpdate'));
+        onError: (error: any) => {
+            handleMutationError(error?.response?.data, t('subscriptions.failedUpdate'));
         },
     });
 
@@ -100,6 +110,20 @@ export function useSubscriptionManager() {
     const monthlyTotal = useMemo(
         () => toNum(projection?.totalMonthlyCost ?? fallbackTotal),
         [fallbackTotal, projection?.totalMonthlyCost],
+    );
+    const monthlyCurrencyBreakdown = useMemo(
+        () =>
+            projection?.currencyBreakdown?.length
+                ? projection.currencyBreakdown.map((item) => ({
+                    currency: item.currency,
+                    total: item.monthlyCost,
+                }))
+                : aggregateCurrencyTotals(
+                    sortedSubscriptions,
+                    (item) => item.cost,
+                    (item) => item.currency,
+                ),
+        [projection?.currencyBreakdown, sortedSubscriptions],
     );
 
     const upcomingInThreeDays = useMemo(
@@ -130,6 +154,7 @@ export function useSubscriptionManager() {
         subscriptions: sortedSubscriptions,
         managedSubscriptions,
         monthlyTotal,
+        monthlyCurrencyBreakdown,
         activeCount: projection?.activeCount ?? sortedSubscriptions.length,
         upcomingInThreeDays,
         refetch,

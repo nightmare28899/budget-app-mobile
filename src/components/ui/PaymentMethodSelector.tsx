@@ -17,7 +17,10 @@ import {
     useThemedStyles,
 } from '../../theme';
 import { useI18n } from '../../hooks/useI18n';
-import { PAYMENT_METHOD_OPTIONS } from '../../utils/paymentMethod';
+import {
+    getPaymentMethodOption,
+    PAYMENT_METHOD_OPTIONS,
+} from '../../utils/paymentMethod';
 
 interface PaymentMethodSelectorProps {
     value: string | undefined;
@@ -31,11 +34,11 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
     const { scaleFont } = useResponsive();
     const { t } = useI18n();
 
-    const selectedMethod = PAYMENT_METHOD_OPTIONS.find((m) => m.id === value);
-    
+    const selectedMethod = getPaymentMethodOption(value);
+
     const displayLabel = selectedMethod
-        ? (t(selectedMethod.labelKey as any) || selectedMethod.fallback)
-        : (t('paymentMethod.select' as any) || 'Select payment method');
+        ? t(selectedMethod.labelKey)
+        : t('paymentMethod.select');
     const displayIcon = selectedMethod ? selectedMethod.icon : 'wallet-outline';
     const displayColor = selectedMethod ? colors.primaryLight : colors.textSecondary;
 
@@ -47,9 +50,9 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
     return (
         <View style={styles.container}>
             <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
-                {t('paymentMethod.label' as any) || 'Payment Method'}
+                {t('paymentMethod.label')}
             </Text>
-            
+
             <TouchableOpacity
                 style={styles.selectorButton}
                 activeOpacity={0.7}
@@ -57,11 +60,13 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
             >
                 <View style={styles.selectorContent}>
                     <Icon name={displayIcon} size={20} color={displayColor} />
-                    <Text style={[
-                        styles.selectorText, 
-                        { fontSize: scaleFont(typography.fontSize.base) },
-                        !selectedMethod && { color: colors.textSecondary }
-                    ]}>
+                    <Text
+                        style={[
+                            styles.selectorText,
+                            { fontSize: scaleFont(typography.fontSize.base) },
+                            !selectedMethod && { color: colors.textSecondary },
+                        ]}
+                    >
                         {displayLabel}
                     </Text>
                 </View>
@@ -79,25 +84,31 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
                         <TouchableWithoutFeedback>
                             <View style={styles.modalContent}>
                                 <Text style={[styles.modalTitle, { fontSize: scaleFont(typography.fontSize.lg) }]}>
-                                    {t('paymentMethod.label' as any) || 'Payment Method'}
+                                    {t('paymentMethod.label')}
                                 </Text>
-                                
+
                                 <TouchableOpacity
                                     style={[
                                         styles.optionButton,
-                                        !value && styles.optionButtonSelected
+                                        !value && styles.optionButtonSelected,
                                     ]}
                                     activeOpacity={0.7}
                                     onPress={() => handleSelect(undefined)}
                                 >
                                     <View style={styles.optionContent}>
-                                        <Icon name="remove-circle-outline" size={24} color={!value ? colors.primaryLight : colors.textSecondary} />
-                                        <Text style={[
-                                            styles.optionText,
-                                            { fontSize: scaleFont(typography.fontSize.base) },
-                                            !value && styles.optionTextSelected
-                                        ]}>
-                                            {t('paymentMethod.none' as any) || 'No payment method'}
+                                        <Icon
+                                            name="remove-circle-outline"
+                                            size={24}
+                                            color={!value ? colors.primaryLight : colors.textSecondary}
+                                        />
+                                        <Text
+                                            style={[
+                                                styles.optionText,
+                                                { fontSize: scaleFont(typography.fontSize.base) },
+                                                !value && styles.optionTextSelected,
+                                            ]}
+                                        >
+                                            {t('paymentMethod.none')}
                                         </Text>
                                     </View>
                                     {!value && (
@@ -118,13 +129,23 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
                                             onPress={() => handleSelect(method.id)}
                                         >
                                             <View style={styles.optionContent}>
-                                                <Icon name={method.icon} size={24} color={isSelected ? colors.primaryLight : colors.textPrimary} />
-                                                <Text style={[
-                                                    styles.optionText,
-                                                    { fontSize: scaleFont(typography.fontSize.base) },
-                                                    isSelected && styles.optionTextSelected
-                                                ]}>
-                                                    {t(method.labelKey as any) || method.fallback}
+                                                <Icon
+                                                    name={method.icon}
+                                                    size={24}
+                                                    color={
+                                                        isSelected
+                                                            ? colors.primaryLight
+                                                            : colors.textPrimary
+                                                    }
+                                                />
+                                                <Text
+                                                    style={[
+                                                        styles.optionText,
+                                                        { fontSize: scaleFont(typography.fontSize.base) },
+                                                        isSelected && styles.optionTextSelected,
+                                                    ]}
+                                                >
+                                                    {t(method.labelKey)}
                                                 </Text>
                                             </View>
                                             {isSelected && (

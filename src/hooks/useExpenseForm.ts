@@ -1,23 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { ExpenseUploadImage, expensesApi } from '../api/expenses';
 import { categoriesApi } from '../api/categories';
-import { extractApiMessage } from '../utils/api';
+import { creditCardsApi } from '../api/creditCards';
+import { useAuthStore } from '../store/authStore';
+import { extractApiMessage, extractPremiumRequiredError } from '../utils/api';
 import { CreateExpensePayload, UpdateExpensePayload } from '../types';
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/currency';
 import { useI18n } from './useI18n';
 import { MAX_COST_LABEL, MAX_COST_VALUE } from '../utils/moneyInput';
 import { todayISO } from '../utils/format';
+import { isCreditCardPaymentMethod, normalizePaymentMethod } from '../utils/paymentMethod';
+import {
+    DEFAULT_INSTALLMENT_FREQUENCY,
+    getInstallmentBreakdown,
+} from '../utils/installments';
 
 export function useExpenseForm(expenseId?: string) {
     const queryClient = useQueryClient();
     const { alert } = useAppAlert();
     const { t } = useI18n();
+    const user = useAuthStore((s) => s.user);
+    const userCurrency = normalizeCurrency(user?.currency, DEFAULT_CURRENCY);
+
+    const handleMutationError = (payload: unknown, fallbackMessage: string) => {
+        const premiumError = extractPremiumRequiredError(payload);
+        if (premiumError) {
+            return;
+        }
+
+        alert(
+            t('common.error'),
+            extractApiMessage(payload) || fallbackMessage,
+        );
+    };
 
     const [title, setTitle] = useState('');
     const [cost, setCost] = useState('');
+    const [currency, setCurrency] = useState(userCurrency);
+    const [isInstallment, setIsInstallment] = useState(false);
+    const [installmentCount, setInstallmentCount] = useState('');
+    const [firstPaymentDate, setFirstPaymentDate] = useState(todayISO());
     const [note, setNote] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<string | undefined>();
+    const [selectedCreditCardId, setSelectedCreditCardId] = useState<string | undefined>();
     const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
     const [date, setDate] = useState(todayISO());
     const [hasLoaded, setHasLoaded] = useState(false);
@@ -31,7 +58,18 @@ export function useExpenseForm(expenseId?: string) {
     useEffect(() => {
         if (expense && expenseId && !hasLoaded) {
             setTitle(expense.title);
-            setCost(expense.cost.toString());
+            setIsInstallment(expense.isInstallment === true);
+            setCost(
+                expense.isInstallment
+                    ? String(expense.installmentTotalAmount ?? expense.cost)
+                    : expense.cost.toString(),
+            );
+            setCurrency(normalizeCurrency(expense.currency, userCurrency));
+            setInstallmentCount(
+                expense.isInstallment && expense.installmentCount
+                    ? String(expense.installmentCount)
+                    : '',
+            );
             setNote(expense.note || '');
             if (expense.categoryId) {
                 setSelectedCategory(expense.categoryId);
@@ -39,17 +77,71 @@ export function useExpenseForm(expenseId?: string) {
             if (expense.paymentMethod) {
                 setPaymentMethod(expense.paymentMethod);
             }
-            if (expense.date) {
-                setDate(expense.date.slice(0, 10));
+            setSelectedCreditCardId(
+                expense.creditCardId ?? expense.creditCard?.id ?? undefined,
+            );
+            const purchaseDate =
+                expense.isInstallment
+                    ? (expense.installmentPurchaseDate ?? expense.date)
+                    : expense.date;
+            const nextFirstPaymentDate =
+                expense.isInstallment
+                    ? (expense.installmentFirstPaymentDate ?? expense.date)
+                    : expense.date;
+            if (purchaseDate) {
+                setDate(purchaseDate.slice(0, 10));
+            }
+            if (nextFirstPaymentDate) {
+                setFirstPaymentDate(nextFirstPaymentDate.slice(0, 10));
             }
             setHasLoaded(true);
         }
-    }, [expense, expenseId, hasLoaded]);
+    }, [expense, expenseId, hasLoaded, userCurrency]);
+
+    useEffect(() => {
+        if (!expenseId) {
+            setCurrency(userCurrency);
+        }
+    }, [expenseId, userCurrency]);
+
+    useEffect(() => {
+        if (!isInstallment) {
+            setFirstPaymentDate(date);
+        }
+    }, [date, isInstallment]);
 
     const { data: categories = [], isLoading: categoriesLoading } = useQuery({
         queryKey: ['categories'],
         queryFn: categoriesApi.getAll,
     });
+
+    const includeInactiveCards = Boolean(expenseId);
+    const shouldLoadCreditCards =
+        isCreditCardPaymentMethod(paymentMethod) || Boolean(selectedCreditCardId);
+    const { data: creditCards = [], isLoading: creditCardsLoading } = useQuery({
+        queryKey: ['creditCards', includeInactiveCards ? 'all' : 'active'],
+        queryFn: () => creditCardsApi.getAll({ includeInactive: includeInactiveCards }),
+        enabled: shouldLoadCreditCards,
+    });
+
+    const selectableCreditCards = useMemo(
+        () =>
+            creditCards.filter((card) => card.isActive || card.id === selectedCreditCardId),
+        [creditCards, selectedCreditCardId],
+    );
+
+    useEffect(() => {
+        if (!isCreditCardPaymentMethod(paymentMethod)) {
+            if (selectedCreditCardId) {
+                setSelectedCreditCardId(undefined);
+            }
+            return;
+        }
+
+        if (!selectedCreditCardId && selectableCreditCards.length === 1) {
+            setSelectedCreditCardId(selectableCreditCards[0].id);
+        }
+    }, [paymentMethod, selectableCreditCards, selectedCreditCardId]);
 
     const createMutation = useMutation({
         mutationFn: ({
@@ -66,10 +158,7 @@ export function useExpenseForm(expenseId?: string) {
             queryClient.invalidateQueries({ queryKey: ['history'] });
         },
         onError: (err: any) => {
-            alert(
-                t('common.error'),
-                extractApiMessage(err?.response?.data) || t('expense.failedSave'),
-            );
+            handleMutationError(err?.response?.data, t('expense.failedSave'));
         },
     });
 
@@ -82,14 +171,24 @@ export function useExpenseForm(expenseId?: string) {
             queryClient.invalidateQueries({ queryKey: ['history'] });
         },
         onError: (err: any) => {
-            alert(
-                t('common.error'),
-                extractApiMessage(err?.response?.data) || t('expense.failedUpdate'),
-            );
+            handleMutationError(err?.response?.data, t('expense.failedUpdate'));
         },
     });
 
     const isPending = createMutation.isPending || updateMutation.isPending;
+    const parsedInstallmentCount = Number.parseInt(installmentCount, 10);
+    const installmentBreakdown = useMemo(() => {
+        const parsedCost = Number.parseFloat(cost);
+
+        if (!isInstallment || !Number.isFinite(parsedCost) || parsedCost <= 0) {
+            return getInstallmentBreakdown(0, 0);
+        }
+
+        return getInstallmentBreakdown(
+            parsedCost,
+            Number.isFinite(parsedInstallmentCount) ? parsedInstallmentCount : 0,
+        );
+    }, [cost, isInstallment, parsedInstallmentCount]);
 
     const saveExpense = async (
         onSuccessCallback: () => void,
@@ -116,14 +215,49 @@ export function useExpenseForm(expenseId?: string) {
             alert(t('common.error'), t('expense.chooseCategory'));
             return;
         }
+        if (!currency) {
+            alert(t('common.error'), t('expense.chooseCurrency'));
+            return;
+        }
+        if (isInstallment) {
+            if (!Number.isFinite(parsedInstallmentCount) || parsedInstallmentCount <= 1) {
+                alert(t('common.error'), t('expense.enterInstallmentCount'));
+                return;
+            }
+            if (!firstPaymentDate) {
+                alert(t('common.error'), t('expense.enterFirstPaymentDate'));
+                return;
+            }
+            if (firstPaymentDate < date) {
+                alert(t('common.error'), t('expense.invalidFirstPaymentDate'));
+                return;
+            }
+        }
+        if (isCreditCardPaymentMethod(paymentMethod) && !selectedCreditCardId) {
+            alert(t('common.error'), t('creditCards.validationRequired'));
+            return;
+        }
 
         const payload = {
             title: title.trim(),
             cost: parsedCost,
+            currency,
+            isInstallment,
+            installmentCount: isInstallment ? parsedInstallmentCount : undefined,
+            installmentFrequency: isInstallment
+                ? DEFAULT_INSTALLMENT_FREQUENCY
+                : undefined,
+            installmentPurchaseDate: isInstallment ? date : undefined,
+            installmentFirstPaymentDate: isInstallment ? firstPaymentDate : undefined,
             note: note.trim() || undefined,
-            paymentMethod: paymentMethod || undefined,
+            paymentMethod: normalizePaymentMethod(paymentMethod),
+            creditCardId: isCreditCardPaymentMethod(paymentMethod)
+                ? selectedCreditCardId
+                : null,
             categoryId: selectedCategory,
-            date: date || todayISO(),
+            date: isInstallment
+                ? (firstPaymentDate || date || todayISO())
+                : (date || todayISO()),
         };
 
         if (expenseId) {
@@ -139,8 +273,13 @@ export function useExpenseForm(expenseId?: string) {
     const resetForm = () => {
         setTitle('');
         setCost('');
+        setCurrency(userCurrency);
+        setIsInstallment(false);
+        setInstallmentCount('');
+        setFirstPaymentDate(todayISO());
         setNote('');
         setPaymentMethod(undefined);
+        setSelectedCreditCardId(undefined);
         setSelectedCategory(undefined);
         setDate(todayISO());
     };
@@ -148,13 +287,20 @@ export function useExpenseForm(expenseId?: string) {
     return {
         title, setTitle,
         cost, setCost,
+        currency, setCurrency,
+        isInstallment, setIsInstallment,
+        installmentCount, setInstallmentCount,
+        firstPaymentDate, setFirstPaymentDate,
+        installmentBreakdown,
         note, setNote,
         paymentMethod, setPaymentMethod,
+        selectedCreditCardId, setSelectedCreditCardId,
         selectedCategory, setSelectedCategory,
         date, setDate,
         hasLoaded, setHasLoaded,
         expense, expenseLoading,
         categories, categoriesLoading,
+        creditCards: selectableCreditCards, creditCardsLoading,
         saveExpense,
         isPending,
         resetForm,

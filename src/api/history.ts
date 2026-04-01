@@ -11,7 +11,14 @@ import {
     Subscription,
     User,
 } from '../types';
+import { normalizeCurrencyTotals } from '../utils/currency';
 import { toNum } from '../utils/number';
+import { isLocalMode } from '../modules/access/localMode';
+import { buildLocalHistoryPayload } from '../modules/local/localFinance';
+import { ensureGuestDataHydrated } from '../store/guestDataStore';
+import { useAuthStore } from '../store/authStore';
+import { dateOnly } from '../utils/filters';
+import { todayISO } from '../utils/format';
 
 function normalizeUser(raw: any): User | null {
     if (!raw || typeof raw !== 'object') {
@@ -42,6 +49,16 @@ function normalizeSummary(
             rawSummary?.totalSubscriptions ?? rawSummary?.subscriptionsTotal ?? subscriptionsTotal,
         ),
         total: toNum(rawSummary?.total ?? expensesTotal + subscriptionsTotal),
+        expenseCurrency:
+            typeof rawSummary?.expenseCurrency === 'string'
+                ? rawSummary.expenseCurrency
+                : null,
+        expenseTotalsByCurrency: normalizeCurrencyTotals(
+            rawSummary?.expenseTotalsByCurrency,
+        ),
+        subscriptionTotalsByCurrency: normalizeCurrencyTotals(
+            rawSummary?.subscriptionTotalsByCurrency,
+        ),
     };
 }
 
@@ -91,10 +108,18 @@ function hasHistoryShape(raw: any): boolean {
     );
 }
 
+function isVisibleExpenseDate(value: unknown, now = new Date()) {
+    const expenseDate = dateOnly(value);
+    const todayKey = dateOnly(now);
+    return !!expenseDate && expenseDate <= todayKey;
+}
+
 function normalizeHistoryPayload(rawPayload: any): HistoryPayload {
     const payload = extractHistoryPayload(rawPayload);
     const expenses: Expense[] = Array.isArray(payload?.expenses)
-        ? payload.expenses.map(normalizeExpense)
+        ? payload.expenses
+            .map(normalizeExpense)
+            .filter((expense: Expense) => isVisibleExpenseDate(expense.date))
         : [];
     const subscriptions: Subscription[] = Array.isArray(payload?.subscriptions)
         ? payload.subscriptions.map(normalizeSubscription)
@@ -125,6 +150,15 @@ function normalizeHistoryPayload(rawPayload: any): HistoryPayload {
 
 export const historyApi = {
     getAll: async () => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            return buildLocalHistoryPayload({
+                user: useAuthStore.getState().user,
+                expenses: state.expenses,
+                subscriptions: state.subscriptions,
+            });
+        }
+
         try {
             const { data } = await apiClient.get('/history');
             const extracted = extractHistoryPayload(data);
@@ -137,7 +171,7 @@ export const historyApi = {
 
         const [userResult, expensesResult, subscriptionsResult] = await Promise.allSettled([
             usersApi.getMe(),
-            expensesApi.getAllPages(),
+            expensesApi.getAllPages({ to: todayISO() }),
             subscriptionsApi.getAll(),
         ]);
 

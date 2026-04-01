@@ -3,6 +3,7 @@ export interface User {
     email: string;
     name: string;
     role?: string;
+    isPremium?: boolean | null;
     avatarUrl?: string | null;
     dailyBudget?: number;
     budgetAmount?: number;
@@ -14,6 +15,29 @@ export interface User {
     isActive?: boolean;
     deletedAt?: string | null;
     createdAt?: string;
+}
+
+export type PaymentMethodValue =
+    | 'CASH'
+    | 'CREDIT_CARD'
+    | 'DEBIT_CARD'
+    | 'TRANSFER';
+
+export type InstallmentFrequency = 'MONTHLY';
+
+export interface CreditCard {
+    id: string;
+    name: string;
+    bank: string;
+    brand: string;
+    last4: string;
+    color?: string | null;
+    creditLimit?: number | null;
+    closingDay?: number | null;
+    paymentDueDay?: number | null;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export type BudgetPeriod =
@@ -35,11 +59,22 @@ export interface Expense {
     id: string;
     title: string;
     cost: number;
+    currency: string;
+    isInstallment?: boolean;
+    installmentGroupId?: string | null;
+    installmentCount?: number | null;
+    installmentIndex?: number | null;
+    installmentTotalAmount?: number | null;
+    installmentFrequency?: InstallmentFrequency | null;
+    installmentPurchaseDate?: string | null;
+    installmentFirstPaymentDate?: string | null;
     isSubscription?: boolean;
     imageUrl?: string;
     imagePresignedUrl?: string;
     note?: string;
-    paymentMethod?: string;
+    paymentMethod?: PaymentMethodValue;
+    creditCardId?: string | null;
+    creditCard?: CreditCard | null;
     date: string;
     categoryId?: string;
     category?: Category;
@@ -73,6 +108,10 @@ export interface ExpensesListResponse {
     expenses: Expense[];
     pagination: ExpensesPagination;
     total: number;
+    currencyBreakdown?: Array<{
+        currency: string;
+        total: number;
+    }>;
 }
 
 export type SubscriptionBillingCycle = 'MONTHLY' | 'YEARLY' | 'WEEKLY';
@@ -81,7 +120,9 @@ export interface Subscription {
     id: string;
     name: string;
     cost: number;
-    paymentMethod?: string;
+    paymentMethod?: PaymentMethodValue;
+    creditCardId?: string | null;
+    creditCard?: CreditCard | null;
     currency: string;
     billingCycle: SubscriptionBillingCycle;
     nextPaymentDate: string;
@@ -111,7 +152,8 @@ export interface SubscriptionProjection {
 export interface CreateSubscriptionPayload {
     name: string;
     cost: number;
-    paymentMethod?: string;
+    paymentMethod?: PaymentMethodValue;
+    creditCardId?: string | null;
     billingCycle: SubscriptionBillingCycle;
     nextPaymentDate: string;
     currency?: string;
@@ -126,6 +168,11 @@ export type UpdateSubscriptionPayload = Partial<CreateSubscriptionPayload>;
 export interface TodaySummary {
     expenses: Expense[];
     total: number;
+    currency?: string | null;
+    currencyBreakdown?: Array<{
+        currency: string;
+        total: number;
+    }>;
     budgetAmount: number;
     budgetPeriod: BudgetPeriod;
     budgetPeriodStart?: string | null;
@@ -177,8 +224,11 @@ export interface UpcomingSubscriptionCharge {
     subscriptionId?: string;
     name: string;
     amount: number;
+    currency?: string;
     daysRemaining: number;
-    paymentMethod?: string;
+    paymentMethod?: PaymentMethodValue;
+    creditCardId?: string | null;
+    creditCard?: CreditCard | null;
     chargeDate?: string | null;
     nextPaymentDate?: string | null;
 }
@@ -242,6 +292,15 @@ export interface HistorySummary {
     totalExpenses: number;
     totalSubscriptions: number;
     total: number;
+    expenseCurrency?: string | null;
+    expenseTotalsByCurrency?: Array<{
+        currency: string;
+        total: number;
+    }>;
+    subscriptionTotalsByCurrency?: Array<{
+        currency: string;
+        total: number;
+    }>;
 }
 
 export interface HistoryPayload {
@@ -267,10 +326,31 @@ export interface RegisterResponse extends AuthResponse {
 export interface CreateExpensePayload {
     title: string;
     cost: number;
-    paymentMethod?: string;
+    currency: string;
+    isInstallment?: boolean;
+    installmentCount?: number;
+    installmentFrequency?: InstallmentFrequency;
+    installmentPurchaseDate?: string;
+    installmentFirstPaymentDate?: string;
+    paymentMethod?: PaymentMethodValue;
+    creditCardId?: string | null;
     note?: string;
     date?: string;
     categoryId?: string;
 }
 
 export type UpdateExpensePayload = Partial<CreateExpensePayload>;
+
+export interface CreateCreditCardPayload {
+    name: string;
+    bank: string;
+    brand: string;
+    last4: string;
+    color?: string | null;
+    creditLimit?: number | null;
+    closingDay?: number | null;
+    paymentDueDay?: number | null;
+    isActive?: boolean;
+}
+
+export type UpdateCreditCardPayload = Partial<CreateCreditCardPayload>;

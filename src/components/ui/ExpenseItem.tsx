@@ -7,10 +7,15 @@ import { MainTabScreenProps } from '../../navigation/types';
 import { CategoryIcon } from '../CategoryIcon';
 import { formatCurrency, formatTime } from '../../utils/format';
 import { withAlpha } from '../../utils/subscriptions';
+import { formatCreditCardLabel } from '../../utils/creditCards';
 import {
     getPaymentMethodOption,
     PAYMENT_METHOD_FALLBACK_ICON,
 } from '../../utils/paymentMethod';
+import {
+    getInstallmentProgress,
+    isInstallmentExpense,
+} from '../../utils/installments';
 import {
     spacing,
     typography,
@@ -20,7 +25,6 @@ import {
     useThemedStyles,
 } from '../../theme';
 import { Expense } from '../../types';
-import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../hooks/useI18n';
 
 const ACTION_WIDTH = 150;
@@ -84,7 +88,6 @@ export function ExpenseItem({
     const navigation = useNavigation<MainTabScreenProps<'Dashboard'>['navigation']>();
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
-    const user = useAuthStore((s) => s.user);
     const { t, language } = useI18n();
     const { isSmallPhone, scaleFont, scaleSize } = useResponsive();
     const appear = useRef(new Animated.Value(0)).current;
@@ -147,11 +150,23 @@ export function ExpenseItem({
     const paymentMethodLabel = paymentMethodOption
         ? (t(paymentMethodOption.labelKey as any) || paymentMethodOption.fallback)
         : null;
+    const creditCardLabel = formatCreditCardLabel(expense.creditCard);
     const paymentMethodIcon = paymentMethodOption?.icon ?? PAYMENT_METHOD_FALLBACK_ICON;
+    const installmentProgress = getInstallmentProgress(expense);
+    const installmentMeta = isInstallmentExpense(expense)
+        && installmentProgress.currentInstallment
+        && installmentProgress.installmentCount
+        ? t('expense.installmentPositionLabel', {
+            current: installmentProgress.currentInstallment,
+            count: installmentProgress.installmentCount,
+        })
+        : null;
     const expenseMeta = [
         expense.category?.name ?? t('expenseDetail.uncategorized'),
         formatTime(expense.date),
+        installmentMeta,
         paymentMethodLabel,
+        creditCardLabel,
     ]
         .filter(Boolean)
         .join(' • ');
@@ -314,7 +329,7 @@ export function ExpenseItem({
                 <Text
                     style={[styles.expenseCost, { fontSize: amountFontSize }]}
                 >
-                    -{formatCurrency(Number(expense.cost), user?.currency)}
+                    -{formatCurrency(Number(expense.cost), expense.currency, locale)}
                 </Text>
             </View>
         </AnimatedTouchableOpacity>

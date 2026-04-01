@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Linking, PermissionsAndroid, Platform } from 'react-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import auth from '@react-native-firebase/auth';
+import messaging from '@react-native-firebase/messaging';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import {
     ImagePickerResponse,
     launchCamera,
@@ -13,6 +16,8 @@ import { reportsApi } from '../api/reports';
 import { extractApiMessage } from '../utils/api';
 import { API_BASE_URL } from '../utils/constants';
 import { BudgetPeriod, User } from '../types';
+import { notificationsApi } from '../api/notifications';
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/currency';
 import {
     extractAvatarUri,
     isLikelyInternalRemoteUri,
@@ -50,7 +55,7 @@ function isValidIsoDate(value: string): boolean {
 }
 
 export function useSettings() {
-    const { user, setUser, setAvatarSuppressed, logout } = useAuthStore();
+    const { user, setUser, setAvatarSuppressed, logout, isAuthenticated, isGuest } = useAuthStore();
     const queryClient = useQueryClient();
     const { alert } = useAppAlert();
     const { t, language, setLanguage } = useI18n();
@@ -65,6 +70,9 @@ export function useSettings() {
     const [budgetAmount, setBudgetAmount] = useState(
         String(toNum(user?.budgetAmount ?? user?.dailyBudget)),
     );
+    const [currency, setCurrency] = useState(
+        normalizeCurrency(user?.currency, DEFAULT_CURRENCY),
+    );
     const [budgetPeriod, setBudgetPeriod] = useState<BudgetPeriod>(
         normalizeBudgetPeriod(user?.budgetPeriod, 'daily'),
     );
@@ -75,9 +83,11 @@ export function useSettings() {
         typeof user?.budgetPeriodEnd === 'string' ? user.budgetPeriodEnd : '',
     );
     const [name, setName] = useState(user?.name ?? '');
+    const [pendingAvatarUploadUri, setPendingAvatarUploadUri] = useState<string | null>(null);
 
     useEffect(() => {
         setBudgetAmount(String(toNum(user?.budgetAmount ?? user?.dailyBudget)));
+        setCurrency(normalizeCurrency(user?.currency, DEFAULT_CURRENCY));
         setBudgetPeriod(normalizeBudgetPeriod(user?.budgetPeriod, 'daily'));
         setBudgetPeriodStart(
             typeof user?.budgetPeriodStart === 'string' ? user.budgetPeriodStart : '',
@@ -89,6 +99,7 @@ export function useSettings() {
     }, [
         user?.budgetAmount,
         user?.dailyBudget,
+        user?.currency,
         user?.budgetPeriod,
         user?.budgetPeriodStart,
         user?.budgetPeriodEnd,
@@ -106,6 +117,64 @@ export function useSettings() {
     useEffect(() => {
         setAvatarLoadFailed(false);
     }, [avatarUri]);
+
+    const parseResponsePayload = async (response: Response) => {
+        const rawText = await response.text();
+        const trimmed = rawText.trim();
+
+        if (!trimmed) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(trimmed);
+        } catch {
+            return trimmed;
+        }
+    };
+
+    const patchProfileMultipart = async (
+        payload: Record<string, string | number>,
+        localAvatarUri: string,
+    ) => {
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+            formData.append(key, String(value));
+        });
+
+        const filename =
+            localAvatarUri.split('/').pop() || `avatar-${Date.now()}.jpg`;
+        formData.append('avatar', {
+            uri: localAvatarUri,
+            name: filename,
+            type: inferImageMimeType(filename),
+        } as any);
+
+        const accessToken = useAuthStore.getState().accessToken;
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
+            method: 'PATCH',
+            headers: {
+                Accept: 'application/json',
+                ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+            },
+            body: formData,
+        });
+
+        const responsePayload = await parseResponsePayload(response);
+        if (!response.ok) {
+            const error: any = new Error(
+                extractApiMessage(responsePayload)
+                || `Request failed with status ${response.status}`,
+            );
+            error.response = {
+                status: response.status,
+                data: responsePayload,
+            };
+            throw error;
+        }
+
+        return (responsePayload as any)?.user ?? responsePayload;
+    };
 
     const normalizeUpdatedUser = (data: any): User => {
         const budgetAmountValue = toNum(
@@ -165,7 +234,7 @@ export function useSettings() {
             id: data?.id ?? user?.id ?? '',
             email: data?.email ?? user?.email ?? '',
             name: data?.name ?? user?.name ?? '',
-            currency: data?.currency ?? user?.currency,
+            currency: normalizeCurrency(data?.currency ?? user?.currency, DEFAULT_CURRENCY),
             dailyBudget: budgetAmountValue,
             budgetAmount: budgetAmountValue,
             budgetPeriod: nextBudgetPeriod,
@@ -206,6 +275,7 @@ export function useSettings() {
             return;
         }
 
+        setPendingAvatarUploadUri(pickedUri);
         setAvatarSuppressed(false);
         updateLocalAvatar(pickedUri);
     };
@@ -302,6 +372,7 @@ export function useSettings() {
                 text: t('common.remove'),
                 style: 'destructive',
                 onPress: () => {
+                    setPendingAvatarUploadUri(null);
                     setAvatarSuppressed(true);
                     updateLocalAvatar(null);
                 },
@@ -375,7 +446,9 @@ export function useSettings() {
             budgetPeriod?: BudgetPeriod;
             budgetPeriodStart?: string;
             budgetPeriodEnd?: string;
+            currency?: string;
             avatarUri?: string | null;
+            avatarUploadUri?: string | null;
         }) => {
             const payload: Record<string, string | number> = {};
             if (data.name !== undefined) {
@@ -398,27 +471,58 @@ export function useSettings() {
                 }
             }
 
-            const trimmedAvatarUri =
-                typeof data.avatarUri === 'string' ? data.avatarUri.trim() : null;
-            const hasLocalAvatarUpload =
-                !!trimmedAvatarUri && !isRemoteHttpUri(trimmedAvatarUri);
+            if (data.currency) {
+                payload.currency = data.currency;
+            }
 
-            if (hasLocalAvatarUpload) {
-                const formData = new FormData();
-                Object.entries(payload).forEach(([key, value]) => {
-                    formData.append(key, String(value));
+            const trimmedAvatarUploadUri =
+                typeof data.avatarUploadUri === 'string'
+                    ? data.avatarUploadUri.trim()
+                    : null;
+
+            if (!useAuthStore.getState().isAuthenticated) {
+                if (!user) {
+                    throw new Error('Guest profile is not available');
+                }
+
+                const nextPeriod = data.budgetPeriod
+                    ? data.budgetPeriod
+                    : normalizeBudgetPeriod(user.budgetPeriod, 'daily');
+                const wantsAvatarRemoval = data.avatarUri === null;
+                const nextAvatarUri = wantsAvatarRemoval
+                    ? null
+                    : trimmedAvatarUploadUri
+                        ? trimmedAvatarUploadUri
+                        : data.avatarUri !== undefined
+                            ? data.avatarUri
+                            : user.avatarUri ?? user.avatarUrl ?? null;
+
+                return normalizeUpdatedUser({
+                    ...user,
+                    name: data.name ?? user.name,
+                    budgetAmount:
+                        data.budgetAmount ?? user.budgetAmount ?? user.dailyBudget,
+                    dailyBudget:
+                        data.budgetAmount ?? user.dailyBudget ?? user.budgetAmount,
+                    budgetPeriod: nextPeriod,
+                    budgetPeriodStart:
+                        nextPeriod === 'period'
+                            ? data.budgetPeriodStart
+                                ?? user.budgetPeriodStart
+                            : null,
+                    budgetPeriodEnd:
+                        nextPeriod === 'period'
+                            ? data.budgetPeriodEnd
+                                ?? user.budgetPeriodEnd
+                            : null,
+                    currency: data.currency ?? user.currency,
+                    avatarUri: nextAvatarUri,
+                    avatarUrl: nextAvatarUri,
                 });
+            }
 
-                const filename =
-                    trimmedAvatarUri.split('/').pop() || `avatar-${Date.now()}.jpg`;
-                formData.append('avatar', {
-                    uri: trimmedAvatarUri,
-                    name: filename,
-                    type: inferImageMimeType(filename),
-                } as any);
-
-                const { data: updated } = await apiClient.patch('/users/me', formData);
-                return (updated?.user ?? updated);
+            if (trimmedAvatarUploadUri) {
+                return patchProfileMultipart(payload, trimmedAvatarUploadUri);
             }
 
             const wantsAvatarRemoval = data.avatarUri === null;
@@ -445,6 +549,7 @@ export function useSettings() {
             return (updated?.user ?? updated);
         },
         onSuccess: (data) => {
+            setPendingAvatarUploadUri(null);
             setUser(normalizeUpdatedUser(data));
             queryClient.invalidateQueries({ queryKey: ['users', 'me'] });
             queryClient.invalidateQueries({ queryKey: ['expenses'] });
@@ -456,6 +561,7 @@ export function useSettings() {
                     ? String(nextBudgetAmount)
                     : budgetAmount,
             );
+            setCurrency(normalizeCurrency(data?.currency ?? user?.currency, DEFAULT_CURRENCY));
             const nextPeriod = normalizeBudgetPeriod(
                 data?.budgetPeriod ?? budgetPeriod,
                 'daily',
@@ -523,17 +629,21 @@ export function useSettings() {
         updateMutation.mutate({
             name: name.trim(),
             budgetAmount: budget,
+            currency,
             budgetPeriod,
             budgetPeriodStart: budgetPeriod === 'period' ? trimmedStart : undefined,
             budgetPeriodEnd: budgetPeriod === 'period' ? trimmedEnd : undefined,
             avatarUri,
+            avatarUploadUri: pendingAvatarUploadUri,
         });
     };
 
     const onSaveProfile = () => {
         updateMutation.mutate({
             name: name.trim(),
+            currency,
             avatarUri,
+            avatarUploadUri: pendingAvatarUploadUri,
         });
     };
 
@@ -543,7 +653,30 @@ export function useSettings() {
             {
                 text: t('common.logout'),
                 style: 'destructive',
-                onPress: () => {
+                onPress: async () => {
+                    if (isAuthenticated) {
+                        try {
+                            const deviceToken = (await messaging().getToken()).trim();
+                            if (deviceToken) {
+                                await notificationsApi.removeDeviceToken(deviceToken);
+                            }
+                        } catch {
+                            // Best-effort cleanup only.
+                        }
+
+                        try {
+                            await auth().signOut();
+                        } catch {
+                            // Best-effort cleanup only.
+                        }
+
+                        try {
+                            await GoogleSignin.signOut();
+                        } catch {
+                            // Best-effort cleanup only.
+                        }
+                    }
+
                     queryClient.clear();
                     logout();
                 },
@@ -662,10 +795,14 @@ export function useSettings() {
         t,
         language,
         user,
+        isAuthenticated,
+        isGuest,
         name,
         setName,
         budgetAmount,
         setBudgetAmount,
+        currency,
+        setCurrency,
         budgetPeriod,
         setBudgetPeriod,
         budgetPeriodStart,

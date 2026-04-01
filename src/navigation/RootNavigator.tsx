@@ -10,8 +10,12 @@ import { EditExpenseScreen } from '../screens/editExpense/EditExpenseScreen';
 import { AddEntryScreen } from '../screens/addExpense/AddEntryScreen';
 import { AddExpenseScreen } from '../screens/addExpense/AddExpenseScreen';
 import { AddSubscriptionScreen } from '../screens/addExpense/AddSubscriptionScreen';
+import { PlanOverviewScreen } from '../screens/profile/PlanOverviewScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { SavingsGoalDetailScreen } from '../screens/savings/SavingsGoalDetailScreen';
+import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
+import { CreditCardFormScreen } from '../screens/creditCards/CreditCardFormScreen';
+import { PremiumPaywallScreen } from '../screens/premium/PremiumPaywallScreen';
 import { useAuthStore } from '../store/authStore';
 import { usersApi } from '../api/users';
 import { useTheme } from '../theme';
@@ -24,12 +28,23 @@ import {
 import { useI18n } from '../hooks/useI18n';
 import { AppSplashScreen } from '../components/ui/AppSplashScreen';
 import { ScreenBackButton } from '../components/ui/ScreenBackButton';
+import {
+    usePreferencesStore,
+} from '../store/preferencesStore';
+import { useGuestDataStore } from '../store/guestDataStore';
+import {
+    flushPendingNotificationDestination,
+    rootNavigationRef,
+} from './navigationBridge';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const MIN_SPLASH_MS = 1200;
 
 export function RootNavigator() {
     const { isAuthenticated, isLoading, hydrate, setUser } = useAuthStore();
+    const isPreferencesHydrated = usePreferencesStore((s) => s.isHydrated);
+    const hasCompletedOnboarding = usePreferencesStore((s) => s.hasCompletedOnboarding);
+    const isGuestDataHydrated = useGuestDataStore((s) => s.isHydrated);
     const { t } = useI18n();
     const { colors, isDark } = useTheme();
     const [splashReady, setSplashReady] = useState(false);
@@ -92,7 +107,11 @@ export function RootNavigator() {
         });
     }, [profile, setUser]);
 
-    const shouldShowSplash = isLoading || !splashReady;
+    const shouldShowSplash =
+        isLoading
+        || !isPreferencesHydrated
+        || !isGuestDataHydrated
+        || !splashReady;
 
     if (shouldShowSplash) {
         return <AppSplashScreen />;
@@ -100,6 +119,8 @@ export function RootNavigator() {
 
     return (
         <NavigationContainer
+            ref={rootNavigationRef}
+            onReady={flushPendingNotificationDestination}
             theme={{
                 dark: isDark,
                 colors: {
@@ -119,12 +140,20 @@ export function RootNavigator() {
             }}
         >
             <Stack.Navigator screenOptions={{ headerShown: false }}>
-                {isAuthenticated ? (
+                {hasCompletedOnboarding ? (
                     <>
                         <Stack.Screen name="Main" component={MainDrawerNavigator} />
                         <Stack.Screen
                             name="Profile"
                             component={ProfileScreen}
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_right',
+                            }}
+                        />
+                        <Stack.Screen
+                            name="PlanOverview"
+                            component={PlanOverviewScreen}
                             options={{
                                 headerShown: false,
                                 animation: 'slide_from_right',
@@ -187,6 +216,14 @@ export function RootNavigator() {
                             }}
                         />
                         <Stack.Screen
+                            name="CreditCardForm"
+                            component={CreditCardFormScreen}
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_right',
+                            }}
+                        />
+                        <Stack.Screen
                             name="SavingsGoalDetail"
                             component={SavingsGoalDetailScreen}
                             options={({ navigation, route }) => ({
@@ -205,8 +242,25 @@ export function RootNavigator() {
                         />
                     </>
                 ) : (
-                    <Stack.Screen name="Auth" component={AuthNavigator} />
+                    <Stack.Screen name="Onboarding" component={OnboardingScreen} />
                 )}
+                <Stack.Screen
+                    name="Auth"
+                    component={AuthNavigator}
+                    options={{
+                        headerShown: false,
+                        animation: 'slide_from_right',
+                    }}
+                />
+                <Stack.Screen
+                    name="PremiumPaywall"
+                    component={PremiumPaywallScreen}
+                    options={{
+                        headerShown: false,
+                        presentation: 'modal',
+                        animation: 'slide_from_bottom',
+                    }}
+                />
             </Stack.Navigator>
         </NavigationContainer>
     );

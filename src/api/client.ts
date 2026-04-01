@@ -4,11 +4,12 @@ import { useAuthStore } from '../store/authStore';
 import { translate, TranslationKey } from '../i18n';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { showGlobalAlert } from '../components/alerts/alertBridge';
+import { extractPremiumRequiredError } from '../utils/api';
+import { openPremiumPaywall } from '../navigation/navigationBridge';
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
     timeout: 15000,
-    headers: { 'Content-Type': 'application/json' },
 });
 
 type RefreshResponse = {
@@ -32,6 +33,27 @@ function isAuthRoute(url?: string): boolean {
     }
 
     return /\/auth\/(login|register|refresh)\b/i.test(url);
+}
+
+function isFormDataPayload(value: unknown): value is FormData {
+    return typeof FormData !== 'undefined' && value instanceof FormData;
+}
+
+function removeContentTypeHeader(
+    headers: InternalAxiosRequestConfig['headers'],
+): void {
+    if (!headers) {
+        return;
+    }
+
+    if (typeof headers.delete === 'function') {
+        headers.delete('Content-Type');
+        headers.delete('content-type');
+        return;
+    }
+
+    delete headers['Content-Type'];
+    delete headers['content-type'];
 }
 
 function askSessionRenewal(): Promise<SessionDecision> {
@@ -95,6 +117,11 @@ function refreshTokens(refreshToken: string): Promise<RefreshResponse> {
 
 apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
+        if (isFormDataPayload(config.data)) {
+            // Let React Native/Axios generate the multipart boundary correctly.
+            removeContentTypeHeader(config.headers);
+        }
+
         if (!__DEV__) {
             const baseUrl = String(config.baseURL || API_BASE_URL);
             const requestUrl = String(config.url || '');
@@ -124,6 +151,11 @@ apiClient.interceptors.response.use(
         const originalRequest = error.config as (InternalAxiosRequestConfig & {
             _retry?: boolean;
         }) | null;
+        const premiumError = extractPremiumRequiredError(error.response?.data);
+
+        if (premiumError) {
+            openPremiumPaywall(premiumError.feature);
+        }
 
         if (!originalRequest) {
             return Promise.reject(error);

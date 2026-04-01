@@ -13,7 +13,7 @@ import { DrawerActions } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/currency';
 import { withAlpha } from '../../utils/subscriptions';
 import {
     spacing,
@@ -45,11 +45,12 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
         scaleFont,
         scaleSize,
     } = useResponsive();
-    const { t, tPlural } = useI18n();
+    const { t, tPlural, language } = useI18n();
+    const locale = getCurrencyLocale(language);
     const {
         items,
-        total,
         totalCount,
+        currencyBreakdown,
         isLoading,
         isRefreshing,
         isLoadingMore,
@@ -74,7 +75,10 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
     const expenses = items;
     const summaryText = t('expenses.overviewSubtitle', {
         count: totalCount,
-        total: formatCurrency(total, user?.currency),
+        total: formatCurrencyBreakdown(currencyBreakdown, {
+            locale,
+            emptyCurrency: user?.currency,
+        }),
     });
     const expensesCountLabel = tPlural('analytics.expenseCount', totalCount);
     const showSkeleton = isLoading && expenses.length === 0;
@@ -178,7 +182,10 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
                     {t('expenses.totalSpending')}
                 </Text>
                 <Text style={[styles.totalValue, { fontSize: scaleFont(typography.fontSize['4xl']) }]}>
-                    {formatCurrency(total, user?.currency)}
+                    {formatCurrencyBreakdown(currencyBreakdown, {
+                        locale,
+                        emptyCurrency: user?.currency,
+                    })}
                 </Text>
                 <Text style={[styles.totalMeta, { fontSize: scaleFont(typography.fontSize.xs) }]}>
                     {expensesCountLabel}
@@ -308,7 +315,7 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
 const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#050F22',
+        backgroundColor: colors.background,
     },
     flex1: {
         flex: 1,

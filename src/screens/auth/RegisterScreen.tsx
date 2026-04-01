@@ -27,6 +27,7 @@ import {
     useThemedStyles,
 } from '../../theme';
 import { useI18n } from '../../hooks/useI18n';
+import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
 
 export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     const { colors } = useTheme();
@@ -46,6 +47,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     const { profileImage, setProfileImage, promptPickImage } = useImagePicker();
 
     const insets = useSafeAreaInsets();
+    const { scrollRef, createScrollOnFocusHandler } = useScrollToFocusedInput(112);
     const {
         horizontalPadding,
         contentMaxWidth,
@@ -55,7 +57,10 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     } = useResponsive();
 
     const onRegister = async () => {
-        await register(email, name, password, confirmPassword, profileImage);
+        const success = await register(email, name, password, confirmPassword, profileImage);
+        if (success) {
+            navigation.getParent()?.goBack();
+        }
     };
     const { t, tPlural } = useI18n();
 
@@ -84,6 +89,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                 </View>
 
                 <ScrollView
+                    ref={scrollRef}
                     contentContainerStyle={[
                         styles.content,
                         {
@@ -96,6 +102,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                     ]}
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode="on-drag"
+                    automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
                 >
                     <View style={styles.form}>
                         <View style={styles.avatarContainer}>
@@ -169,6 +176,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                             placeholder={t('auth.namePlaceholder')}
                             value={name}
                             onChangeText={setName}
+                            onFocus={createScrollOnFocusHandler()}
                         />
 
                         <Input
@@ -178,6 +186,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                             autoCapitalize="none"
                             value={email}
                             onChangeText={setEmail}
+                            onFocus={createScrollOnFocusHandler()}
                         />
 
                         <Input
@@ -186,6 +195,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                             isPassword
                             value={password}
                             onChangeText={setPassword}
+                            onFocus={createScrollOnFocusHandler(132)}
                         />
 
                         <Input
@@ -194,6 +204,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                             isPassword
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
+                            onFocus={createScrollOnFocusHandler(148)}
                         />
 
                         <Button
@@ -234,6 +245,15 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                         <Text style={[styles.footerText, { fontSize: scaleFont(typography.fontSize.md) }]}>
                             {t('auth.alreadyHaveAccount')}{' '}
                             <Text style={styles.footerLink}>{t('auth.signIn')}</Text>
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.guestFooter}
+                        onPress={() => navigation.getParent()?.goBack()}
+                    >
+                        <Text style={[styles.guestFooterText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                            {t('auth.continueGuest')}
                         </Text>
                     </TouchableOpacity>
                 </ScrollView>
@@ -331,6 +351,10 @@ const createStyles = (colors: any) => StyleSheet.create({
         alignItems: 'center',
         marginTop: spacing['2xl'],
     },
+    guestFooter: {
+        alignItems: 'center',
+        marginTop: spacing.base,
+    },
     footerText: {
         fontSize: typography.fontSize.md,
         color: colors.textSecondary,
@@ -338,5 +362,9 @@ const createStyles = (colors: any) => StyleSheet.create({
     footerLink: {
         color: colors.primaryLight,
         fontWeight: typography.fontWeight.bold,
+    },
+    guestFooterText: {
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.medium,
     },
 });

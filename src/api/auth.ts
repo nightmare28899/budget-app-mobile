@@ -18,6 +18,21 @@ function inferMimeType(filename?: string): string {
     return 'image/jpeg';
 }
 
+async function parseResponsePayload(response: Response) {
+    const rawText = await response.text();
+    const trimmed = rawText.trim();
+
+    if (!trimmed) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(trimmed);
+    } catch {
+        return trimmed;
+    }
+}
+
 function normalizeAuthResponse<T extends AuthResponse | RegisterResponse>(data: T): T {
     const budgetAmount = toNum(data?.user?.budgetAmount ?? data?.user?.dailyBudget);
     const budgetPeriod = normalizeBudgetPeriod(data?.user?.budgetPeriod, 'daily');
@@ -49,6 +64,20 @@ export const authApi = {
         avatar?: RegisterAvatarPayload,
         role: string = 'user',
     ) => {
+        if (!avatar?.uri) {
+            const { data } = await apiClient.post<RegisterResponse>(
+                '/auth/register',
+                {
+                    email,
+                    name,
+                    password,
+                    role,
+                },
+            );
+
+            return normalizeAuthResponse(data);
+        }
+
         const formData = new FormData();
         formData.append('email', email);
         formData.append('name', name);
@@ -64,18 +93,38 @@ export const authApi = {
             } as any);
         }
 
-        const { data } = await apiClient.post<RegisterResponse>(
-            '/auth/register',
-            formData,
-        );
+        const response = await fetch(`${apiClient.defaults.baseURL}/auth/register`, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+            },
+            body: formData,
+        });
 
-        return normalizeAuthResponse(data);
+        const payload = await parseResponsePayload(response);
+        if (!response.ok) {
+            const error: any = new Error(`Request failed with status ${response.status}`);
+            error.response = {
+                status: response.status,
+                data: payload,
+            };
+            throw error;
+        }
+
+        return normalizeAuthResponse(payload as RegisterResponse);
     },
 
     login: async (email: string, password: string) => {
         const { data } = await apiClient.post<AuthResponse>('/auth/login', {
             email,
             password,
+        });
+        return normalizeAuthResponse(data);
+    },
+
+    loginWithGoogle: async (firebaseIdToken: string) => {
+        const { data } = await apiClient.post<AuthResponse>('/auth/google', {
+            firebaseIdToken,
         });
         return normalizeAuthResponse(data);
     },

@@ -533,7 +533,6 @@ export function CardsScreen({ navigation, route }: MainTabScreenProps<'Subscript
                                 <SubscriptionItem
                                     subscription={item}
                                     locale={locale}
-                                    currency={user?.currency}
                                     onPress={onEditSubscription}
                                     onEdit={onEditSubscription}
                                     onDelete={onDeleteSubscription}
@@ -571,7 +570,7 @@ export function CardsScreen({ navigation, route }: MainTabScreenProps<'Subscript
 const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#050F22',
+        backgroundColor: colors.background,
     },
     flex1: {
         flex: 1,
@@ -605,7 +604,7 @@ const createStyles = (colors: any) => StyleSheet.create({
         backgroundColor: colors.primaryAction,
     },
     segmentText: {
-        color: '#fff',
+        color: colors.textSecondary,
         fontWeight: typography.fontWeight.semibold,
     },
     segmentTextActive: {

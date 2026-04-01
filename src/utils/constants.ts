@@ -1,6 +1,7 @@
 import { NativeModules } from 'react-native';
+import { API_URL } from '@env';
 
-const PROD_API_BASE_URL = 'https://app.kevinlg.cloud/api';
+const PROD_API_BASE_URL = API_URL;
 
 function extractDevHostFromMetro(): string | null {
     if (!__DEV__) {

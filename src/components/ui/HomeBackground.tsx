@@ -1,11 +1,31 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useTheme } from '../../theme';
+import { withAlpha } from '../../utils/subscriptions';
 
 export function HomeBackground() {
+    const { colors, isDark } = useTheme();
+
     return (
         <View pointerEvents="none" style={styles.backgroundArt}>
-            <View style={[styles.orb, styles.orbTop]} />
-            <View style={[styles.orb, styles.orbBottom]} />
+            <View
+                style={[
+                    styles.orb,
+                    styles.orbTop,
+                    {
+                        backgroundColor: withAlpha(colors.success, isDark ? 0.17 : 0.09),
+                    },
+                ]}
+            />
+            <View
+                style={[
+                    styles.orb,
+                    styles.orbBottom,
+                    {
+                        backgroundColor: withAlpha(colors.primaryAction, isDark ? 0.2 : 0.08),
+                    },
+                ]}
+            />
         </View>
     );
 }
@@ -23,13 +43,11 @@ const styles = StyleSheet.create({
         height: 260,
         top: -120,
         right: -60,
-        backgroundColor: 'rgba(0, 230, 118, 0.17)',
     },
     orbBottom: {
         width: 220,
         height: 220,
         bottom: 120,
         left: -100,
-        backgroundColor: 'rgba(90, 146, 255, 0.2)',
     },
 });

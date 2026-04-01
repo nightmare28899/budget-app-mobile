@@ -15,6 +15,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { ActivityScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { formatCurrency, formatTime } from '../../utils/format';
+import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/currency';
 import {
     getPaymentMethodOption,
     PAYMENT_METHOD_FALLBACK_ICON,
@@ -30,6 +31,7 @@ import {
 } from '../../theme';
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { formatCreditCardLabel } from '../../utils/creditCards';
 import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { HistorySkeleton } from '../../components/ui/Skeleton';
 import { useI18n } from '../../hooks/useI18n';
@@ -64,7 +66,8 @@ export function HistoryScreen({
         scaleFont,
         scaleSize,
     } = useResponsive();
-    const { t } = useI18n();
+    const { t, language } = useI18n();
+    const locale = getCurrencyLocale(language);
     const { alert } = useAppAlert();
     const [showFilters, setShowFilters] = useState(false);
     const [showFilterPicker, setShowFilterPicker] = useState(false);
@@ -124,11 +127,15 @@ export function HistoryScreen({
             const rawAmount = isExpense
                 ? Number(record.expense.cost) || 0
                 : Number(record.subscription.cost) || 0;
+            const recordCurrency = isExpense
+                ? record.expense.currency
+                : record.subscription.currency;
             const signedAmount = -Math.abs(rawAmount);
             const isPositive = signedAmount > 0;
             const amountText = `${isPositive ? '+' : '-'}${formatCurrency(
                 Math.abs(signedAmount),
-                user?.currency,
+                recordCurrency,
+                locale,
             )}`;
             const accentColor = isExpense
                 ? resolveAccentColor(record.expense.category?.color, colors.primary)
@@ -136,6 +143,9 @@ export function HistoryScreen({
             const paymentMethod = isExpense
                 ? record.expense.paymentMethod
                 : record.subscription.paymentMethod;
+            const creditCardLabel = formatCreditCardLabel(
+                isExpense ? record.expense.creditCard : record.subscription.creditCard,
+            );
             const paymentMethodOption = getPaymentMethodOption(paymentMethod);
             const paymentMethodIcon = paymentMethodOption?.icon ?? PAYMENT_METHOD_FALLBACK_ICON;
 
@@ -199,7 +209,9 @@ export function HistoryScreen({
                                 ]}
                                 numberOfLines={1}
                             >
-                                {formatTime(sourceDate)} • {typeLabel}
+                                {[formatTime(sourceDate), typeLabel, creditCardLabel]
+                                    .filter(Boolean)
+                                    .join(' • ')}
                             </Text>
                         </View>
                     </View>
@@ -261,7 +273,7 @@ export function HistoryScreen({
             styles.transactionMetaRow,
             styles.transactionTitle,
             t,
-            user?.currency,
+            locale,
         ],
     );
 
@@ -393,7 +405,10 @@ export function HistoryScreen({
                                 <Text
                                     style={[styles.sectionTotal, { fontSize: scaleFont(typography.fontSize.sm) }]}
                                 >
-                                    {formatCurrency(section.total, user?.currency)}
+                                    {formatCurrencyBreakdown(section.totalBreakdown, {
+                                        locale,
+                                        emptyCurrency: user?.currency,
+                                    })}
                                 </Text>
                             </View>
                         )}
@@ -499,7 +514,7 @@ export function HistoryScreen({
 const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#050F22',
+        backgroundColor: colors.background,
     },
     flex1: {
         flex: 1,

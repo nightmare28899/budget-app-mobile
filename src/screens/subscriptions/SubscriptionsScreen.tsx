@@ -14,7 +14,7 @@ import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Button } from '../../components/ui/Button';
 import { SubscriptionItem } from '../../components/ui/SubscriptionItem';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrencyBreakdown } from '../../utils/currency';
 import { withAlpha } from '../../utils/subscriptions';
 import {
     borderRadius,
@@ -72,7 +72,7 @@ export function SubscriptionsScreen({
         isRefreshing,
         subscriptions,
         refetch,
-        animatedTotal,
+        monthlyCurrencyBreakdown,
         locale,
         activeCountLabel,
         hasUpcomingError,
@@ -185,7 +185,10 @@ export function SubscriptionsScreen({
                                 {t('subscriptions.totalMonthly')}
                             </Text>
                             <Text style={[styles.totalValue, { fontSize: scaleFont(typography.fontSize['4xl']) }]}>
-                                {formatCurrency(animatedTotal, user?.currency)}
+                                {formatCurrencyBreakdown(monthlyCurrencyBreakdown, {
+                                    locale,
+                                    emptyCurrency: user?.currency,
+                                })}
                             </Text>
                             <Text style={[styles.totalMeta, { fontSize: scaleFont(typography.fontSize.xs) }]}>
                                 {activeCountLabel}
@@ -243,7 +246,7 @@ export function SubscriptionsScreen({
                                               ]}
                                           >
                                               {group.date === 'unknown'
-                                                  ? 'Unknown date'
+                                                  ? t('subscriptions.unknownDate')
                                                   : formatDateGroupLabel(group.date, locale)}
                                           </Text>
                                           {group.items.map((subscription, index) => (
@@ -258,7 +261,6 @@ export function SubscriptionsScreen({
                                                   <SubscriptionItem
                                                       subscription={subscription}
                                                       locale={locale}
-                                                      currency={user?.currency}
                                                       onPress={onEditSubscription}
                                                       onEdit={undefined}
                                                       onDelete={undefined}
@@ -282,7 +284,6 @@ export function SubscriptionsScreen({
                                           <SubscriptionItem
                                               subscription={subscription}
                                               locale={locale}
-                                              currency={user?.currency}
                                               onPress={onEditSubscription}
                                               onEdit={onEditSubscription}
                                               onDelete={onDeleteSubscription}
@@ -303,7 +304,7 @@ export function SubscriptionsScreen({
 const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#050F22',
+        backgroundColor: colors.background,
     },
     flex1: {
         flex: 1,

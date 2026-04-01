@@ -41,6 +41,7 @@ import {
     MAX_COST_VALUE,
     sanitizeMoneyInput,
 } from '../../utils/moneyInput';
+import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
 
 type SavingsGoalFormMode = 'create' | 'edit';
 type SavingsGoalFormInitialValues = Partial<
@@ -129,6 +130,7 @@ export function SavingsGoalFormModal({
     const { colors } = useTheme();
     const { scaleFont } = useResponsive();
     const { t, language } = useI18n();
+    const { scrollRef, createScrollOnFocusHandler } = useScrollToFocusedInput(116);
     const locale: 'es-MX' | 'en-US' = language === 'es' ? 'es-MX' : 'en-US';
     const [title, setTitle] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
@@ -302,9 +304,12 @@ export function SavingsGoalFormModal({
                     </View>
 
                     <ScrollView
+                        ref={scrollRef}
                         contentContainerStyle={styles.cardContent}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
+                        keyboardDismissMode="on-drag"
+                        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
                     >
                         <View
                             style={[
@@ -396,6 +401,7 @@ export function SavingsGoalFormModal({
                                 containerStyle={styles.field}
                                 autoCapitalize="sentences"
                                 autoCorrect={false}
+                                onFocus={createScrollOnFocusHandler()}
                                 leftContent={
                                     <Icon
                                         name="pricetag-outline"
@@ -413,6 +419,7 @@ export function SavingsGoalFormModal({
                                 error={targetAmountError}
                                 keyboardType="decimal-pad"
                                 containerStyle={styles.field}
+                                onFocus={createScrollOnFocusHandler(132)}
                                 leftContent={<Text style={styles.currencySign}>$</Text>}
                             />
 

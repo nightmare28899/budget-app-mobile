@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { Asset, ImagePickerResponse, launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import {
+    Asset,
+    ImagePickerResponse,
+    PhotoQuality,
+    launchCamera,
+    launchImageLibrary,
+} from 'react-native-image-picker';
 import { PermissionsAndroid, Platform, Linking } from 'react-native';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useI18n } from './useI18n';
@@ -12,8 +18,8 @@ type UseImagePickerOptions = {
     promptMessage?: string;
     takePhotoLabel?: string;
     chooseGalleryLabel?: string;
-    quality?: number;
-    conversionQuality?: number;
+    quality?: PhotoQuality;
+    conversionQuality?: PhotoQuality;
     maxWidth?: number;
     maxHeight?: number;
     assetRepresentationMode?: 'auto' | 'current' | 'compatible';
@@ -25,8 +31,9 @@ export function useImagePicker(options?: UseImagePickerOptions) {
     const { t } = useI18n();
     const allowGallery = options?.allowGallery ?? true;
     const cameraType = options?.cameraType ?? 'front';
-    const quality = options?.quality ?? 0.8;
-    const conversionQuality = options?.conversionQuality ?? quality;
+    const quality: PhotoQuality = options?.quality ?? 0.8;
+    const conversionQuality: PhotoQuality =
+        options?.conversionQuality ?? quality;
     const maxWidth = options?.maxWidth ?? 1024;
     const maxHeight = options?.maxHeight ?? 1024;
     const assetRepresentationMode = options?.assetRepresentationMode ?? 'compatible';

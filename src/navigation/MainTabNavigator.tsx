@@ -11,7 +11,8 @@ import { AnalyticsScreen } from '../screens/analytics/AnalyticsScreen';
 import { ActivityNavigator } from './ActivityNavigator';
 import { CardsScreen } from '../screens/cards/CardsScreen';
 import { useI18n } from '../hooks/useI18n';
-import { spacing, typography, useResponsive, useThemedStyles } from '../theme';
+import { spacing, typography, useResponsive, useTheme, useThemedStyles } from '../theme';
+import { withAlpha } from '../utils/subscriptions';
 import {
     getMainTabBarHeight,
     getMainTabFabBottomOffset,
@@ -20,15 +21,11 @@ import {
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const NAVY_BORDER = 'rgba(0, 230, 118, 0.28)';
-const ACCENT_GREEN = '#00E676';
-const INACTIVE_TINT = '#87A3CC';
-
 function GlobalActionFab() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const { isSmallPhone, scaleSize } = useResponsive();
-    const insets = useSafeAreaInsets();
     const styles = useThemedStyles(createStyles);
+    const { colors } = useTheme();
     const fabSize = getMainTabFabSize({ isSmallPhone, scaleSize });
     const fabBottomOffset = getMainTabFabBottomOffset({
         isSmallPhone,
@@ -59,7 +56,7 @@ function GlobalActionFab() {
                     ]}
                     onPress={onOpenAddEntry}
                 >
-                    <Icon name="add" size={Math.round(fabSize * 0.52)} color="#041023" />
+                    <Icon name="add" size={Math.round(fabSize * 0.52)} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
         </View>
@@ -70,6 +67,7 @@ export function MainTabNavigator() {
     const insets = useSafeAreaInsets();
     const { isSmallPhone } = useResponsive();
     const styles = useThemedStyles(createStyles);
+    const { colors } = useTheme();
     const { t } = useI18n();
     const centerGap = isSmallPhone ? 24 : 32;
     const tabBarHeight = getMainTabBarHeight({
@@ -90,8 +88,8 @@ export function MainTabNavigator() {
                             paddingTop: isSmallPhone ? spacing.xs : spacing.sm,
                         },
                     ],
-                    tabBarActiveTintColor: ACCENT_GREEN,
-                    tabBarInactiveTintColor: INACTIVE_TINT,
+                    tabBarActiveTintColor: colors.primaryAction,
+                    tabBarInactiveTintColor: colors.textMuted,
                     tabBarShowLabel: true,
                     tabBarLabelStyle: styles.tabBarLabel,
                     tabBarItemStyle: styles.tabBarItem,
@@ -162,7 +160,7 @@ export function MainTabNavigator() {
     );
 }
 
-const createStyles = (_colors: any) =>
+const createStyles = (colors: any) =>
     StyleSheet.create({
         container: {
             flex: 1,
@@ -173,13 +171,13 @@ const createStyles = (_colors: any) =>
             right: spacing.base,
             bottom: spacing.xs,
             borderRadius: 30,
-            backgroundColor: 'rgba(6, 21, 44, 0.94)',
-            borderTopColor: NAVY_BORDER,
+            backgroundColor: withAlpha(colors.surfaceCard, 0.96),
+            borderTopColor: withAlpha(colors.border, 0.75),
             borderTopWidth: 1,
             borderWidth: 1,
-            borderColor: 'rgba(125, 163, 204, 0.22)',
+            borderColor: withAlpha(colors.border, 0.9),
             elevation: 0,
-            shadowColor: '#000000',
+            shadowColor: colors.textPrimary,
             shadowOffset: { width: 0, height: 14 },
             shadowOpacity: 0.35,
             shadowRadius: 22,
@@ -192,7 +190,6 @@ const createStyles = (_colors: any) =>
         tabBarLabel: {
             fontSize: 11,
             fontWeight: typography.fontWeight.semibold,
-            color: '#FFFFFF',
         },
         fabLayer: {
             position: 'absolute',
@@ -203,10 +200,10 @@ const createStyles = (_colors: any) =>
         fabMain: {
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: ACCENT_GREEN,
+            backgroundColor: colors.primaryAction,
             borderWidth: 4,
-            borderColor: '#081A34',
-            shadowColor: ACCENT_GREEN,
+            borderColor: colors.background,
+            shadowColor: colors.primaryAction,
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.42,
             shadowRadius: 14,

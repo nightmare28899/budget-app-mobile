@@ -13,7 +13,9 @@ import {
     ExpensesListResponse,
 } from '../types';
 import { useAppAlert } from '../components/alerts/AlertProvider';
+import { aggregateCurrencyTotals } from '../utils/currency';
 import { useI18n } from './useI18n';
+import { todayISO } from '../utils/format';
 
 type NavigationLike = {
     setParams: (params: any) => void;
@@ -27,7 +29,9 @@ type UseExpensesScreenParams = {
 const DEFAULT_LIMIT = 20;
 
 function normalizeFilters(filters: ExpensesFilters): ExpensesFilters {
-    const normalized: ExpensesFilters = {};
+    const normalized: ExpensesFilters = {
+        to: todayISO(),
+    };
 
     if (typeof filters.from === 'string' && filters.from.trim()) {
         normalized.from = filters.from.trim();
@@ -63,38 +67,42 @@ function mergeUniqueExpenses(pages: ExpensesListResponse[] | undefined): Expense
     return items;
 }
 
-function removeExpenseFromInfiniteData(
+function removeExpenseIdsFromInfiniteData(
     data: InfiniteData<ExpensesListResponse, number> | undefined,
-    expenseId: string,
+    expenseIds: string[],
 ): InfiniteData<ExpensesListResponse, number> | undefined {
     if (!data) {
         return data;
     }
 
-    let removedExpense: Expense | undefined;
+    const removableIds = new Set(expenseIds);
+    const removedExpenses: Expense[] = [];
     const pageExpenses = data.pages.map((page) =>
         page.expenses.filter((expense) => {
-            if (expense.id !== expenseId) {
+            if (!removableIds.has(expense.id)) {
                 return true;
             }
 
-            removedExpense = expense;
+            removedExpenses.push(expense);
             return false;
         }),
     );
 
-    if (!removedExpense) {
+    if (!removedExpenses.length) {
         return data;
     }
 
-    const removedCost = Number(removedExpense.cost || 0);
+    const removedCost = removedExpenses.reduce(
+        (sum, expense) => sum + Number(expense.cost || 0),
+        0,
+    );
     const pages = data.pages.map((page, index) => ({
         ...page,
         expenses: pageExpenses[index],
         total: Math.max(0, page.total - removedCost),
         pagination: {
             ...page.pagination,
-            totalCount: Math.max(page.pagination.totalCount - 1, 0),
+            totalCount: Math.max(page.pagination.totalCount - removedExpenses.length, 0),
         },
     }));
 
@@ -209,6 +217,14 @@ export function useExpensesScreen({
     const page = lastPage?.pagination.page ?? 1;
     const total = firstPage?.total ?? 0;
     const totalCount = firstPage?.pagination.totalCount ?? items.length;
+    const currencyBreakdown =
+        firstPage?.currencyBreakdown?.length
+            ? firstPage.currencyBreakdown
+            : aggregateCurrencyTotals(
+                items,
+                (item) => item.cost,
+                (item) => item.currency,
+            );
     const hasNext = hasNextPage ?? false;
     const isInitialLoading = isLoading && items.length === 0;
     const isRefreshing = isRefetching && !isFetchingNextPage;
@@ -261,11 +277,14 @@ export function useExpensesScreen({
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => expensesApi.delete(id),
-        onSuccess: async (_result, deletedId) => {
+        onSuccess: async (result, deletedId) => {
+            const deletedExpenseIds = Array.isArray(result?.deletedExpenseIds)
+                ? result.deletedExpenseIds
+                : [deletedId];
             queryClient.setQueriesData(
                 { queryKey: ['expenses', 'list'] },
                 (oldData: InfiniteData<ExpensesListResponse, number> | undefined) =>
-                    removeExpenseFromInfiniteData(oldData, deletedId),
+                    removeExpenseIdsFromInfiniteData(oldData, deletedExpenseIds),
             );
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: ['expenses'] }),
@@ -292,6 +311,7 @@ export function useExpensesScreen({
         limit,
         total,
         totalCount,
+        currencyBreakdown,
         hasNext,
         isLoading: isInitialLoading,
         isRefreshing,

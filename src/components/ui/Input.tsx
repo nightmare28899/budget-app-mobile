@@ -30,6 +30,7 @@ export function Input({
     label,
     error,
     isPassword,
+    multiline,
     containerStyle,
     inputStyle,
     leftContent,
@@ -59,6 +60,7 @@ export function Input({
                     styles.inputContainer,
                     isFocused && styles.inputContainerFocused,
                     error && styles.inputContainerError,
+                    multiline && styles.multilineContainer,
                     inputStyle,
                 ]}
             >
@@ -72,6 +74,7 @@ export function Input({
                             paddingHorizontal: inputHorizontalPadding,
                         },
                         isPassword && styles.passwordInput,
+                        multiline && styles.multilineInput,
                     ]}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry={isPassword && !showPassword}
@@ -129,9 +132,16 @@ const createStyles = (colors: any) => StyleSheet.create({
     inputContainerError: {
         borderColor: colors.error,
     },
+    multilineContainer: {
+        alignItems: 'stretch',
+    },
     input: {
         flex: 1,
         color: colors.textPrimary,
+    },
+    multilineInput: {
+        alignSelf: 'stretch',
+        textAlignVertical: 'top',
     },
     passwordInput: {
         paddingRight: spacing.base,

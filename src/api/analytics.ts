@@ -7,6 +7,16 @@ import {
 } from '../types';
 import { normalizeBudgetPeriod } from '../utils/budget';
 import { toNum } from '../utils/number';
+import { isLocalMode } from '../modules/access/localMode';
+import {
+    buildBudgetSummary,
+    buildCategoryBreakdown,
+    buildDailyTotals,
+    buildWeeklySummary,
+} from '../modules/local/localFinance';
+import { ensureGuestDataHydrated } from '../store/guestDataStore';
+import { useAuthStore } from '../store/authStore';
+import { dateOnly } from '../utils/filters';
 
 function normalizePeriod(period: any, summary?: any) {
     return {
@@ -55,18 +65,49 @@ function normalizeSummary(data: any): BudgetSummary {
 
 export const analyticsApi = {
     getDailyTotals: async (days = 7) => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            return buildDailyTotals(state.expenses, days);
+        }
+
         const { data } = await apiClient.get<DailyTotal[]>('/analytics/daily', {
             params: { days },
         });
+        const todayKey = dateOnly(new Date());
         return Array.isArray(data)
-            ? data.map((item) => ({
-                ...item,
-                total: toNum(item?.total),
-            }))
+            ? data
+                .filter((item) => {
+                    const entryDate = dateOnly(item?.date);
+                    return !!entryDate && entryDate <= todayKey;
+                })
+                .map((item) => ({
+                    ...item,
+                    total: toNum(item?.total),
+                }))
             : [];
     },
 
     getCategoryBreakdown: async (from?: string, to?: string) => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            const expenses = state.expenses.filter((expense) => {
+                const expenseDate = String(expense.date).slice(0, 10);
+                if (from && expenseDate < from) {
+                    return false;
+                }
+                if (to && expenseDate > to) {
+                    return false;
+                }
+                return true;
+            });
+
+            return buildCategoryBreakdown({
+                user: useAuthStore.getState().user,
+                expenses,
+                categories: state.categories,
+            });
+        }
+
         const { data } = await apiClient.get<CategoryBreakdown[]>(
             '/analytics/categories',
             { params: { from, to } },
@@ -82,6 +123,15 @@ export const analyticsApi = {
     },
 
     getBudgetSummary: async () => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            return buildBudgetSummary({
+                user: useAuthStore.getState().user,
+                expenses: state.expenses,
+                subscriptions: state.subscriptions,
+            });
+        }
+
         const { data } = await apiClient.get<BudgetSummary>(
             '/analytics/budget-summary',
         );
@@ -89,6 +139,14 @@ export const analyticsApi = {
     },
 
     getWeeklySummary: async () => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            return buildWeeklySummary({
+                user: useAuthStore.getState().user,
+                expenses: state.expenses,
+            });
+        }
+
         const { data } = await apiClient.get<WeeklySummary>(
             '/analytics/weekly-summary',
         );

@@ -1,5 +1,10 @@
 import apiClient from './client';
 import { Category } from '../types';
+import { isLocalMode } from '../modules/access/localMode';
+import {
+    ensureGuestDataHydrated,
+    getGuestUserId,
+} from '../store/guestDataStore';
 
 export interface CreateCategoryPayload {
     name: string;
@@ -97,6 +102,11 @@ function extractSingleCategory(raw: any): any {
 
 export const categoriesApi = {
     getAll: async () => {
+        if (isLocalMode()) {
+            const { categories } = ensureGuestDataHydrated();
+            return [...categories].sort((a, b) => a.name.localeCompare(b.name));
+        }
+
         const { data } = await apiClient.get('/categories');
         return extractCategoryArray(data)
             .map((item) => toCategory(item))
@@ -104,6 +114,30 @@ export const categoriesApi = {
     },
 
     create: async (payload: CreateCategoryPayload) => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            const normalizedName = payload.name.trim();
+            const duplicate = state.categories.find(
+                (item) => item.name.trim().toLowerCase() === normalizedName.toLowerCase(),
+            );
+
+            if (duplicate) {
+                const error: any = new Error('Category already exists');
+                error.response = { status: 409, data: { message: 'Category already exists' } };
+                throw error;
+            }
+
+            const category: Category = {
+                id: `category_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
+                name: normalizedName,
+                icon: toStringOrUndefined(payload.icon),
+                color: toStringOrUndefined(payload.color),
+                userId: getGuestUserId(),
+            };
+
+            return state.addCategory(category);
+        }
+
         const { data } = await apiClient.post('/categories', payload);
         const normalized = toCategory(extractSingleCategory(data));
         if (!normalized) {

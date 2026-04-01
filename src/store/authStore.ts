@@ -1,12 +1,37 @@
 import { create } from 'zustand';
 import { User } from '../types';
 import { createSecureStorage, migrateLegacyStringStore } from './secureStorage';
+import { resetToMainDashboard } from '../navigation/navigationBridge';
 import { normalizeImageUri } from '../utils/media';
 import { isLikelyInternalRemoteUri, isRemoteHttpUri } from '../utils/media';
+import { DEFAULT_CURRENCY } from '../utils/currency';
 
 const STORAGE_ID = 'auth-storage';
 const storage = createSecureStorage(STORAGE_ID);
 migrateLegacyStringStore(STORAGE_ID, storage);
+const AUTH_USER_KEY = 'authUser';
+const GUEST_USER_KEY = 'guestUser';
+const ACCESS_TOKEN_KEY = 'accessToken';
+const REFRESH_TOKEN_KEY = 'refreshToken';
+
+export type SessionMode = 'guest' | 'authenticated';
+
+function buildDefaultGuestUser(): User {
+    return {
+        id: 'guest-local',
+        email: '',
+        name: 'Guest',
+        role: 'guest',
+        currency: DEFAULT_CURRENCY,
+        budgetAmount: 0,
+        dailyBudget: 0,
+        budgetPeriod: 'monthly',
+        budgetPeriodStart: null,
+        budgetPeriodEnd: null,
+        avatarUrl: null,
+        avatarUri: null,
+    };
+}
 
 function normalizeKeyPart(value?: string): string | null {
     if (typeof value !== 'string') {
@@ -125,9 +150,12 @@ function persistAvatar(user: User) {
 
 interface AuthState {
     user: User | null;
+    guestUser: User;
     accessToken: string | null;
     refreshToken: string | null;
+    sessionMode: SessionMode;
     isAuthenticated: boolean;
+    isGuest: boolean;
     isLoading: boolean;
 
     setAuth: (user: User, accessToken: string, refreshToken: string) => void;
@@ -138,43 +166,75 @@ interface AuthState {
     hydrate: () => void;
 }
 
+function persistActiveUser(mode: SessionMode, user: User) {
+    storage.set(
+        mode === 'authenticated' ? AUTH_USER_KEY : GUEST_USER_KEY,
+        JSON.stringify(user),
+    );
+}
+
+function readStoredUser(key: string): User | null {
+    const raw = storage.getString(key);
+    if (!raw) {
+        return null;
+    }
+
+    try {
+        return applyStoredAvatar(JSON.parse(raw) as User);
+    } catch {
+        return null;
+    }
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
     user: null,
+    guestUser: buildDefaultGuestUser(),
     accessToken: null,
     refreshToken: null,
+    sessionMode: 'guest',
     isAuthenticated: false,
+    isGuest: true,
     isLoading: true,
 
     setAuth: (user, accessToken, refreshToken) => {
         const userWithAvatar = applyStoredAvatar(user);
         persistAvatar(userWithAvatar);
 
-        storage.set('user', JSON.stringify(userWithAvatar));
-        storage.set('accessToken', accessToken);
-        storage.set('refreshToken', refreshToken);
+        persistActiveUser('authenticated', userWithAvatar);
+        storage.set(ACCESS_TOKEN_KEY, accessToken);
+        storage.set(REFRESH_TOKEN_KEY, refreshToken);
 
         set({
             user: userWithAvatar,
+            sessionMode: 'authenticated',
             accessToken,
             refreshToken,
             isAuthenticated: true,
+            isGuest: false,
             isLoading: false,
         });
     },
 
     setTokens: (accessToken, refreshToken) => {
-        storage.set('accessToken', accessToken);
-        storage.set('refreshToken', refreshToken);
+        storage.set(ACCESS_TOKEN_KEY, accessToken);
+        storage.set(REFRESH_TOKEN_KEY, refreshToken);
         set({ accessToken, refreshToken });
     },
 
-    setUser: (user) => {
+    setUser: (user) => set((state) => {
         const userWithAvatar = applyStoredAvatar(user);
         persistAvatar(userWithAvatar);
+        persistActiveUser(state.sessionMode, userWithAvatar);
 
-        storage.set('user', JSON.stringify(userWithAvatar));
-        set({ user: userWithAvatar });
-    },
+        if (state.sessionMode === 'authenticated') {
+            return { user: userWithAvatar };
+        }
+
+        return {
+            user: userWithAvatar,
+            guestUser: userWithAvatar,
+        };
+    }),
 
     setAvatarSuppressed: (suppressed) => {
         set((state) => {
@@ -193,47 +253,89 @@ export const useAuthStore = create<AuthState>((set) => ({
 
             const userWithAvatar = applyStoredAvatar(state.user);
             persistAvatar(userWithAvatar);
-            storage.set('user', JSON.stringify(userWithAvatar));
+            persistActiveUser(state.sessionMode, userWithAvatar);
 
-            return { user: userWithAvatar };
+            if (state.sessionMode === 'authenticated') {
+                return { user: userWithAvatar };
+            }
+
+            return {
+                user: userWithAvatar,
+                guestUser: userWithAvatar,
+            };
         });
     },
 
     logout: () => {
-        storage.remove('user');
-        storage.remove('accessToken');
-        storage.remove('refreshToken');
+        storage.remove(AUTH_USER_KEY);
+        storage.remove(ACCESS_TOKEN_KEY);
+        storage.remove(REFRESH_TOKEN_KEY);
+
+        const guestUser = readStoredUser(GUEST_USER_KEY) ?? buildDefaultGuestUser();
+        persistAvatar(guestUser);
+        persistActiveUser('guest', guestUser);
 
         set({
-            user: null,
+            user: guestUser,
+            guestUser,
             accessToken: null,
             refreshToken: null,
+            sessionMode: 'guest',
             isAuthenticated: false,
+            isGuest: true,
             isLoading: false,
         });
+
+        resetToMainDashboard();
     },
 
     hydrate: () => {
         try {
-            const userStr = storage.getString('user');
-            const accessToken = storage.getString('accessToken');
-            const refreshToken = storage.getString('refreshToken');
+            const guestUser = readStoredUser(GUEST_USER_KEY) ?? buildDefaultGuestUser();
+            const authUser = readStoredUser(AUTH_USER_KEY);
+            const accessToken = storage.getString(ACCESS_TOKEN_KEY);
+            const refreshToken = storage.getString(REFRESH_TOKEN_KEY);
 
-            if (userStr && accessToken && refreshToken) {
-                const user = applyStoredAvatar(JSON.parse(userStr) as User);
-                persistAvatar(user);
+            persistAvatar(guestUser);
+            persistActiveUser('guest', guestUser);
+
+            if (authUser && accessToken && refreshToken) {
+                persistAvatar(authUser);
                 set({
-                    user,
+                    user: authUser,
+                    guestUser,
                     accessToken,
                     refreshToken,
+                    sessionMode: 'authenticated',
                     isAuthenticated: true,
+                    isGuest: false,
                     isLoading: false,
                 });
             } else {
-                set({ isLoading: false });
+                set({
+                    user: guestUser,
+                    guestUser,
+                    accessToken: null,
+                    refreshToken: null,
+                    sessionMode: 'guest',
+                    isAuthenticated: false,
+                    isGuest: true,
+                    isLoading: false,
+                });
             }
         } catch {
-            set({ isLoading: false });
+            const guestUser = buildDefaultGuestUser();
+            persistActiveUser('guest', guestUser);
+            set({
+                user: guestUser,
+                guestUser,
+                accessToken: null,
+                refreshToken: null,
+                sessionMode: 'guest',
+                isAuthenticated: false,
+                isGuest: true,
+                isLoading: false,
+            });
         }
     },
 }));

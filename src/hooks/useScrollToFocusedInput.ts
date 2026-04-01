@@ -1,0 +1,52 @@
+import { useCallback, useRef } from 'react';
+import { ScrollView } from 'react-native';
+
+type ScrollViewWithKeyboardHelper = ScrollView & {
+    scrollResponderScrollNativeHandleToKeyboard?: (
+        nodeHandle: number,
+        additionalOffset?: number,
+        preventNegativeScrollOffset?: boolean,
+    ) => void;
+};
+
+export function useScrollToFocusedInput(defaultExtraOffset: number = 96) {
+    const scrollRef = useRef<ScrollView>(null);
+
+    const scrollToFocusedInput = useCallback(
+        (target: number | null | undefined, extraOffset: number = defaultExtraOffset) => {
+            if (!target) {
+                return;
+            }
+
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    (
+                        scrollRef.current as ScrollViewWithKeyboardHelper | null
+                    )?.scrollResponderScrollNativeHandleToKeyboard?.(
+                        target,
+                        extraOffset,
+                        true,
+                    );
+                }, 60);
+            });
+        },
+        [defaultExtraOffset],
+    );
+
+    const createScrollOnFocusHandler = useCallback(
+        (extraOffset: number = defaultExtraOffset) =>
+            (event: any) => {
+                scrollToFocusedInput(
+                    typeof event?.target === 'number' ? event.target : null,
+                    extraOffset,
+                );
+            },
+        [defaultExtraOffset, scrollToFocusedInput],
+    );
+
+    return {
+        scrollRef,
+        scrollToFocusedInput,
+        createScrollOnFocusHandler,
+    };
+}

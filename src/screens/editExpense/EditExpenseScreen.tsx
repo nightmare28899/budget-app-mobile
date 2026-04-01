@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -7,18 +7,26 @@ import {
     KeyboardAvoidingView,
     Platform,
     TextInput,
+    TouchableOpacity,
 } from 'react-native';
+import DateTimePicker, {
+    DateTimePickerAndroid,
+    DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootScreenProps } from '../../navigation/types';
 import { useExpenseForm } from '../../hooks/useExpenseForm';
 import { CategorySelector } from '../../components/ui/CategorySelector';
+import { CurrencySelector } from '../../components/ui/CurrencySelector';
+import { CreditCardSelector } from '../../components/ui/CreditCardSelector';
 import { PaymentMethodSelector } from '../../components/ui/PaymentMethodSelector';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { Skeleton } from '../../components/ui/Skeleton';
 import {
+    borderRadius,
     spacing,
     typography,
     useResponsive,
@@ -26,6 +34,24 @@ import {
     useThemedStyles,
 } from '../../theme';
 import { useI18n } from '../../hooks/useI18n';
+import { getCurrencyLocale, getCurrencySymbol } from '../../utils/currency';
+import { sanitizeMoneyInput } from '../../utils/moneyInput';
+import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
+import { isCreditCardPaymentMethod } from '../../utils/paymentMethod';
+import { formatCurrency, formatDate } from '../../utils/format';
+import { useAppAccess } from '../../hooks/useAppAccess';
+import { usePremiumAccess } from '../../hooks/usePremiumAccess';
+
+type DateField = 'purchase' | 'firstPayment';
+
+function parseDateOrToday(value: string): Date {
+    const parsed = new Date(`${value}T12:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+        return new Date();
+    }
+
+    return parsed;
+}
 
 export function EditExpenseScreen({
     route,
@@ -36,39 +62,164 @@ export function EditExpenseScreen({
     const { id } = route.params;
     const insets = useSafeAreaInsets();
     const headerHeight = useHeaderHeight();
-    const scrollRef = useRef<ScrollView>(null);
     const {
         horizontalPadding,
         contentMaxWidth,
         isSmallPhone,
         scaleFont,
     } = useResponsive();
-    const { t } = useI18n();
+    const { t, language } = useI18n();
+    const { hasPremium } = useAppAccess();
+    const { requirePremiumAccess } = usePremiumAccess();
+    const locale = getCurrencyLocale(language);
+    const [activeDateField, setActiveDateField] = useState<DateField>('purchase');
+    const { scrollRef, createScrollOnFocusHandler } = useScrollToFocusedInput(120);
 
     const {
         title, setTitle,
         cost, setCost,
+        currency, setCurrency,
+        isInstallment, setIsInstallment,
+        installmentCount, setInstallmentCount,
+        firstPaymentDate, setFirstPaymentDate,
+        installmentBreakdown,
         note, setNote,
         paymentMethod, setPaymentMethod,
+        selectedCreditCardId, setSelectedCreditCardId,
         selectedCategory, setSelectedCategory,
+        date, setDate,
         categories, categoriesLoading,
+        creditCards, creditCardsLoading,
         hasLoaded, setHasLoaded,
         expense, expenseLoading,
         saveExpense,
         isPending: isUpdatingExpense,
     } = useExpenseForm(id);
+    const currencySymbol = getCurrencySymbol(currency, locale);
+    const parsedInstallmentCount = Number.parseInt(installmentCount, 10);
+    const dateLabel = useMemo(
+        () =>
+            parseDateOrToday(date).toLocaleDateString(locale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            }),
+        [date, locale],
+    );
+    const firstPaymentDateLabel = useMemo(
+        () =>
+            parseDateOrToday(firstPaymentDate).toLocaleDateString(locale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            }),
+        [firstPaymentDate, locale],
+    );
+    const installmentPreviewLabel = useMemo(() => {
+        if (!isInstallment || installmentBreakdown.amounts.length === 0) {
+            return null;
+        }
+
+        const installmentAmountLabel = formatCurrency(
+            installmentBreakdown.installmentAmount,
+            currency,
+            locale,
+        );
+        const finalAmountLabel = formatCurrency(
+            installmentBreakdown.finalInstallmentAmount,
+            currency,
+            locale,
+        );
+
+        if (installmentBreakdown.hasAdjustedFinal) {
+            return t('expense.installmentPreviewAdjusted', {
+                count: installmentBreakdown.amounts.length,
+                amount: installmentAmountLabel,
+                finalAmount: finalAmountLabel,
+            });
+        }
+
+        return t('expense.installmentPreviewEqual', {
+            count: installmentBreakdown.amounts.length,
+            amount: installmentAmountLabel,
+        });
+    }, [currency, installmentBreakdown, isInstallment, locale, t]);
+    const handleInstallmentMode = (nextValue: boolean) => {
+        if (nextValue && !hasPremium && !requirePremiumAccess('installments')) {
+            return;
+        }
+
+        setIsInstallment(nextValue);
+    };
+    const handlePaymentMethodChange = (nextValue: string | undefined) => {
+        if (
+            nextValue
+            && isCreditCardPaymentMethod(nextValue)
+            && !hasPremium
+            && !requirePremiumAccess('credit_cards')
+        ) {
+            return;
+        }
+
+        setPaymentMethod(nextValue);
+    };
+    const handleAddCreditCard = () => {
+        if (!hasPremium && !requirePremiumAccess('credit_cards')) {
+            return;
+        }
+
+        navigation.navigate('CreditCardForm');
+    };
 
     // Pre-fill form with existing expense data
     useEffect(() => {
         if (expense && !hasLoaded && categories.length > 0) {
             setTitle(expense.title);
-            setCost(String(expense.cost));
             setNote(expense.note ?? '');
             setPaymentMethod(expense.paymentMethod || undefined);
             setSelectedCategory(expense.categoryId ?? expense.category?.id);
             setHasLoaded(true);
         }
-    }, [expense, hasLoaded, categories, setTitle, setCost, setNote, setPaymentMethod, setSelectedCategory, setHasLoaded]);
+    }, [expense, hasLoaded, categories, setTitle, setNote, setPaymentMethod, setSelectedCategory, setHasLoaded]);
+
+    const applyDateValue = (field: DateField, value?: Date) => {
+        if (!value) {
+            return;
+        }
+
+        const nextDate = formatDate(value, 'YYYY-MM-DD');
+        if (field === 'firstPayment') {
+            setFirstPaymentDate(nextDate);
+        } else {
+            setDate(nextDate);
+        }
+
+        if (Platform.OS === 'ios') {
+            setActiveDateField('purchase');
+        }
+    };
+
+    const createDateChangeHandler = (field: DateField) => (
+        _event: DateTimePickerEvent,
+        value?: Date,
+    ) => {
+        applyDateValue(field, value);
+    };
+
+    const openDatePicker = (field: DateField) => {
+        setActiveDateField(field);
+        const current = parseDateOrToday(field === 'firstPayment' ? firstPaymentDate : date);
+        if (Platform.OS === 'android') {
+            DateTimePickerAndroid.open({
+                mode: 'date',
+                value: current,
+                onChange: createDateChangeHandler(field),
+            });
+            return;
+        }
+
+        setActiveDateField(field);
+    };
 
     const onSave = async () => {
         await saveExpense(() => {
@@ -84,12 +235,6 @@ export function EditExpenseScreen({
             });
         });
     };
-
-    const scrollToFocusedField = useCallback(() => {
-        requestAnimationFrame(() => {
-            scrollRef.current?.scrollToEnd({ animated: true });
-        });
-    }, []);
 
     if (expenseLoading || !hasLoaded) {
         return (
@@ -134,23 +279,43 @@ export function EditExpenseScreen({
                     automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
                 >
                     {/* Amount Input */}
-                    <View style={styles.amountContainer}>
-                        <Text style={[styles.currencySign, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>$</Text>
-                        <TextInput
-                            style={[
-                                styles.amountInput,
-                                {
-                                    fontSize: scaleFont(typography.fontSize['5xl']),
-                                    lineHeight: scaleFont(typography.fontSize['5xl']),
-                                    minWidth: isSmallPhone ? 100 : 120,
-                                },
-                            ]}
-                            placeholder={t('common.amountPlaceholder')}
-                            placeholderTextColor={colors.textMuted}
-                            keyboardType="decimal-pad"
-                            value={cost}
-                            onChangeText={setCost}
-                            onFocus={scrollToFocusedField}
+                    <View style={styles.amountBlock}>
+                        <View style={styles.amountContainer}>
+                            <Text style={[styles.currencySign, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>
+                                {currencySymbol}
+                            </Text>
+                            <TextInput
+                                style={[
+                                    styles.amountInput,
+                                    {
+                                        fontSize: scaleFont(typography.fontSize['5xl']),
+                                        lineHeight: scaleFont(typography.fontSize['5xl']),
+                                        minWidth: isSmallPhone ? 100 : 120,
+                                    },
+                                ]}
+                                placeholder={t('common.amountPlaceholder')}
+                                placeholderTextColor={colors.textMuted}
+                                keyboardType="decimal-pad"
+                                value={cost}
+                                onChangeText={(value) => setCost(sanitizeMoneyInput(value))}
+                                onFocus={createScrollOnFocusHandler(64)}
+                            />
+                            <View style={styles.amountCurrencyBadge}>
+                                <Text
+                                    style={[
+                                        styles.amountCurrencyText,
+                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                    ]}
+                                >
+                                    {currency}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <CurrencySelector
+                            label={t('common.currency')}
+                            value={currency}
+                            onChange={setCurrency}
                         />
                     </View>
 
@@ -160,9 +325,170 @@ export function EditExpenseScreen({
                         placeholder={t('addExpense.titlePlaceholder')}
                         value={title}
                         onChangeText={setTitle}
-                        onFocus={scrollToFocusedField}
+                        onFocus={createScrollOnFocusHandler()}
                         containerStyle={styles.fieldContainer}
                     />
+
+                    <View style={styles.fieldContainer}>
+                        <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                            {t('expense.paymentTimingLabel')}
+                        </Text>
+                        <View style={styles.planModeRow}>
+                            <TouchableOpacity
+                                activeOpacity={0.84}
+                                style={[
+                                    styles.planModeButton,
+                                    !isInstallment && styles.planModeButtonActive,
+                                ]}
+                                onPress={() => handleInstallmentMode(false)}
+                            >
+                                <Text
+                                    style={[
+                                        styles.planModeButtonText,
+                                        !isInstallment && styles.planModeButtonTextActive,
+                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                    ]}
+                                >
+                                    {t('expense.singlePayment')}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                activeOpacity={0.84}
+                                style={[
+                                    styles.planModeButton,
+                                    isInstallment && styles.planModeButtonActive,
+                                ]}
+                                onPress={() => handleInstallmentMode(true)}
+                            >
+                                <Text
+                                    style={[
+                                        styles.planModeButtonText,
+                                        isInstallment && styles.planModeButtonTextActive,
+                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                    ]}
+                                >
+                                    {t('expense.installmentPayment')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <View style={styles.fieldContainer}>
+                        <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                            {isInstallment
+                                ? t('expense.purchaseDateLabel')
+                                : t('addExpense.dateLabel')}
+                        </Text>
+                        <TouchableOpacity
+                            activeOpacity={0.84}
+                            style={styles.dateButton}
+                            onPress={() => openDatePicker('purchase')}
+                        >
+                            <View style={styles.dateButtonContent}>
+                                <Text
+                                    style={[
+                                        styles.dateButtonText,
+                                        { fontSize: scaleFont(typography.fontSize.base) },
+                                    ]}
+                                >
+                                    {dateLabel}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                        {Platform.OS === 'ios' && activeDateField === 'purchase' ? (
+                            <View style={styles.iosDatePickerCard}>
+                                <DateTimePicker
+                                    mode="date"
+                                    display="spinner"
+                                    value={parseDateOrToday(date)}
+                                    onChange={createDateChangeHandler('purchase')}
+                                />
+                            </View>
+                        ) : null}
+                    </View>
+
+                    {isInstallment ? (
+                        <View style={styles.installmentCard}>
+                            <Input
+                                label={t('expense.installmentCountLabel')}
+                                placeholder={t('expense.installmentCountPlaceholder')}
+                                value={installmentCount}
+                                onChangeText={(value) =>
+                                    setInstallmentCount(value.replace(/[^0-9]/g, ''))
+                                }
+                                keyboardType="number-pad"
+                                onFocus={createScrollOnFocusHandler(128)}
+                                containerStyle={styles.fieldContainer}
+                            />
+
+                            <View style={styles.fieldContainer}>
+                                <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                                    {t('expense.firstPaymentDateLabel')}
+                                </Text>
+                                <TouchableOpacity
+                                    activeOpacity={0.84}
+                                    style={styles.dateButton}
+                                    onPress={() => openDatePicker('firstPayment')}
+                                >
+                                    <View style={styles.dateButtonContent}>
+                                        <Text
+                                            style={[
+                                                styles.dateButtonText,
+                                                { fontSize: scaleFont(typography.fontSize.base) },
+                                            ]}
+                                        >
+                                            {firstPaymentDateLabel}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                                {Platform.OS === 'ios' && activeDateField === 'firstPayment' ? (
+                                    <View style={styles.iosDatePickerCard}>
+                                        <DateTimePicker
+                                            mode="date"
+                                            display="spinner"
+                                            value={parseDateOrToday(firstPaymentDate)}
+                                            onChange={createDateChangeHandler('firstPayment')}
+                                        />
+                                    </View>
+                                ) : null}
+                            </View>
+
+                            <View style={styles.installmentPreviewCard}>
+                                <Text
+                                    style={[
+                                        styles.installmentPreviewTitle,
+                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                    ]}
+                                >
+                                    {t('expense.installmentPreviewTitle')}
+                                </Text>
+                                <Text
+                                    style={[
+                                        styles.installmentPreviewValue,
+                                        { fontSize: scaleFont(typography.fontSize.base) },
+                                    ]}
+                                >
+                                    {installmentPreviewLabel ?? t('expense.installmentPreviewHint')}
+                                </Text>
+                                {Number.isFinite(parsedInstallmentCount) && parsedInstallmentCount > 1 ? (
+                                    <Text
+                                        style={[
+                                            styles.installmentPreviewMeta,
+                                            { fontSize: scaleFont(typography.fontSize.sm) },
+                                        ]}
+                                    >
+                                        {t('expense.installmentFrequencyMonthly', {
+                                            total: formatCurrency(
+                                                Number.parseFloat(cost || '0') || 0,
+                                                currency,
+                                                locale,
+                                            ),
+                                        })}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        </View>
+                    ) : null}
 
                     {/* Category */}
                     <View style={[styles.fieldContainer, styles.categorySection]}>
@@ -180,8 +506,18 @@ export function EditExpenseScreen({
 
                     <PaymentMethodSelector
                         value={paymentMethod}
-                        onChange={setPaymentMethod}
+                        onChange={handlePaymentMethodChange}
                     />
+
+                    {isCreditCardPaymentMethod(paymentMethod) ? (
+                        <CreditCardSelector
+                            value={selectedCreditCardId}
+                            cards={creditCards}
+                            isLoading={creditCardsLoading}
+                            onChange={setSelectedCreditCardId}
+                            onAddCard={handleAddCreditCard}
+                        />
+                    ) : null}
 
                     {/* Note */}
                     <Input
@@ -190,7 +526,7 @@ export function EditExpenseScreen({
                         multiline
                         value={note}
                         onChangeText={setNote}
-                        onFocus={scrollToFocusedField}
+                        onFocus={createScrollOnFocusHandler(184)}
                         inputStyle={styles.noteInput}
                         containerStyle={styles.fieldContainer}
                     />
@@ -231,11 +567,14 @@ const createStyles = (colors: any) => StyleSheet.create({
         width: '100%',
     },
     // Amount
+    amountBlock: {
+        marginBottom: spacing['2xl'],
+        gap: spacing.base,
+    },
     amountContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: spacing['2xl'],
         paddingVertical: spacing.xl,
     },
     currencySign: {
@@ -254,6 +593,19 @@ const createStyles = (colors: any) => StyleSheet.create({
         includeFontPadding: false,
         paddingVertical: 0,
     },
+    amountCurrencyBadge: {
+        marginLeft: spacing.sm,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceElevated,
+    },
+    amountCurrencyText: {
+        color: colors.textSecondary,
+        fontWeight: typography.fontWeight.semibold,
+    },
     // Fields
     fieldContainer: {
         marginBottom: spacing.lg,
@@ -267,6 +619,86 @@ const createStyles = (colors: any) => StyleSheet.create({
         color: colors.textSecondary,
         marginBottom: spacing.sm,
         marginLeft: spacing.xs,
+    },
+    dateButton: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surfaceElevated,
+        minHeight: 52,
+        justifyContent: 'center',
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+    },
+    dateButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    dateButtonText: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    iosDatePickerCard: {
+        marginTop: spacing.sm,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surfaceElevated,
+        borderWidth: 1,
+        borderColor: colors.border,
+        overflow: 'hidden',
+    },
+    planModeRow: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+    },
+    planModeButton: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.surfaceElevated,
+        paddingVertical: spacing.sm + 2,
+        paddingHorizontal: spacing.md,
+        alignItems: 'center',
+    },
+    planModeButtonActive: {
+        borderColor: colors.primaryLight,
+        backgroundColor: colors.primary + '15',
+    },
+    planModeButtonText: {
+        color: colors.textSecondary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    planModeButtonTextActive: {
+        color: colors.primaryLight,
+    },
+    installmentCard: {
+        marginBottom: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.xl,
+        backgroundColor: colors.surfaceCard,
+        padding: spacing.lg,
+    },
+    installmentPreviewCard: {
+        marginTop: spacing.sm,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceElevated,
+        padding: spacing.md,
+        gap: spacing.xs,
+    },
+    installmentPreviewTitle: {
+        color: colors.textSecondary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    installmentPreviewValue: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    installmentPreviewMeta: {
+        color: colors.textMuted,
     },
     noteInput: {
         height: 80,

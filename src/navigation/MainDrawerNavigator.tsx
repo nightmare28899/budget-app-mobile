@@ -13,6 +13,7 @@ import { MainTabNavigator } from './MainTabNavigator';
 import { ExpensesScreen } from '../screens/expenses/ExpensesScreen';
 import { SubscriptionsScreen } from '../screens/subscriptions/SubscriptionsScreen';
 import { SavingsScreen } from '../screens/savings/SavingsScreen';
+import { CreditCardsScreen } from '../screens/creditCards/CreditCardsScreen';
 import { spacing, typography, useTheme } from '../theme';
 import { useI18n } from '../hooks/useI18n';
 
@@ -98,7 +99,9 @@ export function MainDrawerNavigator() {
                             : route.name === 'Expenses'
                                 ? 'wallet-outline'
                                 : route.name === 'Subscriptions'
-                                    ? 'card-outline'
+                                    ? 'albums-outline'
+                                    : route.name === 'CreditCards'
+                                        ? 'card-outline'
                                     : route.name === 'Savings'
                                         ? 'cash-outline'
                                     : 'settings-outline';
@@ -118,6 +121,11 @@ export function MainDrawerNavigator() {
                         navigation.closeDrawer();
                     },
                 })}
+            />
+            <Drawer.Screen
+                name="CreditCards"
+                component={CreditCardsScreen}
+                options={{ drawerLabel: t('creditCards.title') }}
             />
             <Drawer.Screen
                 name="Expenses"

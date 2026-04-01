@@ -16,8 +16,12 @@ export function useExpenseDetail(id: string, onDeleted: () => void) {
 
     const deleteMutation = useMutation({
         mutationFn: () => expensesApi.delete(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['expenses'] });
+        onSuccess: async () => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['expenses'] }),
+                queryClient.invalidateQueries({ queryKey: ['history'] }),
+                queryClient.invalidateQueries({ queryKey: ['analytics'] }),
+            ]);
             onDeleted();
         },
     });
@@ -25,7 +29,9 @@ export function useExpenseDetail(id: string, onDeleted: () => void) {
     const onDelete = useCallback(() => {
         alert(
             t('expenseDetail.deleteTitle'),
-            t('expenseDetail.deleteMessage'),
+            expense?.isInstallment
+                ? t('expenseDetail.deleteInstallmentMessage')
+                : t('expenseDetail.deleteMessage'),
             [
                 { text: t('common.cancel'), style: 'cancel' },
                 {
@@ -35,7 +41,7 @@ export function useExpenseDetail(id: string, onDeleted: () => void) {
                 },
             ],
         );
-    }, [alert, deleteMutation, t]);
+    }, [alert, deleteMutation, expense?.isInstallment, t]);
 
     return {
         expense,

@@ -1,15 +1,44 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import auth, { GoogleAuthProvider } from '@react-native-firebase/auth';
+import {
+    GoogleSignin,
+    isErrorWithCode,
+    isSuccessResponse,
+    statusCodes,
+} from '@react-native-google-signin/google-signin';
 import { useAuthStore } from '../store/authStore';
 import { useOfflineRegistrationStore } from '../store/offlineRegistrationStore';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { authApi } from '../api/auth';
-import { extractApiMessage } from '../utils/api';
+import { usersApi } from '../api/users';
+import { expensesApi } from '../api/expenses';
+import { analyticsApi } from '../api/analytics';
+import { historyApi } from '../api/history';
+import { subscriptionsApi } from '../api/subscriptions';
+import { extractApiMessage, isLikelyJsonParseError } from '../utils/api';
 import { API_BASE_URL } from '../utils/constants';
 import { Asset } from 'react-native-image-picker';
 import { extractAvatarUri } from '../utils/media';
+import { getInternetAccessState } from '../utils/network';
 import { useI18n } from './useI18n';
+import { resetToMainDashboard } from '../navigation/navigationBridge';
+import { configureGoogleSignIn } from '../utils/googleAuth';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function logGoogleAuth(event: string, details?: Record<string, unknown>) {
+    if (!__DEV__) {
+        return;
+    }
+
+    if (details) {
+        console.log(`[google-auth] ${event}`, details);
+        return;
+    }
+
+    console.log(`[google-auth] ${event}`);
+}
 
 function getUnreachableApiMessage(t: ReturnType<typeof useI18n>['t']) {
     if (__DEV__) {
@@ -19,13 +48,76 @@ function getUnreachableApiMessage(t: ReturnType<typeof useI18n>['t']) {
     return t('network.cannotReachServer');
 }
 
+function getGoogleSdkErrorMessage(
+    err: { code?: string; message?: string },
+    t: ReturnType<typeof useI18n>['t'],
+) {
+    if (
+        err.code === '10' ||
+        err.code === '12500' ||
+        /DEVELOPER_ERROR/i.test(err.message || '') ||
+        /non-recoverable sign in failure/i.test(err.message || '')
+    ) {
+        return t('auth.googleDeveloperError');
+    }
+
+    if (err.code === statusCodes.SIGN_IN_REQUIRED) {
+        return t('auth.googleSignInGeneric');
+    }
+
+    return err.message || t('auth.googleSignInGeneric');
+}
+
 export function useAuth() {
     const [loading, setLoading] = useState(false);
+    const queryClient = useQueryClient();
     const setAuth = useAuthStore((s) => s.setAuth);
     const { addToQueue, isSyncing, queue } = useOfflineRegistrationStore();
     const pendingRegistrationsCount = queue.length;
     const { alert } = useAppAlert();
     const { t } = useI18n();
+    const registrationFallbackMessage = t('auth.registrationTryAgain');
+
+    const completeAuthenticatedSession = (
+        user: Parameters<typeof setAuth>[0],
+        accessToken: string,
+        refreshToken: string,
+    ) => {
+        setAuth(user, accessToken, refreshToken);
+        warmAuthenticatedDashboard();
+        resetToMainDashboard();
+    };
+
+    const warmAuthenticatedDashboard = () => {
+        queryClient.removeQueries({ queryKey: ['expenses'] });
+        queryClient.removeQueries({ queryKey: ['analytics'] });
+        queryClient.removeQueries({ queryKey: ['history'] });
+        queryClient.removeQueries({ queryKey: ['subscriptions'] });
+        queryClient.removeQueries({ queryKey: ['users', 'me'] });
+
+        void Promise.allSettled([
+            queryClient.fetchQuery({
+                queryKey: ['users', 'me'],
+                queryFn: usersApi.getMe,
+            }),
+            queryClient.fetchQuery({
+                queryKey: ['expenses', 'today'],
+                queryFn: expensesApi.getToday,
+            }),
+            queryClient.fetchQuery({
+                queryKey: ['analytics', 'budget-summary'],
+                queryFn: analyticsApi.getBudgetSummary,
+            }),
+            queryClient.fetchQuery({
+                queryKey: ['history', 'all'],
+                queryFn: historyApi.getAll,
+            }),
+            queryClient.fetchQuery({
+                queryKey: ['subscriptions', 'upcoming', 3],
+                queryFn: () => subscriptionsApi.getUpcoming(3),
+            }),
+        ]);
+    };
 
     const login = async (email: string, password: string) => {
         const normalizedEmail = email.trim().toLowerCase();
@@ -41,7 +133,7 @@ export function useAuth() {
         setLoading(true);
         try {
             const res = await authApi.login(normalizedEmail, password);
-            setAuth(res.user, res.accessToken, res.refreshToken);
+            completeAuthenticatedSession(res.user, res.accessToken, res.refreshToken);
             return true;
         } catch (err: any) {
             const apiMessage = extractApiMessage(err?.response?.data);
@@ -52,6 +144,111 @@ export function useAuth() {
             alert(t('auth.loginFailed'), message);
             return false;
         } finally {
+            setLoading(false);
+        }
+    };
+
+    const loginWithGoogle = async () => {
+        logGoogleAuth('start');
+        const configuredWebClientId = configureGoogleSignIn();
+        if (!configuredWebClientId) {
+            logGoogleAuth('config-missing');
+            alert(t('auth.googleSignInFailed'), t('auth.googleConfigMissing'));
+            return false;
+        }
+        logGoogleAuth('configured', {
+            hasWebClientId: true,
+            webClientIdSuffix: configuredWebClientId.slice(-12),
+        });
+
+        setLoading(true);
+        try {
+            await GoogleSignin.hasPlayServices({
+                showPlayServicesUpdateDialog: true,
+            });
+            logGoogleAuth('play-services-ready');
+
+            const response = await GoogleSignin.signIn();
+            logGoogleAuth('google-signin-response', {
+                success: isSuccessResponse(response),
+            });
+            if (!isSuccessResponse(response)) {
+                logGoogleAuth('google-signin-non-success-response');
+                return false;
+            }
+
+            const googleIdToken = response.data.idToken;
+            if (!googleIdToken) {
+                logGoogleAuth('missing-google-id-token');
+                alert(t('auth.googleSignInFailed'), t('auth.googleMissingIdToken'));
+                return false;
+            }
+            logGoogleAuth('google-id-token-received', {
+                tokenLength: googleIdToken.length,
+            });
+
+            const credential = GoogleAuthProvider.credential(googleIdToken);
+            const firebaseCredential = await auth().signInWithCredential(credential);
+            logGoogleAuth('firebase-signin-success', {
+                uid: firebaseCredential.user.uid,
+                email: firebaseCredential.user.email,
+            });
+            const firebaseIdToken = await firebaseCredential.user.getIdToken(true);
+            logGoogleAuth('firebase-id-token-received', {
+                tokenLength: firebaseIdToken.length,
+            });
+            const res = await authApi.loginWithGoogle(firebaseIdToken);
+            logGoogleAuth('backend-google-login-success', {
+                userId: res.user.id,
+                email: res.user.email,
+            });
+
+            completeAuthenticatedSession(res.user, res.accessToken, res.refreshToken);
+            logGoogleAuth('session-complete');
+            return true;
+        } catch (err: any) {
+            if (isErrorWithCode(err)) {
+                logGoogleAuth('google-sdk-error', {
+                    code: err.code,
+                    message: err.message,
+                });
+                if (err.code === statusCodes.SIGN_IN_CANCELLED) {
+                    return false;
+                }
+
+                if (err.code === statusCodes.IN_PROGRESS) {
+                    alert(t('auth.googleSignInFailed'), t('auth.googleInProgress'));
+                    return false;
+                }
+
+                if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                    alert(t('auth.googleSignInFailed'), t('auth.googlePlayServicesUnavailable'));
+                    return false;
+                }
+
+                alert(
+                    t('auth.googleSignInFailed'),
+                    getGoogleSdkErrorMessage(err, t),
+                );
+                return false;
+            }
+
+            const apiMessage = extractApiMessage(err?.response?.data);
+            const message = err?.response
+                ? apiMessage || t('auth.googleSignInGeneric')
+                : getUnreachableApiMessage(t);
+            logGoogleAuth('failure', {
+                hasResponse: Boolean(err?.response),
+                status: err?.response?.status,
+                apiMessage,
+                message,
+                error: err?.message,
+            });
+
+            alert(t('auth.googleSignInFailed'), message);
+            return false;
+        } finally {
+            logGoogleAuth('finish');
             setLoading(false);
         }
     };
@@ -99,30 +296,32 @@ export function useAuth() {
                 avatarPayload,
             );
             const successMessage = extractApiMessage(res) || t('auth.accountCreatedSuccess');
+            const avatarFromApi = extractAvatarUri(res.user);
+            const userWithAvatar =
+                avatarFromApi !== undefined
+                    ? {
+                        ...res.user,
+                        avatarUrl: avatarFromApi,
+                        avatarUri: avatarFromApi,
+                    }
+                    : profileImage?.uri
+                        ? { ...res.user, avatarUri: profileImage.uri }
+                        : res.user;
+
+            setAuth(userWithAvatar, res.accessToken, res.refreshToken);
 
             alert(t('auth.registrationSuccessful'), successMessage, [
-                {
-                    text: t('common.continue'),
-                    onPress: () => {
-                        const avatarFromApi = extractAvatarUri(res.user);
-                        const userWithAvatar =
-                            avatarFromApi !== undefined
-                                ? {
-                                    ...res.user,
-                                    avatarUrl: avatarFromApi,
-                                    avatarUri: avatarFromApi,
-                                }
-                                : profileImage?.uri
-                                    ? { ...res.user, avatarUri: profileImage.uri }
-                                    : res.user;
-
-                        setAuth(userWithAvatar, res.accessToken, res.refreshToken);
-                    },
-                },
+                { text: t('common.continue') },
             ]);
             return true;
         } catch (err: any) {
-            if (!err?.response) {
+            const parseFailure = isLikelyJsonParseError(err);
+            const internetAccessState =
+                !err?.response && !parseFailure
+                    ? await getInternetAccessState()
+                    : 'unknown';
+
+            if (!err?.response && !parseFailure && internetAccessState === 'offline') {
                 const result = addToQueue({
                     email: normalizedEmail,
                     name: trimmedName,
@@ -145,9 +344,17 @@ export function useAuth() {
             }
 
             const errorMessage = extractApiMessage(err?.response?.data);
+            const fallbackMessage =
+                err?.response || internetAccessState === 'online'
+                    ? registrationFallbackMessage
+                    : getUnreachableApiMessage(t);
+
             alert(
                 t('auth.registrationFailed'),
-                errorMessage || getUnreachableApiMessage(t),
+                errorMessage ||
+                    (parseFailure
+                        ? registrationFallbackMessage
+                        : fallbackMessage),
             );
             return false;
         } finally {
@@ -157,6 +364,7 @@ export function useAuth() {
 
     return {
         login,
+        loginWithGoogle,
         register,
         loading,
         pendingRegistrationsCount,

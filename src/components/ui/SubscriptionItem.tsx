@@ -5,6 +5,7 @@ import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Subscription } from '../../types';
 import { formatCurrency } from '../../utils/format';
 import { withAlpha } from '../../utils/subscriptions';
+import { formatCreditCardLabel } from '../../utils/creditCards';
 import {
     getPaymentMethodOption,
     PAYMENT_METHOD_FALLBACK_ICON,
@@ -26,7 +27,6 @@ const HEX_COLOR_PATTERN = /^#(?:[0-9A-F]{3}){1,2}$/i;
 interface SubscriptionItemProps {
     subscription: Subscription;
     locale: 'en-US' | 'es-MX';
-    currency?: string;
     onPress?: (id: string) => void;
     onEdit?: (id: string) => void;
     onDelete?: (id: string) => void;
@@ -57,7 +57,6 @@ function resolveAccentColor(value: string | null | undefined, fallback: string):
 export function SubscriptionItem({
     subscription,
     locale,
-    currency,
     onPress,
     onEdit,
     onDelete,
@@ -162,10 +161,12 @@ export function SubscriptionItem({
     const paymentMethodLabel = paymentMethodOption
         ? (t(paymentMethodOption.labelKey as any) || paymentMethodOption.fallback)
         : null;
+    const creditCardLabel = formatCreditCardLabel(subscription.creditCard);
     const paymentMethodIcon = paymentMethodOption?.icon ?? PAYMENT_METHOD_FALLBACK_ICON;
     const subscriptionMeta = [
         `${t('subscriptions.chargeDate')} • ${chargeLabel}`,
         paymentMethodLabel,
+        creditCardLabel,
     ]
         .filter(Boolean)
         .join(' • ');
@@ -281,7 +282,7 @@ export function SubscriptionItem({
                 <Text
                     style={[styles.subscriptionCost, { fontSize: amountFontSize }]}
                 >
-                    {formatCurrency(subscription.cost, currency)}
+                    {formatCurrency(subscription.cost, subscription.currency, locale)}
                 </Text>
             </View>
         </AnimatedTouchableOpacity>

@@ -27,14 +27,28 @@ import { useI18n } from '../../hooks/useI18n';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { HomeBackground } from '../../components/ui/HomeBackground';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
+import { withAlpha } from '../../utils/subscriptions';
+
+function getReadableIconColor(backgroundColor: string): string {
+    const normalized = backgroundColor.replace('#', '').trim();
+    if (!/^[\da-fA-F]{3}$|^[\da-fA-F]{6}$/.test(normalized)) {
+        return '#0F172A';
+    }
+
+    const full = normalized.length === 3
+        ? normalized.split('').map((char) => `${char}${char}`).join('')
+        : normalized;
+    const r = Number.parseInt(full.slice(0, 2), 16);
+    const g = Number.parseInt(full.slice(2, 4), 16);
+    const b = Number.parseInt(full.slice(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    return luminance > 0.62 ? '#0F172A' : '#FFFFFF';
+}
 
 export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
-    const ACCENT_GREEN = '#00E676';
-    const PURPLE = '#7F00FF';
-    const BLUE = '#4DA3FF';
-    const ORANGE = '#FF9D4D';
-    const fallbackColors = [ACCENT_GREEN, PURPLE, BLUE, ORANGE];
     const { colors } = useTheme();
+    const fallbackColors = [colors.success, colors.accent, colors.info, colors.warning];
     const styles = useThemedStyles(createStyles);
     const user = useAuthStore((s) => s.user);
     const insets = useSafeAreaInsets();
@@ -180,7 +194,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                                     <View
                                         style={[
                                             styles.progressFill,
-                                            { width: `${progress * 100}%`, backgroundColor: ACCENT_GREEN },
+                                            { width: `${progress * 100}%`, backgroundColor: colors.success },
                                         ]}
                                     />
                                 </View>
@@ -230,7 +244,9 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                                                                     {
                                                                         height: Math.max(barHeight, 6),
                                                                         width: isSmallPhone ? 16 : 20,
-                                                                        backgroundColor: isToday ? ACCENT_GREEN : colors.primaryLight + '66',
+                                                                        backgroundColor: isToday
+                                                                            ? colors.success
+                                                                            : withAlpha(colors.primaryLight, 0.4),
                                                                     },
                                                                 ]}
                                                             />
@@ -317,7 +333,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                                                             icon={cat.icon}
                                                             categoryName={cat.name}
                                                             size={14}
-                                                            color="#050b1c"
+                                                            color={getReadableIconColor(cat.color || colors.primaryLight)}
                                                         />
                                                     </View>
                                                     <View>
@@ -365,7 +381,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
 const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#050B1C',
+        backgroundColor: colors.background,
     },
     flex1: {
         flex: 1,
@@ -396,19 +412,19 @@ const createStyles = (colors: any) => StyleSheet.create({
         paddingHorizontal: spacing.md,
         paddingVertical: 6,
         borderRadius: borderRadius.full,
-        backgroundColor: 'rgba(14, 26, 52, 0.8)',
+        backgroundColor: colors.surfaceElevated,
         borderWidth: 1,
-        borderColor: 'rgba(110, 140, 190, 0.25)',
+        borderColor: colors.border,
     },
     dateText: {
         color: colors.textMuted,
         fontWeight: typography.fontWeight.semibold,
     },
     glassCard: {
-        backgroundColor: 'rgba(15, 28, 55, 0.84)',
+        backgroundColor: colors.surfaceCard,
         borderRadius: borderRadius.xl,
         borderWidth: 1,
-        borderColor: 'rgba(120, 150, 200, 0.2)',
+        borderColor: colors.border,
         marginBottom: spacing.lg,
     },
     eyebrow: {
@@ -444,7 +460,7 @@ const createStyles = (colors: any) => StyleSheet.create({
     progressTrack: {
         height: 10,
         borderRadius: 999,
-        backgroundColor: 'rgba(140, 170, 220, 0.2)',
+        backgroundColor: withAlpha(colors.primaryAction, 0.12),
         overflow: 'hidden',
         marginTop: spacing.sm,
     },
@@ -460,11 +476,11 @@ const createStyles = (colors: any) => StyleSheet.create({
         flexDirection: 'row',
         gap: spacing.sm,
         marginTop: spacing.sm,
-        backgroundColor: 'rgba(5, 12, 28, 0.6)',
+        backgroundColor: colors.surfaceElevated,
         borderRadius: borderRadius.lg,
         padding: spacing.md,
         borderWidth: 1,
-        borderColor: 'rgba(120, 150, 200, 0.15)',
+        borderColor: colors.border,
     },
     axisColumn: {
         justifyContent: 'space-between',
@@ -511,7 +527,7 @@ const createStyles = (colors: any) => StyleSheet.create({
         borderColor: 'transparent',
     },
     donutHole: {
-        backgroundColor: 'rgba(15, 28, 55, 0.9)',
+        backgroundColor: colors.surface,
     },
     categoryList: {
         flex: 1,

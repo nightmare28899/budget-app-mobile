@@ -1,12 +1,17 @@
 import dayjs from 'dayjs';
+import { DEFAULT_CURRENCY, normalizeCurrency } from './currency';
 
 /**
  * Format a number as currency
  */
-export function formatCurrency(amount: number, currency = 'MXN'): string {
-    return new Intl.NumberFormat('es-MX', {
+export function formatCurrency(
+    amount: number,
+    currency = DEFAULT_CURRENCY,
+    locale: 'es-MX' | 'en-US' = 'es-MX',
+): string {
+    return new Intl.NumberFormat(locale, {
         style: 'currency',
-        currency,
+        currency: normalizeCurrency(currency),
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(amount);

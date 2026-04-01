@@ -7,7 +7,9 @@ import { RootNavigator } from './navigation/RootNavigator';
 import { AlertProvider } from './components/alerts/AlertProvider';
 import { OfflineRegistrationSync } from './components/OfflineRegistrationSync';
 import { usePreferencesStore } from './store/preferencesStore';
+import { useGuestDataStore } from './store/guestDataStore';
 import { ThemeProvider, useTheme } from './theme';
+import { usePushNotifications } from './hooks/usePushNotifications';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -20,10 +22,12 @@ const queryClient = new QueryClient({
 
 export default function App() {
     const hydratePreferences = usePreferencesStore((s) => s.hydrate);
+    const hydrateGuestData = useGuestDataStore((s) => s.hydrate);
 
     useEffect(() => {
         hydratePreferences();
-    }, [hydratePreferences]);
+        hydrateGuestData();
+    }, [hydrateGuestData, hydratePreferences]);
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
@@ -43,6 +47,7 @@ export default function App() {
 
 function ThemedRoot() {
     const { colors, isDark } = useTheme();
+    usePushNotifications();
 
     return (
         <>

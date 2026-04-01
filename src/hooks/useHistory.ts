@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { historyApi } from '../api/history';
-import { formatCurrency } from '../utils/format';
 import { dateOnly, isValidDateFilter } from '../utils/filters';
 import { Expense, Subscription } from '../types';
+import {
+    aggregateCurrencyTotals,
+    formatCurrencyBreakdown,
+    getCurrencyLocale,
+} from '../utils/currency';
 import { useI18n } from './useI18n';
 import { toNum } from '../utils/number';
 
@@ -27,6 +31,10 @@ type HistorySection = {
     date: string;
     title: string;
     total: number;
+    totalBreakdown: Array<{
+        currency: string;
+        total: number;
+    }>;
     data: HistoryRecord[];
 };
 
@@ -113,6 +121,7 @@ type UseHistoryParams = {
 
 export function useHistory({ successMessage, onSuccessHandled, currency }: UseHistoryParams) {
     const { t, language } = useI18n();
+    const locale = getCurrencyLocale(language);
 
     const [selectedCategoryId, setSelectedCategoryId] = useState('all');
     const [dateFilter, setDateFilter] = useState('');
@@ -328,16 +337,35 @@ export function useHistory({ successMessage, onSuccessHandled, currency }: UseHi
                     date,
                     title: displayDate,
                     total: items.reduce((sum, item) => sum + item.amount, 0),
+                    totalBreakdown: aggregateCurrencyTotals(
+                        items,
+                        (item) => item.amount,
+                        (item) =>
+                            item.kind === 'expense'
+                                ? item.expense.currency
+                                : item.subscription.currency,
+                    ),
                     data: items,
                 };
             });
     }, [language, records, t, todayKey]);
 
     const summaryCount = records.length;
-    const summaryTotal = records.reduce((sum, item) => sum + item.amount, 0);
+    const summaryBreakdown = aggregateCurrencyTotals(
+        records,
+        (item) => item.amount,
+        (item) =>
+            item.kind === 'expense'
+                ? item.expense.currency
+                : item.subscription.currency,
+        currency,
+    );
     const summaryText = t('history.subtitle', {
         count: summaryCount,
-        total: formatCurrency(summaryTotal, currency),
+        total: formatCurrencyBreakdown(summaryBreakdown, {
+            locale,
+            emptyCurrency: currency,
+        }),
     });
     const showSkeleton = (isLoading || isRefetching) && !data;
 

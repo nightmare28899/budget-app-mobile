@@ -4,7 +4,7 @@ const { execFileSync, spawnSync } = require('node:child_process');
 const { existsSync } = require('node:fs');
 const { join } = require('node:path');
 
-const API_PORT = 3001;
+const REVERSED_PORTS = [3001, 8081];
 
 function resolveAdbBinary() {
     const sdkRoot = process.env.ANDROID_SDK_ROOT || process.env.ANDROID_HOME;
@@ -40,17 +40,19 @@ function listOnlineDevices(adbPath) {
     }
 }
 
-function reverseApiPort(adbPath, serial) {
+function reversePort(adbPath, serial, port) {
     try {
-        execFileSync(
-            adbPath,
-            ['-s', serial, 'reverse', `tcp:${API_PORT}`, `tcp:${API_PORT}`],
-            { stdio: ['ignore', 'pipe', 'pipe'] },
-        );
-        console.log(`[android] ${serial}: reversed tcp:${API_PORT} -> tcp:${API_PORT}`);
+        execFileSync(adbPath, ['-s', serial, 'reverse', `tcp:${port}`, `tcp:${port}`], {
+            stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        console.log(`[android] ${serial}: reversed tcp:${port} -> tcp:${port}`);
     } catch (error) {
-        console.warn(`[android] ${serial}: failed to reverse tcp:${API_PORT}:`, error.message);
+        console.warn(`[android] ${serial}: failed to reverse tcp:${port}:`, error.message);
     }
+}
+
+function reversePorts(adbPath, serial) {
+    REVERSED_PORTS.forEach((port) => reversePort(adbPath, serial, port));
 }
 
 function runAndroid() {
@@ -74,7 +76,7 @@ const devices = listOnlineDevices(adbPath);
 if (devices.length === 0) {
     console.log('[android] No online devices found for adb reverse.');
 } else {
-    devices.forEach((serial) => reverseApiPort(adbPath, serial));
+    devices.forEach((serial) => reversePorts(adbPath, serial));
 }
 
 const exitCode = runAndroid();
@@ -84,7 +86,7 @@ if (exitCode === 0) {
     if (postRunDevices.length === 0) {
         console.log('[android] No online devices found after run-android.');
     } else {
-        postRunDevices.forEach((serial) => reverseApiPort(adbPath, serial));
+        postRunDevices.forEach((serial) => reversePorts(adbPath, serial));
     }
 }
 

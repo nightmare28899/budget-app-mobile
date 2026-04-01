@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     Text,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthScreenProps } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
@@ -19,21 +20,32 @@ import {
     spacing,
     typography,
     useResponsive,
+    useTheme,
     useThemedStyles,
 } from '../../theme';
 import { useI18n } from '../../hooks/useI18n';
+import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
 
 export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
     const styles = useThemedStyles(createStyles);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, loading } = useAuth();
+    const { colors } = useTheme();
+    const { login, loginWithGoogle, loading } = useAuth();
     const insets = useSafeAreaInsets();
     const { horizontalPadding, contentMaxWidth, scaleFont } = useResponsive();
     const { t } = useI18n();
+    const { scrollRef, createScrollOnFocusHandler } = useScrollToFocusedInput(112);
 
     const onLogin = async () => {
         await login(email, password);
+    };
+
+    const onGoogleLogin = async () => {
+        if (__DEV__) {
+            console.log('[google-auth] button-pressed');
+        }
+        await loginWithGoogle();
     };
 
     return (
@@ -44,6 +56,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
         >
             <AnimatedScreen style={styles.flex1} delay={40}>
                 <ScrollView
+                    ref={scrollRef}
                     contentContainerStyle={[
                         styles.content,
                         {
@@ -57,6 +70,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
                     ]}
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode="on-drag"
+                    automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
                 >
                     <HeroHeader
                         icon="wallet-outline"
@@ -72,6 +86,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
                             autoCapitalize="none"
                             value={email}
                             onChangeText={setEmail}
+                            onFocus={createScrollOnFocusHandler()}
                         />
 
                         <Input
@@ -80,6 +95,7 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
                             isPassword
                             value={password}
                             onChangeText={setPassword}
+                            onFocus={createScrollOnFocusHandler(132)}
                         />
 
                         <Button
@@ -88,6 +104,26 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
                             loading={loading}
                             containerStyle={styles.loginButton}
                         />
+
+                        <View style={styles.dividerRow}>
+                            <View style={styles.dividerLine} />
+                            <Text style={[styles.dividerText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                                {t('auth.orContinueWith')}
+                            </Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.googleButton}
+                            onPress={onGoogleLogin}
+                            activeOpacity={0.82}
+                            disabled={loading}
+                        >
+                            <Icon name="logo-google" size={20} color={colors.textPrimary} />
+                            <Text style={[styles.googleButtonText, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                {t('auth.continueWithGoogle')}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
 
                     <TouchableOpacity
@@ -97,6 +133,15 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
                         <Text style={[styles.footerText, { fontSize: scaleFont(typography.fontSize.md) }]}>
                             {t('auth.noAccount')}{' '}
                             <Text style={styles.footerLink}>{t('auth.signUp')}</Text>
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.guestFooter}
+                        onPress={() => navigation.getParent()?.goBack()}
+                    >
+                        <Text style={[styles.guestFooterText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                            {t('auth.continueGuest')}
                         </Text>
                     </TouchableOpacity>
                 </ScrollView>
@@ -123,9 +168,47 @@ const createStyles = (colors: any) => StyleSheet.create({
     loginButton: {
         marginTop: spacing.sm,
     },
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginTop: spacing.base,
+    },
+    dividerLine: {
+        flex: 1,
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: colors.border,
+    },
+    dividerText: {
+        color: colors.textMuted,
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.medium,
+    },
+    googleButton: {
+        minHeight: 48,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceElevated,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+    },
+    googleButtonText: {
+        color: colors.textPrimary,
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+    },
     footer: {
         alignItems: 'center',
         marginTop: spacing['2xl'],
+    },
+    guestFooter: {
+        alignItems: 'center',
+        marginTop: spacing.base,
     },
     footerText: {
         fontSize: typography.fontSize.md,
@@ -134,5 +217,9 @@ const createStyles = (colors: any) => StyleSheet.create({
     footerLink: {
         color: colors.primaryLight,
         fontWeight: typography.fontWeight.bold,
+    },
+    guestFooterText: {
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.medium,
     },
 });

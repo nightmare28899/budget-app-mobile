@@ -1,9 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import { DateTimePickerAndroid, DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useQuery } from '@tanstack/react-query';
 import { useSubscriptionManager } from '../modules/subscriptions/useSubscriptionManager';
 import { useAuthStore } from '../store/authStore';
 import { useAppAlert } from '../components/alerts/AlertProvider';
+import { creditCardsApi } from '../api/creditCards';
 import {
     formatDateISO,
     getPresetByName,
@@ -15,9 +17,11 @@ import {
     MAX_COST_VALUE,
     sanitizeMoneyInput,
 } from '../utils/moneyInput';
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/currency';
 import { useTheme } from '../theme';
 import { useI18n } from './useI18n';
 import { SubscriptionBillingCycle, Subscription } from '../types';
+import { isCreditCardPaymentMethod, normalizePaymentMethod } from '../utils/paymentMethod';
 
 function parseDateOrToday(value: string): Date {
     const date = new Date(`${value}T12:00:00`);
@@ -57,6 +61,10 @@ export function useSubscriptionForm({
     } = useSubscriptionManager();
 
     const isEditMode = Boolean(editingSubscription?.id);
+    const defaultCurrency = normalizeCurrency(
+        editingSubscription?.currency ?? user?.currency,
+        DEFAULT_CURRENCY,
+    );
     const initialPresetId = editingSubscription?.name
         ? getPresetByName(editingSubscription.name)?.id ?? null
         : null;
@@ -65,8 +73,12 @@ export function useSubscriptionForm({
     const [cost, setCost] = useState(
         editingSubscription ? String(editingSubscription.cost) : '',
     );
+    const [currency, setCurrency] = useState(defaultCurrency);
     const [paymentMethod, setPaymentMethod] = useState<string | undefined>(
         editingSubscription?.paymentMethod ?? undefined,
+    );
+    const [selectedCreditCardId, setSelectedCreditCardId] = useState<string | undefined>(
+        editingSubscription?.creditCardId ?? editingSubscription?.creditCard?.id ?? undefined,
     );
     const [chargeDate, setChargeDate] = useState(
         editingSubscription?.chargeDate ?? formatDateISO(new Date()),
@@ -86,6 +98,34 @@ export function useSubscriptionForm({
         editingSubscription?.billingCycle ?? 'MONTHLY',
     );
     const [showIosPicker, setShowIosPicker] = useState(false);
+
+    const includeInactiveCards = Boolean(editingSubscription?.id);
+    const shouldLoadCreditCards =
+        isCreditCardPaymentMethod(paymentMethod) || Boolean(selectedCreditCardId);
+    const { data: creditCards = [], isLoading: creditCardsLoading } = useQuery({
+        queryKey: ['creditCards', includeInactiveCards ? 'all' : 'active'],
+        queryFn: () => creditCardsApi.getAll({ includeInactive: includeInactiveCards }),
+        enabled: shouldLoadCreditCards,
+    });
+
+    const selectableCreditCards = useMemo(
+        () =>
+            creditCards.filter((card) => card.isActive || card.id === selectedCreditCardId),
+        [creditCards, selectedCreditCardId],
+    );
+
+    useEffect(() => {
+        if (!isCreditCardPaymentMethod(paymentMethod)) {
+            if (selectedCreditCardId) {
+                setSelectedCreditCardId(undefined);
+            }
+            return;
+        }
+
+        if (!selectedCreditCardId && selectableCreditCards.length === 1) {
+            setSelectedCreditCardId(selectableCreditCards[0].id);
+        }
+    }, [paymentMethod, selectableCreditCards, selectedCreditCardId]);
 
     const locale = language === 'es' ? 'es-MX' : 'en-US';
     const chargeDateLabel = useMemo(
@@ -141,6 +181,12 @@ export function useSubscriptionForm({
         setCost(sanitizeMoneyInput(value));
     }, []);
 
+    const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod);
+
+    const effectiveCreditCardId = isCreditCardPaymentMethod(paymentMethod)
+        ? selectedCreditCardId
+        : undefined;
+
     const onSave = useCallback(() => {
         const parsedCost = Number(cost);
         if (!name.trim()) {
@@ -162,6 +208,14 @@ export function useSubscriptionForm({
             alert(t('common.error'), t('addSubscription.validationDate'));
             return;
         }
+        if (!currency) {
+            alert(t('common.error'), t('addSubscription.validationCurrency'));
+            return;
+        }
+        if (isCreditCardPaymentMethod(paymentMethod) && !selectedCreditCardId) {
+            alert(t('common.error'), t('creditCards.validationRequired'));
+            return;
+        }
 
         const parsedDate = parseDateOrToday(chargeDate);
         const now = new Date();
@@ -179,10 +233,11 @@ export function useSubscriptionForm({
         const payload = {
             name: name.trim(),
             cost: parsedCost,
-            paymentMethod: paymentMethod || undefined,
+            paymentMethod: normalizedPaymentMethod,
+            creditCardId: effectiveCreditCardId ?? null,
             billingCycle,
             nextPaymentDate: parsedDate.toISOString(),
-            currency: user?.currency || editingSubscription?.currency || 'MXN',
+            currency,
             reminderDays: editingSubscription?.reminderDays ?? 3,
             isActive: true,
             hexColor: serviceColor,
@@ -196,7 +251,9 @@ export function useSubscriptionForm({
             .then(() => {
                 setName('');
                 setCost('');
+                setCurrency(defaultCurrency);
                 setPaymentMethod(undefined);
+                setSelectedCreditCardId(undefined);
                 setChargeDate(formatDateISO(new Date()));
                 setSelectedPresetId(null);
                 setServiceColor(colors.primary);
@@ -233,10 +290,14 @@ export function useSubscriptionForm({
         name,
         navigation,
         paymentMethod,
+        normalizedPaymentMethod,
+        currency,
         serviceColor,
+        selectedCreditCardId,
+        effectiveCreditCardId,
         t,
         updateSubscription,
-        user?.currency,
+        defaultCurrency,
     ]);
 
     const onDelete = useCallback(() => {
@@ -278,8 +339,12 @@ export function useSubscriptionForm({
         setName,
         cost,
         onChangeCost,
+        currency,
+        setCurrency,
         paymentMethod,
         setPaymentMethod,
+        selectedCreditCardId,
+        setSelectedCreditCardId,
         chargeDate,
         chargeDateLabel,
         serviceColor,
@@ -292,6 +357,8 @@ export function useSubscriptionForm({
         isCreating,
         isUpdating,
         isRemoving,
+        creditCards: selectableCreditCards,
+        creditCardsLoading,
         onChangeDate,
         openDatePicker,
         onPickPreset,
@@ -301,7 +368,10 @@ export function useSubscriptionForm({
     };
 }
 
-export { QUICK_SUBSCRIPTION_PRESETS } from '../utils/subscriptions';
+export {
+    QUICK_SUBSCRIPTION_PRESETS,
+    QUICK_SUBSCRIPTION_PRESET_GROUPS,
+} from '../utils/subscriptions';
 
 export const BILLING_CYCLE_OPTIONS: Array<{
     value: SubscriptionBillingCycle;

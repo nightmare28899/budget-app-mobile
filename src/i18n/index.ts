@@ -16,6 +16,9 @@ const en = {
     'common.retry': 'Retry',
     'common.success': 'Success',
     'common.error': 'Error',
+    'common.loading': 'Loading...',
+    'common.currency': 'Currency',
+    'common.notAvailable': 'Not available',
     'common.maxAmountExceeded': 'Amount cannot exceed {max}',
     'common.amountPlaceholder': '0.00',
 
@@ -48,6 +51,76 @@ const en = {
     'auth.pendingOfflineRegistrations.other': '{count} pending offline registrations',
     'auth.offlineSavedHint':
         'Saved registrations are sent automatically when internet connection is available.',
+    'auth.continueGuest': 'Continue in guest mode',
+    'auth.orContinueWith': 'or continue with',
+    'auth.continueWithGoogle': 'Continue with Google',
+    'auth.googleSignInFailed': 'Google Sign-In Failed',
+    'auth.googleConfigMissing':
+        'Google sign-in is not configured yet. Add GOOGLE_WEB_CLIENT_ID to the mobile .env and enable Google Authentication in Firebase.',
+    'auth.googleMissingIdToken':
+        'Google sign-in did not return an ID token. Check your Firebase Authentication and OAuth client configuration.',
+    'auth.googleInProgress':
+        'A Google sign-in request is already in progress. Please wait a moment and try again.',
+    'auth.googlePlayServicesUnavailable':
+        'Google Play Services are not available on this device.',
+    'auth.googleDeveloperError':
+        'Android Google sign-in is not fully configured yet. Add the app SHA-1 and SHA-256 in Firebase, download a new google-services.json, and rebuild the app.',
+    'auth.googleSignInGeneric':
+        'We could not complete Google sign-in right now. Please try again.',
+    'guest.accessTitle': 'Access & Backup',
+    'guest.statusGuest': 'Guest mode',
+    'guest.statusAccount': 'Account connected',
+    'guest.accessGuestDescription':
+        'You can use the app immediately with local data stored on this device. Sign in later for cloud backup, sync, recovery, and future premium restore.',
+    'guest.accessAccountDescription':
+        'Your account keeps the app ready for backup, sync, recovery, and future premium restore across devices.',
+    'guest.benefitCloudBackup': 'Cloud backup when you sign in',
+    'guest.benefitSync': 'Sync across devices later',
+    'guest.benefitRecovery': 'Account recovery if you change phones',
+    'guest.benefitPremiumRestore': 'Future premium restore tied to your account',
+    'guest.benefitContinuity': 'Better long-term data continuity',
+    'guest.accountReadyHint':
+        'You can keep using the app normally. Account features stay available here whenever you need them.',
+    'premium.title': 'Premium Required',
+    'premium.acquiredTitle': 'Premium Acquired',
+    'premium.subtitle': 'This feature is available only in the Premium version.',
+    'premium.acquiredSubtitle':
+        'Your account already has Premium. These tools are unlocked and ready to use.',
+    'premium.lockedBadge': 'Premium locked',
+    'premium.activeBadge': 'Premium acquired',
+    'premium.benefitsTitle': 'Unlocked benefits',
+    'premium.benefitsDescription':
+        'These advantages are already active in your account and available whenever you need them.',
+    'premium.creditCardsTitle': 'Manage your wallet with saved credit cards',
+    'premium.creditCardsDescription':
+        'Upgrade to Premium to access the credit cards catalog and reuse cards across expenses and subscriptions.',
+    'premium.creditCardsEnabledDescription':
+        'Your Premium access unlocks a reusable card catalog for expenses and subscriptions.',
+    'premium.creditCardsBullet1': 'Create, edit, and organize saved cards',
+    'premium.creditCardsBullet2': 'Reuse the same card in expenses and subscriptions',
+    'premium.creditCardsBullet3': 'Keep limits, closing day, and due day in one place',
+    'premium.installmentsTitle': 'Split purchases into installment plans',
+    'premium.installmentsDescription':
+        'Get Premium to create multi-payment expenses and keep each monthly charge organized.',
+    'premium.installmentsEnabledDescription':
+        'Your Premium access unlocks multi-payment expenses with clear monthly tracking.',
+    'premium.installmentsBullet1': 'Create 3, 6, 12, or custom monthly plans',
+    'premium.installmentsBullet2': 'Track installment progress in history and details',
+    'premium.installmentsBullet3': 'Keep the plan total and first payment date visible',
+    'premium.managementTitle': 'Premium is managed outside the app',
+    'premium.managementDescription':
+        'For now, Premium can only be enabled from the admin panel linked to your account.',
+    'premium.signInTitle': 'Sign in for restore and sync',
+    'premium.signInDescription':
+        'Creating an account adds backup, recovery, and future premium restore to your setup.',
+    'premium.activeStatus': 'Premium active',
+    'premium.inactiveStatus': 'Free plan',
+    'premium.manageButton': 'View Premium',
+    'premium.viewButton': 'See Premium',
+    'premium.accountManagedHint': 'This account already reports Premium from account state and cannot be changed here.',
+    'premium.externalManagementHint': 'Premium access is managed outside the app for now.',
+    'premium.featureCreditCards': 'Credit cards',
+    'premium.featureInstallments': 'Installments',
 
     'error.fillAllFields': 'Please fill in all fields',
     'error.validEmail': 'Please enter a valid email address',
@@ -65,6 +138,8 @@ const en = {
     'auth.savedOfflineDesc':
         'No internet connection right now. Registration was saved and will sync automatically when connection returns.',
     'auth.registrationFailed': 'Registration Failed',
+    'auth.registrationTryAgain':
+        'We could not complete the registration right now. Please try again.',
     'network.cannotReachApi': 'Cannot reach API at {baseUrl}. Make sure the backend is running.',
     'network.cannotReachServer':
         'Cannot reach server right now. Check your internet connection and try again.',
@@ -76,6 +151,93 @@ const en = {
     'session.renewFailedTitle': 'Session ended',
     'session.renewFailedMessage':
         'We could not renew your session. Please sign in again.',
+
+    'onboarding.stepLabel': 'Step {current} of {total}',
+    'onboarding.skip': 'Skip',
+    'onboarding.back': 'Back',
+    'onboarding.next': 'Next',
+    'onboarding.finish': 'Start using the app',
+    'onboarding.skipSetup': 'Skip setup for now',
+    'onboarding.welcomeTitle': 'Start with a quick walkthrough',
+    'onboarding.welcomeDescription':
+        'BudgetApp works best when the first steps are clear. This short intro shows what matters.',
+    'onboarding.heroTitle': 'See where your money goes without extra friction',
+    'onboarding.heroDescription':
+        'Use one place to log expenses, watch recurring charges, and move savings goals forward.',
+    'onboarding.valueCaptureTitle': 'Capture daily spending fast',
+    'onboarding.valueCaptureDescription':
+        'Add purchases in a few taps and keep notes when you need more context.',
+    'onboarding.valuePlanTitle': 'Plan around upcoming charges',
+    'onboarding.valuePlanDescription':
+        'Subscriptions and savings help you avoid surprises before they hit your budget.',
+    'onboarding.valueControlTitle': 'Keep a clear budget view',
+    'onboarding.valueControlDescription':
+        'Track what is safe to spend and spot pressure points before the month gets away from you.',
+    'onboarding.featuresTitle': 'Understand each module',
+    'onboarding.featuresDescription':
+        'Tap any area below to see what it does and how it helps your day-to-day flow.',
+    'onboarding.moduleExpensesTitle': 'Expenses',
+    'onboarding.moduleExpensesDescription': 'Log daily spending and keep each purchase organized.',
+    'onboarding.moduleExpensesBullet1': 'Create entries with amount, category, date, and notes.',
+    'onboarding.moduleExpensesBullet2': 'Use history later to search, review, or edit what you added.',
+    'onboarding.moduleSubscriptionsTitle': 'Subscriptions',
+    'onboarding.moduleSubscriptionsDescription':
+        'Track recurring services separately so they do not disappear inside normal spending.',
+    'onboarding.moduleSubscriptionsBullet1':
+        'Save billing cycle, charge date, and payment method for each service.',
+    'onboarding.moduleSubscriptionsBullet2':
+        'Check upcoming charges before they affect your available budget.',
+    'onboarding.moduleSavingsTitle': 'Savings Box',
+    'onboarding.moduleSavingsDescription':
+        'Create goals and move money in or out without losing progress visibility.',
+    'onboarding.moduleSavingsBullet1':
+        'Set a target amount and optional date for each goal.',
+    'onboarding.moduleSavingsBullet2':
+        'Review deposits and withdrawals from the goal detail screen.',
+    'onboarding.moduleAnalyticsTitle': 'Analytics',
+    'onboarding.moduleAnalyticsDescription':
+        'Turn your activity into trends so you can adjust faster.',
+    'onboarding.moduleAnalyticsBullet1':
+        'Compare spending against your budget and average pace.',
+    'onboarding.moduleAnalyticsBullet2':
+        'See category breakdowns to understand where the money is going.',
+    'onboarding.workflowTitle': 'How to use the app day to day',
+    'onboarding.workflowDescription':
+        'This is the practical rhythm that keeps the app useful instead of becoming another forgotten tracker.',
+    'onboarding.workflowHomeTitle': 'Start on Home',
+    'onboarding.workflowHomeDescription':
+        'Check your budget, recent activity, savings progress, and upcoming subscription pressure in one view.',
+    'onboarding.workflowAddTitle': 'Use the add flow often',
+    'onboarding.workflowAddDescription':
+        'Open the add button when you spend money or create a recurring service so your numbers stay current.',
+    'onboarding.workflowSavingsTitle': 'Review goals when you save',
+    'onboarding.workflowSavingsDescription':
+        'Move money into a goal as soon as you set it aside so the app reflects real progress.',
+    'onboarding.workflowSettingsTitle': 'Adjust the app to fit you',
+    'onboarding.workflowSettingsDescription':
+        'Settings lets you change language, budget period, theme, and profile details whenever your routine changes.',
+    'onboarding.setupTitle': 'Finish your initial setup',
+    'onboarding.setupDescription':
+        'Set the basics now so the home screen and analytics reflect the budget you actually want to follow.',
+    'onboarding.languageTitle': 'Choose your language',
+    'onboarding.languageDescription':
+        'Pick the language you want to use across the whole app.',
+    'onboarding.currencyTitle': 'Choose your main currency',
+    'onboarding.currencyDescription':
+        'Use your preferred currency as the default for new expenses, subscriptions, and budget setup.',
+    'onboarding.budgetTitle': 'Set your budget',
+    'onboarding.budgetDescription':
+        'Define the amount and period you want BudgetApp to measure against.',
+    'onboarding.setupHelper':
+        'You can update this later from Settings, but saving it now makes your first dashboard more useful.',
+    'onboarding.validationBudgetAmount': 'Enter a valid budget amount.',
+    'onboarding.validationPeriodDatesRequired':
+        'Start and end dates are required for a custom period.',
+    'onboarding.validationPeriodDateFormat': 'Use YYYY-MM-DD for custom period dates.',
+    'onboarding.validationPeriodEndBeforeStart':
+        'The custom period end date must be the same as or after the start date.',
+    'onboarding.saveFailed':
+        'We could not save your setup right now. Please try again.',
 
     'tab.home': 'Home',
     'tab.activity': 'Activity',
@@ -90,6 +252,8 @@ const en = {
     'filters.dateHint': 'Use YYYY-MM-DD format',
 
     'dashboard.hello': 'Hello, {name}',
+    'dashboard.helloGeneric': 'Hello',
+    'dashboard.subtitle': 'Personal finance at a glance',
     'dashboard.todaySpending': "Today's Spending",
     'dashboard.todayExpenses': "Today's Expenses",
     'dashboard.seeAll': 'See All',
@@ -164,6 +328,7 @@ const en = {
     'subscriptions.upcomingEmptyDescription':
         'No subscriptions are due in the next {days} days.',
     'subscriptions.upcomingLoadError': 'Could not load upcoming subscriptions.',
+    'subscriptions.unknownDate': 'Unknown date',
     'subscriptions.totalMonthly': 'Total Monthly Spend',
     'subscriptions.activeCount.one': '{count} active subscription',
     'subscriptions.activeCount.other': '{count} active subscriptions',
@@ -177,6 +342,12 @@ const en = {
     'subscriptions.searchLabel': 'Find a service',
     'subscriptions.searchPlaceholder': 'Netflix, Spotify...',
     'subscriptions.searchEmpty': 'No services found.',
+    'subscriptions.groupStreaming': 'Streaming & music',
+    'subscriptions.groupCloud': 'Cloud & utilities',
+    'subscriptions.groupWork': 'Work & creative tools',
+    'subscriptions.groupGaming': 'Gaming & community',
+    'subscriptions.groupLifestyle': 'Lifestyle & learning',
+    'subscriptions.groupOther': 'Other',
     'subscriptions.failedCreate': 'Could not create the subscription',
     'subscriptions.failedUpdate': 'Could not update the subscription',
     'subscriptions.failedRemove': 'Could not remove the subscription',
@@ -281,12 +452,71 @@ const en = {
     'paymentMethod.none': 'No payment method',
     'paymentMethod.cash': 'Cash',
     'paymentMethod.card': 'Card',
+    'paymentMethod.creditCard': 'Credit card',
+    'paymentMethod.debitCard': 'Debit card',
+    'paymentMethod.transfer': 'Transfer',
+
+    'creditCards.title': 'Credit Cards',
+    'creditCards.subtitle': 'Save your cards once and reuse them in expenses and subscriptions.',
+    'creditCards.label': 'Credit Card',
+    'creditCards.select': 'Select a credit card',
+    'creditCards.helper': 'Choose the specific card used for this record.',
+    'creditCards.none': 'No card selected',
+    'creditCards.emptyShort': 'No cards registered',
+    'creditCards.emptyHint': 'Add a card to use credit card payments.',
+    'creditCards.emptyTitle': 'No credit cards yet',
+    'creditCards.emptyDescription':
+        'Create your first card so you can link it to expenses and subscriptions.',
+    'creditCards.addFirst': 'Add first card',
+    'creditCards.addNew': 'Add new card',
+    'creditCards.openModule': 'Open credit cards',
+    'creditCards.manageModule': 'Manage credit cards',
+    'creditCards.moduleHint':
+        'This module is always available from Settings and the side menu.',
+    'creditCards.addTitle': 'Add Credit Card',
+    'creditCards.editTitle': 'Edit Credit Card',
+    'creditCards.formSubtitle':
+        'Store only the catalog details you need. No full number, CVV, or expiry date.',
+    'creditCards.previewName': 'Card alias',
+    'creditCards.name': 'Alias',
+    'creditCards.namePlaceholder': 'e.g. Nu Personal',
+    'creditCards.bank': 'Bank',
+    'creditCards.bankPlaceholder': 'e.g. Nu Bank',
+    'creditCards.brand': 'Brand',
+    'creditCards.last4': 'Last 4 digits',
+    'creditCards.color': 'Color',
+    'creditCards.limit': 'Credit limit',
+    'creditCards.closingDay': 'Closing day',
+    'creditCards.paymentDueDay': 'Payment due day',
+    'creditCards.status': 'Status',
+    'creditCards.active': 'Active',
+    'creditCards.inactive': 'Inactive',
+    'creditCards.save': 'Save card',
+    'creditCards.saveChanges': 'Save changes',
+    'creditCards.deactivateTitle': 'Deactivate credit card',
+    'creditCards.deactivateMessage':
+        'Do you want to deactivate {name}? Historical records will keep their link.',
+    'creditCards.deactivateAction': 'Deactivate',
+    'creditCards.activateAction': 'Activate',
+    'creditCards.failedCreate': 'Could not create the credit card',
+    'creditCards.failedUpdate': 'Could not update the credit card',
+    'creditCards.failedRemove': 'Could not deactivate the credit card',
+    'creditCards.validationRequired': 'Please choose a credit card',
+    'creditCards.validationName': 'Please enter a card alias',
+    'creditCards.validationBank': 'Please enter the bank name',
+    'creditCards.validationBrand': 'Please choose a brand',
+    'creditCards.validationLast4': 'Please enter exactly 4 digits',
+    'creditCards.validationLimit': 'Please enter a valid credit limit',
+    'creditCards.validationClosingDay': 'Closing day must be between 1 and 31',
+    'creditCards.validationDueDay': 'Payment due day must be between 1 and 31',
 
     'addSubscription.title': 'Add Subscription',
     'addSubscription.editTitle': 'Edit Subscription',
     'addSubscription.subtitle': 'Register a service in seconds',
     'addSubscription.editSubtitle': 'Update or remove this subscription',
     'addSubscription.quickPick': 'Quick Pick',
+    'addSubscription.quickPickHint':
+        'Choose a service to fill the name, icon, and color faster.',
     'addSubscription.name': 'Name',
     'addSubscription.namePlaceholder': 'e.g. Netflix',
     'addSubscription.cost': 'Cost',
@@ -304,6 +534,7 @@ const en = {
     'addSubscription.validationName': 'Please enter a subscription name',
     'addSubscription.validationCost': 'Please enter a valid cost',
     'addSubscription.validationDate': 'Please choose a charge date',
+    'addSubscription.validationCurrency': 'Please choose a currency',
     'addEntry.expenseTab': 'Expense',
     'addEntry.subscriptionTab': 'Subscription',
 
@@ -352,6 +583,8 @@ const en = {
     'expenseDetail.deleteExpense': 'Delete Expense',
     'expenseDetail.deleteTitle': 'Delete Expense',
     'expenseDetail.deleteMessage': 'Are you sure you want to delete this expense?',
+    'expenseDetail.deleteInstallmentMessage':
+        'Deleting this installment removes the entire installment plan. Continue?',
 
     'category.noneAvailable': 'No categories available. You can create one below.',
     'category.created': 'Category created',
@@ -363,6 +596,27 @@ const en = {
     'expense.failedUpdate': 'Failed to update expense',
     'expense.enterTitle': 'Please enter a title',
     'expense.enterAmount': 'Please enter a valid amount',
+    'expense.paymentTimingLabel': 'Payment Type',
+    'expense.singlePayment': 'Single payment',
+    'expense.installmentPayment': 'Installments',
+    'expense.installmentCountLabel': 'Number of installments',
+    'expense.installmentCountPlaceholder': 'For example: 3, 6, 12',
+    'expense.enterInstallmentCount': 'Please enter an installment count greater than 1',
+    'expense.purchaseDateLabel': 'Purchase date',
+    'expense.firstPaymentDateLabel': 'First payment date',
+    'expense.enterFirstPaymentDate': 'Please choose the first payment date',
+    'expense.invalidFirstPaymentDate':
+        'The first payment date must be the same as or after the purchase date.',
+    'expense.installmentPreviewTitle': 'Installment breakdown',
+    'expense.installmentPreviewHint':
+        'Add the total amount and installment count to preview the monthly split.',
+    'expense.installmentPreviewEqual': '{count} installments of {amount}',
+    'expense.installmentPreviewAdjusted':
+        '{count} installments: {amount} and a final payment of {finalAmount}',
+    'expense.installmentFrequencyMonthly': 'Monthly schedule • Total {total}',
+    'expense.installmentPositionLabel': 'Installment {current} of {count}',
+    'expense.installmentPlanTotalLabel': 'Plan total',
+    'expense.chooseCurrency': 'Please choose a currency',
     'expense.chooseCategory': 'Please choose a category',
     'expense.deleteTitle': 'Delete Expense',
     'expense.deleteMessage': 'Are you sure you want to delete this expense?',
@@ -395,20 +649,47 @@ const en = {
     'camera.permissionDeniedMessage': 'Camera permission was denied.',
 
     'settings.title': 'Settings',
-    'settings.subtitle': 'Manage your preferences',
+    'settings.subtitle': 'Manage your profile, preferences, and access.',
     'settings.profile': 'Profile',
+    'settings.preferencesTitle': 'Settings',
     'settings.name': 'Name',
     'settings.email': 'Email',
     'settings.dailyBudget': 'Daily Budget',
     'settings.budgetSettings': 'Budget',
+    'settings.currencyHelp':
+        'This currency will be used by default when you create new expenses and subscriptions.',
     'settings.budgetAmount': 'Budget Amount',
     'settings.budgetPeriod': 'Budget Period',
     'settings.selectBudgetPeriod': 'Choose how your budget should be calculated.',
     'settings.periodStart': 'Period start',
     'settings.periodEnd': 'Period end',
     'settings.currentBudget': 'Current: {value} ({period})',
+    'settings.planTitle': 'Current plan',
+    'settings.planLabel': 'Plan',
+    'settings.planAccessLabel': 'Access',
+    'settings.planShortcutDescription':
+        'Review your access level, included tools, and Premium benefits in one place.',
+    'settings.planOpenCta': 'Open plan details',
+    'settings.planIncludedTitle': 'Included in your access',
+    'settings.planFeatureEnabled': 'Available now',
+    'settings.planFeatureLocked': 'Locked until Premium',
+    'settings.planPremiumDescription':
+        'This account currently has Premium unlocked, including saved credit cards and installment plans.',
+    'settings.planFreeDescription':
+        'This account is currently on the free plan. Upgrade when you want more control tools.',
+    'settings.planGuestDescription':
+        'You are using the free plan in guest mode on this device. Sign in later if you want backup and restore tied to your account.',
+    'settings.backupLabel': 'Backup',
+    'settings.backupGuestValue': 'Local only',
+    'settings.backupAccountValue': 'Cloud ready',
+    'settings.accessBackupGuestDescription':
+        'You are using this device in local mode. Sign in when you want backup, sync, and recovery.',
+    'settings.accessBackupAccountDescription':
+        'Your account keeps backup, sync, and recovery ready across devices.',
     'settings.saveChanges': 'Save Changes',
+    'settings.saveProfile': 'Save Profile',
     'settings.actions': 'Actions',
+    'settings.accountActionsTitle': 'Account actions',
     'settings.seedCategories': 'Seed Default Categories',
     'settings.seedCategoriesDesc': 'Create Food, Transport, Shopping, etc.',
     'settings.sendWeeklyReport': 'Send Weekly Report',
@@ -454,6 +735,18 @@ const en = {
     'settings.themeLivePreviewDesc':
         'Container and button update instantly when you change the theme.',
     'settings.themeLivePreviewButton': 'Open theme selector',
+    'plan.title': 'Plan & access',
+    'plan.subtitle':
+        'Review your current access level, backup state, and the Premium tools available on this account.',
+    'plan.heroPremiumDescription':
+        'This account has Premium active, including saved credit cards and installment plans.',
+    'plan.heroFreeDescription':
+        'You are on the free plan right now. Upgrade when you want saved cards and installment tracking.',
+    'plan.heroGuestDescription':
+        'You are using the free plan in guest mode on this device. Sign in later if you want backup and restore linked to your account.',
+    'plan.featuresTitle': 'Included benefits',
+    'plan.featuresSubtitle':
+        'These are the tools currently enabled for your access level.',
 } as const;
 
 type TranslationKeyInternal = keyof typeof en;
@@ -472,6 +765,8 @@ const es: Record<TranslationKeyInternal, string> = {
     'common.retry': 'Reintentar',
     'common.success': 'Éxito',
     'common.error': 'Error',
+    'common.loading': 'Cargando...',
+    'common.notAvailable': 'No disponible',
     'common.maxAmountExceeded': 'El monto no puede superar {max}',
     'common.amountPlaceholder': '0.00',
 
@@ -504,6 +799,76 @@ const es: Record<TranslationKeyInternal, string> = {
     'auth.pendingOfflineRegistrations.other': '{count} registros pendientes sin conexión',
     'auth.offlineSavedHint':
         'Los registros guardados se envían automáticamente cuando hay conexión a internet.',
+    'auth.continueGuest': 'Continuar en modo invitado',
+    'auth.orContinueWith': 'o continuar con',
+    'auth.continueWithGoogle': 'Continuar con Google',
+    'auth.googleSignInFailed': 'Error con Google',
+    'auth.googleConfigMissing':
+        'El acceso con Google aún no está configurado. Agrega GOOGLE_WEB_CLIENT_ID al .env móvil y habilita Google Authentication en Firebase.',
+    'auth.googleMissingIdToken':
+        'Google no devolvió un ID token. Revisa la configuración de Firebase Authentication y de los clientes OAuth.',
+    'auth.googleInProgress':
+        'Ya hay una solicitud de inicio con Google en progreso. Espera un momento e inténtalo de nuevo.',
+    'auth.googlePlayServicesUnavailable':
+        'Google Play Services no está disponible en este dispositivo.',
+    'auth.googleDeveloperError':
+        'El acceso con Google en Android aún no está configurado por completo. Agrega la SHA-1 y la SHA-256 de la app en Firebase, descarga un nuevo google-services.json y vuelve a compilar la app.',
+    'auth.googleSignInGeneric':
+        'No pudimos completar el acceso con Google en este momento. Inténtalo de nuevo.',
+    'guest.accessTitle': 'Acceso y respaldo',
+    'guest.statusGuest': 'Modo invitado',
+    'guest.statusAccount': 'Cuenta conectada',
+    'guest.accessGuestDescription':
+        'Puedes usar la app de inmediato con datos locales guardados en este dispositivo. Inicia sesión después para respaldo en la nube, sincronización, recuperación y futura restauración Premium.',
+    'guest.accessAccountDescription':
+        'Tu cuenta deja la app lista para respaldo, sincronización, recuperación y futura restauración Premium entre dispositivos.',
+    'guest.benefitCloudBackup': 'Respaldo en la nube al iniciar sesión',
+    'guest.benefitSync': 'Sincronización futura entre dispositivos',
+    'guest.benefitRecovery': 'Recuperación de cuenta si cambias de teléfono',
+    'guest.benefitPremiumRestore': 'Futura restauración Premium ligada a tu cuenta',
+    'guest.benefitContinuity': 'Mejor continuidad de tus datos a largo plazo',
+    'guest.accountReadyHint':
+        'Puedes seguir usando la app normalmente. Las funciones de cuenta seguirán disponibles aquí cuando las necesites.',
+    'premium.title': 'Premium requerido',
+    'premium.acquiredTitle': 'Premium adquirido',
+    'premium.subtitle': 'Esta función está disponible solo en la versión Premium.',
+    'premium.acquiredSubtitle':
+        'Tu cuenta ya tiene Premium. Estas herramientas están desbloqueadas y listas para usarse.',
+    'premium.lockedBadge': 'Premium bloqueado',
+    'premium.activeBadge': 'Premium adquirido',
+    'premium.benefitsTitle': 'Beneficios desbloqueados',
+    'premium.benefitsDescription':
+        'Estas ventajas ya están activas en tu cuenta y disponibles cada vez que las necesites.',
+    'premium.creditCardsTitle': 'Administra tu cartera con tarjetas guardadas',
+    'premium.creditCardsDescription':
+        'Actualiza a Premium para acceder al catálogo de tarjetas y reutilizarlas en gastos y suscripciones.',
+    'premium.creditCardsEnabledDescription':
+        'Tu acceso Premium desbloquea un catálogo reutilizable de tarjetas para gastos y suscripciones.',
+    'premium.creditCardsBullet1': 'Crea, edita y organiza tus tarjetas guardadas',
+    'premium.creditCardsBullet2': 'Reutiliza la misma tarjeta en gastos y suscripciones',
+    'premium.creditCardsBullet3': 'Mantén límite, fecha de corte y fecha de pago en un solo lugar',
+    'premium.installmentsTitle': 'Divide compras en planes de mensualidades',
+    'premium.installmentsDescription':
+        'Obtén Premium para crear gastos en múltiples pagos y mantener ordenado cada cargo mensual.',
+    'premium.installmentsEnabledDescription':
+        'Tu acceso Premium desbloquea gastos a múltiples pagos con seguimiento mensual claro.',
+    'premium.installmentsBullet1': 'Crea planes de 3, 6, 12 o más mensualidades',
+    'premium.installmentsBullet2': 'Sigue el progreso de mensualidades en historial y detalles',
+    'premium.installmentsBullet3': 'Mantén visible el total del plan y la fecha del primer pago',
+    'premium.managementTitle': 'Premium se administra fuera de la app',
+    'premium.managementDescription':
+        'Por ahora, Premium solo se puede activar desde el panel administrativo vinculado a tu cuenta.',
+    'premium.signInTitle': 'Inicia sesión para restaurar y sincronizar',
+    'premium.signInDescription':
+        'Crear una cuenta agrega respaldo, recuperación y futura restauración Premium a tu configuración.',
+    'premium.activeStatus': 'Premium activo',
+    'premium.inactiveStatus': 'Plan gratis',
+    'premium.manageButton': 'Ver Premium',
+    'premium.viewButton': 'Ver Premium',
+    'premium.accountManagedHint': 'Esta cuenta ya reporta Premium desde el estado de la cuenta y no se puede cambiar aquí.',
+    'premium.externalManagementHint': 'El acceso Premium se administra fuera de la app por ahora.',
+    'premium.featureCreditCards': 'Tarjetas',
+    'premium.featureInstallments': 'Mensualidades',
 
     'error.fillAllFields': 'Por favor completa todos los campos',
     'error.validEmail': 'Por favor ingresa un correo válido',
@@ -521,6 +886,8 @@ const es: Record<TranslationKeyInternal, string> = {
     'auth.savedOfflineDesc':
         'No hay conexión en este momento. El registro se guardó y se sincronizará automáticamente cuando vuelva la conexión.',
     'auth.registrationFailed': 'Registro fallido',
+    'auth.registrationTryAgain':
+        'No pudimos completar el registro en este momento. Inténtalo de nuevo.',
     'network.cannotReachApi':
         'No se puede conectar con la API en {baseUrl}. Verifica que el backend esté ejecutándose.',
     'network.cannotReachServer':
@@ -533,6 +900,98 @@ const es: Record<TranslationKeyInternal, string> = {
     'session.renewFailedTitle': 'Sesión finalizada',
     'session.renewFailedMessage':
         'No pudimos renovar tu sesión. Inicia sesión nuevamente.',
+    'common.currency': 'Moneda',
+
+    'onboarding.stepLabel': 'Paso {current} de {total}',
+    'onboarding.skip': 'Omitir',
+    'onboarding.back': 'Atrás',
+    'onboarding.next': 'Siguiente',
+    'onboarding.finish': 'Empezar a usar la app',
+    'onboarding.skipSetup': 'Omitir configuración por ahora',
+    'onboarding.welcomeTitle': 'Empieza con un recorrido corto',
+    'onboarding.welcomeDescription':
+        'BudgetApp funciona mejor cuando los primeros pasos son claros. Esta introducción te muestra lo importante.',
+    'onboarding.heroTitle': 'Mira a dónde se va tu dinero sin fricción extra',
+    'onboarding.heroDescription':
+        'Usa un solo lugar para registrar gastos, vigilar cobros recurrentes y avanzar metas de ahorro.',
+    'onboarding.valueCaptureTitle': 'Captura tus gastos diarios rápido',
+    'onboarding.valueCaptureDescription':
+        'Agrega compras en pocos toques y guarda notas cuando necesites más contexto.',
+    'onboarding.valuePlanTitle': 'Planea alrededor de tus próximos cobros',
+    'onboarding.valuePlanDescription':
+        'Las suscripciones y el ahorro te ayudan a evitar sorpresas antes de que golpeen tu presupuesto.',
+    'onboarding.valueControlTitle': 'Mantén un presupuesto claro',
+    'onboarding.valueControlDescription':
+        'Controla cuánto puedes gastar y detecta presión en tus finanzas antes de que el mes se te vaya.',
+    'onboarding.featuresTitle': 'Entiende cada módulo',
+    'onboarding.featuresDescription':
+        'Toca cualquier área para ver qué hace y cómo ayuda a tu flujo diario.',
+    'onboarding.moduleExpensesTitle': 'Gastos',
+    'onboarding.moduleExpensesDescription':
+        'Registra tus gastos diarios y mantén cada compra organizada.',
+    'onboarding.moduleExpensesBullet1':
+        'Crea registros con monto, categoría, fecha y notas.',
+    'onboarding.moduleExpensesBullet2':
+        'Después usa el historial para buscar, revisar o editar lo que agregaste.',
+    'onboarding.moduleSubscriptionsTitle': 'Suscripciones',
+    'onboarding.moduleSubscriptionsDescription':
+        'Controla los servicios recurrentes por separado para que no se pierdan entre los gastos normales.',
+    'onboarding.moduleSubscriptionsBullet1':
+        'Guarda ciclo de cobro, fecha de pago y método de pago para cada servicio.',
+    'onboarding.moduleSubscriptionsBullet2':
+        'Revisa próximos cobros antes de que afecten tu presupuesto disponible.',
+    'onboarding.moduleSavingsTitle': 'Caja de ahorro',
+    'onboarding.moduleSavingsDescription':
+        'Crea metas y mueve dinero dentro o fuera sin perder visibilidad del avance.',
+    'onboarding.moduleSavingsBullet1':
+        'Define una meta de monto y una fecha opcional para cada objetivo.',
+    'onboarding.moduleSavingsBullet2':
+        'Revisa depósitos y retiros desde el detalle de cada meta.',
+    'onboarding.moduleAnalyticsTitle': 'Analíticas',
+    'onboarding.moduleAnalyticsDescription':
+        'Convierte tu actividad en tendencias para ajustar más rápido.',
+    'onboarding.moduleAnalyticsBullet1':
+        'Compara tus gastos contra tu presupuesto y tu ritmo promedio.',
+    'onboarding.moduleAnalyticsBullet2':
+        'Ve el desglose por categorías para entender a dónde se va el dinero.',
+    'onboarding.workflowTitle': 'Cómo usar la app en el día a día',
+    'onboarding.workflowDescription':
+        'Este es el ritmo práctico que mantiene útil la app en lugar de convertirse en otro registro olvidado.',
+    'onboarding.workflowHomeTitle': 'Empieza en Inicio',
+    'onboarding.workflowHomeDescription':
+        'Revisa tu presupuesto, actividad reciente, avance de ahorro y presión por próximos cobros en una sola vista.',
+    'onboarding.workflowAddTitle': 'Usa seguido el flujo de agregar',
+    'onboarding.workflowAddDescription':
+        'Abre el botón de agregar cuando gastes dinero o crees un servicio recurrente para mantener tus números al día.',
+    'onboarding.workflowSavingsTitle': 'Revisa tus metas cuando ahorres',
+    'onboarding.workflowSavingsDescription':
+        'Mueve dinero a una meta apenas lo apartes para que la app refleje el progreso real.',
+    'onboarding.workflowSettingsTitle': 'Ajusta la app a tu manera',
+    'onboarding.workflowSettingsDescription':
+        'Desde Ajustes puedes cambiar idioma, período de presupuesto, tema y perfil cuando cambie tu rutina.',
+    'onboarding.setupTitle': 'Termina tu configuración inicial',
+    'onboarding.setupDescription':
+        'Define lo básico ahora para que Inicio y Analíticas reflejen el presupuesto que realmente quieres seguir.',
+    'onboarding.languageTitle': 'Elige tu idioma',
+    'onboarding.languageDescription':
+        'Selecciona el idioma que quieres usar en toda la app.',
+    'onboarding.currencyTitle': 'Elige tu moneda principal',
+    'onboarding.currencyDescription':
+        'Usa tu moneda preferida como valor predeterminado para nuevos gastos, suscripciones y presupuesto.',
+    'onboarding.budgetTitle': 'Configura tu presupuesto',
+    'onboarding.budgetDescription':
+        'Define el monto y el período contra el que BudgetApp va a medir tus gastos.',
+    'onboarding.setupHelper':
+        'Puedes cambiar esto después en Ajustes, pero guardarlo ahora hace más útil tu primer panel.',
+    'onboarding.validationBudgetAmount': 'Ingresa un monto de presupuesto válido.',
+    'onboarding.validationPeriodDatesRequired':
+        'La fecha de inicio y fin son obligatorias para un período personalizado.',
+    'onboarding.validationPeriodDateFormat':
+        'Usa el formato YYYY-MM-DD para las fechas del período personalizado.',
+    'onboarding.validationPeriodEndBeforeStart':
+        'La fecha final del período personalizado debe ser igual o posterior a la fecha inicial.',
+    'onboarding.saveFailed':
+        'No pudimos guardar tu configuración ahora mismo. Inténtalo de nuevo.',
 
     'tab.home': 'Inicio',
     'tab.activity': 'Actividad',
@@ -547,6 +1006,8 @@ const es: Record<TranslationKeyInternal, string> = {
     'filters.dateHint': 'Usa el formato YYYY-MM-DD',
 
     'dashboard.hello': 'Hola, {name}',
+    'dashboard.helloGeneric': 'Hola',
+    'dashboard.subtitle': 'Tus finanzas personales de un vistazo',
     'dashboard.todaySpending': 'Gasto de hoy',
     'dashboard.todayExpenses': 'Gastos de hoy',
     'dashboard.seeAll': 'Ver todo',
@@ -621,6 +1082,7 @@ const es: Record<TranslationKeyInternal, string> = {
     'subscriptions.upcomingEmptyDescription':
         'No hay suscripciones con cobro en los próximos {days} días.',
     'subscriptions.upcomingLoadError': 'No se pudieron cargar las suscripciones próximas.',
+    'subscriptions.unknownDate': 'Fecha desconocida',
     'subscriptions.totalMonthly': 'Gasto mensual total',
     'subscriptions.activeCount.one': '{count} suscripción activa',
     'subscriptions.activeCount.other': '{count} suscripciones activas',
@@ -634,6 +1096,12 @@ const es: Record<TranslationKeyInternal, string> = {
     'subscriptions.searchLabel': 'Buscar servicio',
     'subscriptions.searchPlaceholder': 'Netflix, Spotify...',
     'subscriptions.searchEmpty': 'No se encontraron servicios.',
+    'subscriptions.groupStreaming': 'Streaming y música',
+    'subscriptions.groupCloud': 'Nube y servicios',
+    'subscriptions.groupWork': 'Trabajo y creatividad',
+    'subscriptions.groupGaming': 'Gaming y comunidad',
+    'subscriptions.groupLifestyle': 'Estilo de vida y aprendizaje',
+    'subscriptions.groupOther': 'Otros',
     'subscriptions.failedCreate': 'No se pudo crear la suscripción',
     'subscriptions.failedUpdate': 'No se pudo actualizar la suscripción',
     'subscriptions.failedRemove': 'No se pudo eliminar la suscripción',
@@ -738,12 +1206,72 @@ const es: Record<TranslationKeyInternal, string> = {
     'paymentMethod.none': 'Sin método de pago',
     'paymentMethod.cash': 'Efectivo',
     'paymentMethod.card': 'Tarjeta',
+    'paymentMethod.creditCard': 'Tarjeta de crédito',
+    'paymentMethod.debitCard': 'Tarjeta de débito',
+    'paymentMethod.transfer': 'Transferencia',
+
+    'creditCards.title': 'Tarjetas de crédito',
+    'creditCards.subtitle':
+        'Guarda tus tarjetas una vez y reutilízalas en gastos y suscripciones.',
+    'creditCards.label': 'Tarjeta de crédito',
+    'creditCards.select': 'Selecciona una tarjeta de crédito',
+    'creditCards.helper': 'Elige la tarjeta específica usada en este movimiento.',
+    'creditCards.none': 'Sin tarjeta seleccionada',
+    'creditCards.emptyShort': 'No hay tarjetas registradas',
+    'creditCards.emptyHint': 'Agrega una tarjeta para usar pagos con tarjeta de crédito.',
+    'creditCards.emptyTitle': 'Aún no tienes tarjetas de crédito',
+    'creditCards.emptyDescription':
+        'Crea tu primera tarjeta para poder vincularla a gastos y suscripciones.',
+    'creditCards.addFirst': 'Agregar primera tarjeta',
+    'creditCards.addNew': 'Agregar nueva tarjeta',
+    'creditCards.openModule': 'Abrir tarjetas de credito',
+    'creditCards.manageModule': 'Administrar tarjetas',
+    'creditCards.moduleHint':
+        'Este modulo siempre esta disponible desde Ajustes y el menu lateral.',
+    'creditCards.addTitle': 'Agregar tarjeta de crédito',
+    'creditCards.editTitle': 'Editar tarjeta de crédito',
+    'creditCards.formSubtitle':
+        'Guarda solo los datos de catálogo que necesitas. No se guarda el número completo, CVV ni vencimiento.',
+    'creditCards.previewName': 'Alias de la tarjeta',
+    'creditCards.name': 'Alias',
+    'creditCards.namePlaceholder': 'Ej. Nu Personal',
+    'creditCards.bank': 'Banco',
+    'creditCards.bankPlaceholder': 'Ej. Nu Bank',
+    'creditCards.brand': 'Marca',
+    'creditCards.last4': 'Últimos 4 dígitos',
+    'creditCards.color': 'Color',
+    'creditCards.limit': 'Límite de crédito',
+    'creditCards.closingDay': 'Día de corte',
+    'creditCards.paymentDueDay': 'Día límite de pago',
+    'creditCards.status': 'Estado',
+    'creditCards.active': 'Activa',
+    'creditCards.inactive': 'Inactiva',
+    'creditCards.save': 'Guardar tarjeta',
+    'creditCards.saveChanges': 'Guardar cambios',
+    'creditCards.deactivateTitle': 'Desactivar tarjeta de crédito',
+    'creditCards.deactivateMessage':
+        '¿Quieres desactivar {name}? Los registros históricos conservarán el vínculo.',
+    'creditCards.deactivateAction': 'Desactivar',
+    'creditCards.activateAction': 'Activar',
+    'creditCards.failedCreate': 'No se pudo crear la tarjeta de crédito',
+    'creditCards.failedUpdate': 'No se pudo actualizar la tarjeta de crédito',
+    'creditCards.failedRemove': 'No se pudo desactivar la tarjeta de crédito',
+    'creditCards.validationRequired': 'Selecciona una tarjeta de crédito',
+    'creditCards.validationName': 'Ingresa un alias para la tarjeta',
+    'creditCards.validationBank': 'Ingresa el nombre del banco',
+    'creditCards.validationBrand': 'Selecciona una marca',
+    'creditCards.validationLast4': 'Ingresa exactamente 4 dígitos',
+    'creditCards.validationLimit': 'Ingresa un límite de crédito válido',
+    'creditCards.validationClosingDay': 'El día de corte debe estar entre 1 y 31',
+    'creditCards.validationDueDay': 'El día límite de pago debe estar entre 1 y 31',
 
     'addSubscription.title': 'Agregar Suscripción',
     'addSubscription.editTitle': 'Editar Suscripción',
     'addSubscription.subtitle': 'Registra un servicio en segundos',
     'addSubscription.editSubtitle': 'Actualiza o elimina esta suscripción',
     'addSubscription.quickPick': 'Selección rápida',
+    'addSubscription.quickPickHint':
+        'Elige un servicio para llenar más rápido el nombre, el icono y el color.',
     'addSubscription.name': 'Nombre',
     'addSubscription.namePlaceholder': 'Ej. Netflix',
     'addSubscription.cost': 'Costo',
@@ -763,6 +1291,7 @@ const es: Record<TranslationKeyInternal, string> = {
         'Por favor ingresa el nombre de la suscripción',
     'addSubscription.validationCost': 'Por favor ingresa un costo válido',
     'addSubscription.validationDate': 'Selecciona una fecha de cobro',
+    'addSubscription.validationCurrency': 'Selecciona una moneda',
     'addEntry.expenseTab': 'Gasto',
     'addEntry.subscriptionTab': 'Suscripción',
 
@@ -816,6 +1345,8 @@ const es: Record<TranslationKeyInternal, string> = {
     'expenseDetail.deleteExpense': 'Eliminar gasto',
     'expenseDetail.deleteTitle': 'Eliminar gasto',
     'expenseDetail.deleteMessage': '¿Seguro que quieres eliminar este gasto?',
+    'expenseDetail.deleteInstallmentMessage':
+        'Si eliminas esta mensualidad se eliminará todo el plan de pagos. ¿Continuar?',
 
     'category.noneAvailable': 'No hay categorías disponibles. Puedes crear una abajo.',
     'category.created': 'Categoría creada',
@@ -827,6 +1358,28 @@ const es: Record<TranslationKeyInternal, string> = {
     'expense.failedUpdate': 'No se pudo actualizar el gasto',
     'expense.enterTitle': 'Por favor ingresa un título',
     'expense.enterAmount': 'Por favor ingresa un monto válido',
+    'expense.paymentTimingLabel': 'Tipo de pago',
+    'expense.singlePayment': 'Pago único',
+    'expense.installmentPayment': 'Meses',
+    'expense.installmentCountLabel': 'Número de mensualidades',
+    'expense.installmentCountPlaceholder': 'Por ejemplo: 3, 6, 12',
+    'expense.enterInstallmentCount':
+        'Ingresa un número de mensualidades mayor a 1',
+    'expense.purchaseDateLabel': 'Fecha de compra',
+    'expense.firstPaymentDateLabel': 'Fecha del primer pago',
+    'expense.enterFirstPaymentDate': 'Selecciona la fecha del primer pago',
+    'expense.invalidFirstPaymentDate':
+        'La fecha del primer pago debe ser igual o posterior a la fecha de compra.',
+    'expense.installmentPreviewTitle': 'Desglose de mensualidades',
+    'expense.installmentPreviewHint':
+        'Agrega el monto total y el número de mensualidades para ver el cálculo.',
+    'expense.installmentPreviewEqual': '{count} mensualidades de {amount}',
+    'expense.installmentPreviewAdjusted':
+        '{count} mensualidades: {amount} y un último pago de {finalAmount}',
+    'expense.installmentFrequencyMonthly': 'Plan mensual • Total {total}',
+    'expense.installmentPositionLabel': 'Mensualidad {current} de {count}',
+    'expense.installmentPlanTotalLabel': 'Total del plan',
+    'expense.chooseCurrency': 'Selecciona una moneda',
     'expense.chooseCategory': 'Por favor elige una categoría',
     'expense.deleteTitle': 'Eliminar gasto',
     'expense.deleteMessage': '¿Seguro que quieres eliminar este gasto?',
@@ -859,20 +1412,47 @@ const es: Record<TranslationKeyInternal, string> = {
     'camera.permissionDeniedMessage': 'Se denegó el permiso de cámara.',
 
     'settings.title': 'Ajustes',
-    'settings.subtitle': 'Administra tus preferencias',
+    'settings.subtitle': 'Administra tu perfil, ajustes y acceso.',
     'settings.profile': 'Perfil',
+    'settings.preferencesTitle': 'Ajustes',
     'settings.name': 'Nombre',
     'settings.email': 'Correo',
     'settings.dailyBudget': 'Presupuesto diario',
     'settings.budgetSettings': 'Presupuesto',
+    'settings.currencyHelp':
+        'Esta moneda se usará por defecto cuando crees nuevos gastos y suscripciones.',
     'settings.budgetAmount': 'Monto del presupuesto',
     'settings.budgetPeriod': 'Período del presupuesto',
     'settings.selectBudgetPeriod': 'Elige cómo se calculará tu presupuesto.',
     'settings.periodStart': 'Inicio del período',
     'settings.periodEnd': 'Fin del período',
     'settings.currentBudget': 'Actual: {value} ({period})',
+    'settings.planTitle': 'Plan actual',
+    'settings.planLabel': 'Plan',
+    'settings.planAccessLabel': 'Acceso',
+    'settings.planShortcutDescription':
+        'Revisa tu nivel de acceso, las herramientas incluidas y los beneficios Premium en un solo lugar.',
+    'settings.planOpenCta': 'Abrir detalles del plan',
+    'settings.planIncludedTitle': 'Incluido en tu acceso',
+    'settings.planFeatureEnabled': 'Disponible ahora',
+    'settings.planFeatureLocked': 'Bloqueado hasta Premium',
+    'settings.planPremiumDescription':
+        'Esta cuenta ya tiene Premium desbloqueado, incluyendo tarjetas guardadas y planes de mensualidades.',
+    'settings.planFreeDescription':
+        'Esta cuenta está actualmente en el plan gratis. Mejora cuando quieras más herramientas de control.',
+    'settings.planGuestDescription':
+        'Estás usando el plan gratis en modo invitado en este dispositivo. Inicia sesión después si quieres respaldo y restauración ligados a tu cuenta.',
+    'settings.backupLabel': 'Respaldo',
+    'settings.backupGuestValue': 'Solo local',
+    'settings.backupAccountValue': 'Nube lista',
+    'settings.accessBackupGuestDescription':
+        'Estás usando este dispositivo en modo local. Inicia sesión cuando quieras respaldo, sincronización y recuperación.',
+    'settings.accessBackupAccountDescription':
+        'Tu cuenta mantiene listo el respaldo, la sincronización y la recuperación entre dispositivos.',
     'settings.saveChanges': 'Guardar cambios',
+    'settings.saveProfile': 'Guardar perfil',
     'settings.actions': 'Acciones',
+    'settings.accountActionsTitle': 'Acciones de la cuenta',
     'settings.seedCategories': 'Crear categorías por defecto',
     'settings.seedCategoriesDesc': 'Crear Comida, Transporte, Compras, etc.',
     'settings.sendWeeklyReport': 'Enviar reporte semanal',
@@ -919,6 +1499,18 @@ const es: Record<TranslationKeyInternal, string> = {
     'settings.themeLivePreviewDesc':
         'El contenedor y el botón cambian al instante cuando eliges otro tema.',
     'settings.themeLivePreviewButton': 'Abrir selector de tema',
+    'plan.title': 'Plan y acceso',
+    'plan.subtitle':
+        'Revisa tu nivel de acceso actual, el estado del respaldo y las herramientas Premium disponibles en esta cuenta.',
+    'plan.heroPremiumDescription':
+        'Esta cuenta tiene Premium activo, incluyendo tarjetas guardadas y planes de mensualidades.',
+    'plan.heroFreeDescription':
+        'Ahora mismo estás en el plan gratis. Mejora cuando quieras tarjetas guardadas y seguimiento de mensualidades.',
+    'plan.heroGuestDescription':
+        'Estás usando el plan gratis en modo invitado en este dispositivo. Inicia sesión después si quieres respaldo y restauración ligados a tu cuenta.',
+    'plan.featuresTitle': 'Beneficios incluidos',
+    'plan.featuresSubtitle':
+        'Estas son las herramientas habilitadas actualmente para tu nivel de acceso.',
 };
 
 const translations = { en, es } as const;
