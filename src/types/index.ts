@@ -477,3 +477,65 @@ export interface CreateCreditCardPayload {
 }
 
 export type UpdateCreditCardPayload = Partial<CreateCreditCardPayload>;
+
+export interface CreditCardCycleSnapshot {
+    start: string;
+    end: string;
+    spend: number;
+    expenseCount: number;
+}
+
+export interface CreditCardCreditStatus {
+    limit: number | null;
+    availableCredit: number | null;
+    utilizationPercent: number | null;
+}
+
+export interface CreditCardScheduleSnapshot {
+    nextClosingDate: string | null;
+    daysUntilClosing: number | null;
+    nextPaymentDueDate: string | null;
+    daysUntilPaymentDue: number | null;
+}
+
+export interface CreditCardRecurringSnapshot {
+    activeCount: number;
+    monthlyRecurringSpend: number;
+    nextChargeDate: string | null;
+}
+
+export interface CreditCardOverviewFlags {
+    missingLimit: boolean;
+    highUtilization: boolean;
+    overLimit: boolean;
+    paymentDueSoon: boolean;
+    closingSoon: boolean;
+}
+
+export interface CreditCardOverviewCard extends CreditCard {
+    currentCycle: CreditCardCycleSnapshot;
+    creditStatus: CreditCardCreditStatus;
+    schedule: CreditCardScheduleSnapshot;
+    subscriptions: CreditCardRecurringSnapshot;
+    flags: CreditCardOverviewFlags;
+}
+
+export interface CreditCardPortfolioOverview {
+    trackedCards: number;
+    activeCards: number;
+    cardsWithLimit: number;
+    totalCreditLimit: number;
+    totalCurrentCycleSpend: number;
+    totalAvailableCredit: number;
+    utilizationPercent: number | null;
+    paymentDueSoonCount: number;
+    highUtilizationCount: number;
+    linkedSubscriptionsCount: number;
+    monthlyRecurringSpend: number;
+}
+
+export interface CreditCardsOverviewResponse {
+    referenceDate: string;
+    portfolio: CreditCardPortfolioOverview;
+    cards: CreditCardOverviewCard[];
+}

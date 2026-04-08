@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     ScrollView,
     StyleSheet,
@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { useCreditCardsCatalog } from '../../hooks/useCreditCardsCatalog';
+import { useCreditCardsOverview } from '../../hooks/useCreditCardsOverview';
 import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { HomeBackground } from '../../components/ui/HomeBackground';
 import { Button } from '../../components/ui/Button';
@@ -30,6 +31,31 @@ import {
 } from '../../theme';
 import { withAlpha } from '../../utils/subscriptions';
 import { usePremiumAccess } from '../../hooks/usePremiumAccess';
+import { CreditCardOverviewCard } from '../../types';
+
+type SignalTone = 'warning' | 'danger' | 'muted';
+
+type SignalItem = {
+    key: string;
+    label: string;
+    tone: SignalTone;
+};
+
+function formatShortDate(date: string | null, locale: 'es-MX' | 'en-US') {
+    if (!date) {
+        return null;
+    }
+
+    const parsed = new Date(`${date}T12:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+        return null;
+    }
+
+    return new Intl.DateTimeFormat(locale, {
+        month: 'short',
+        day: 'numeric',
+    }).format(parsed);
+}
 
 export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditCards'>) {
     const { colors } = useTheme();
@@ -49,6 +75,14 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
         deactivateCard,
         updateCard,
     } = useCreditCardsCatalog({ includeInactive: true, enabled: hasPremium });
+    const { overview } = useCreditCardsOverview({
+        includeInactive: true,
+        enabled: hasPremium,
+    });
+
+    const overviewById = useMemo(() => {
+        return new Map((overview?.cards ?? []).map((card) => [card.id, card]));
+    }, [overview?.cards]);
 
     if (!hasPremium) {
         return (
@@ -58,6 +92,87 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
             />
         );
     }
+
+    const formatMoney = (amount: number | null | undefined) => {
+        if (amount == null) {
+            return t('common.notAvailable');
+        }
+
+        return formatCurrency(amount, user?.currency, locale);
+    };
+
+    const formatUtilization = (value: number | null | undefined) => {
+        if (value == null) {
+            return t('common.notAvailable');
+        }
+
+        const normalized = Number.isInteger(value) ? String(value) : value.toFixed(1);
+        return `${normalized}%`;
+    };
+
+    const formatTimeline = (days: number | null | undefined) => {
+        if (days == null) {
+            return t('creditCards.noSchedule');
+        }
+
+        if (days === 0) {
+            return t('creditCards.today');
+        }
+
+        if (days === 1) {
+            return t('creditCards.tomorrow');
+        }
+
+        return t('creditCards.inDays', { count: days });
+    };
+
+    const buildSignals = (card: CreditCardOverviewCard | undefined): SignalItem[] => {
+        if (!card) {
+            return [];
+        }
+
+        const items: SignalItem[] = [];
+
+        if (card.flags.overLimit) {
+            items.push({
+                key: 'overLimit',
+                label: t('creditCards.overLimit'),
+                tone: 'danger',
+            });
+        } else if (card.flags.highUtilization) {
+            items.push({
+                key: 'highUsage',
+                label: t('creditCards.highUsage'),
+                tone: 'warning',
+            });
+        }
+
+        if (card.flags.paymentDueSoon) {
+            items.push({
+                key: 'dueSoon',
+                label: t('creditCards.dueSoon'),
+                tone: 'warning',
+            });
+        }
+
+        if (card.flags.closingSoon) {
+            items.push({
+                key: 'closesSoon',
+                label: t('creditCards.closesSoon'),
+                tone: 'muted',
+            });
+        }
+
+        if (card.flags.missingLimit) {
+            items.push({
+                key: 'limitMissing',
+                label: t('creditCards.limitMissing'),
+                tone: 'muted',
+            });
+        }
+
+        return items;
+    };
 
     const handleDeactivate = (id: string, name: string) => {
         alert(
@@ -175,160 +290,440 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                         </View>
                     ) : (
                         <View style={styles.list}>
-                            {cards.map((card) => (
+                            {overview ? (
                                 <View
-                                    key={card.id}
                                     style={[
-                                        styles.cardItem,
+                                        styles.summaryCard,
                                         {
-                                            borderColor: withAlpha(
-                                                card.color || colors.primaryAction,
-                                                0.28,
-                                            ),
+                                            borderColor: withAlpha(colors.primaryAction, 0.28),
                                         },
                                     ]}
                                 >
-                                    <View style={styles.cardTopRow}>
-                                        <View style={styles.cardIdentityRow}>
-                                            <View
-                                                style={[
-                                                    styles.cardColorDot,
-                                                    {
-                                                        backgroundColor:
-                                                            card.color || colors.primaryAction,
-                                                    },
-                                                ]}
-                                            />
-                                            <View style={styles.cardTextWrap}>
-                                                <Text
-                                                    style={[
-                                                        styles.cardTitle,
-                                                        { fontSize: scaleFont(typography.fontSize.base) },
-                                                    ]}
-                                                >
-                                                    {formatCreditCardLabel(card)}
-                                                </Text>
-                                                <Text
-                                                    style={[
-                                                        styles.cardSubtitle,
-                                                        { fontSize: scaleFont(typography.fontSize.xs) },
-                                                    ]}
-                                                >
-                                                    {formatCreditCardSummary(card)}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        <View
-                                            style={[
-                                                styles.statusPill,
-                                                card.isActive
-                                                    ? styles.statusPillActive
-                                                    : styles.statusPillInactive,
-                                            ]}
-                                        >
+                                    <View style={styles.summaryHeaderRow}>
+                                        <View style={styles.summaryTextWrap}>
                                             <Text
                                                 style={[
-                                                    styles.statusText,
+                                                    styles.summaryTitle,
+                                                    { fontSize: scaleFont(typography.fontSize.lg) },
+                                                ]}
+                                            >
+                                                {t('creditCards.walletTitle')}
+                                            </Text>
+                                            <Text
+                                                style={[
+                                                    styles.summarySubtitle,
+                                                    { fontSize: scaleFont(typography.fontSize.sm) },
+                                                ]}
+                                            >
+                                                {t('creditCards.walletHint')}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.utilizationPill}>
+                                            <Text
+                                                style={[
+                                                    styles.utilizationPillText,
                                                     { fontSize: scaleFont(typography.fontSize.xs) },
                                                 ]}
                                             >
-                                                {t(
-                                                    card.isActive
-                                                        ? 'creditCards.active'
-                                                        : 'creditCards.inactive',
-                                                )}
+                                                {formatUtilization(overview.portfolio.utilizationPercent)}
                                             </Text>
                                         </View>
                                     </View>
 
-                                    <View style={styles.metaGrid}>
-                                        <View style={styles.metaBlock}>
+                                    <View style={styles.summaryGrid}>
+                                        <View style={styles.summaryMetric}>
                                             <Text
                                                 style={[
-                                                    styles.metaLabel,
+                                                    styles.summaryLabel,
                                                     { fontSize: scaleFont(typography.fontSize.xs) },
                                                 ]}
                                             >
-                                                {t('creditCards.limit')}
+                                                {t('creditCards.currentCycle')}
                                             </Text>
                                             <Text
                                                 style={[
-                                                    styles.metaValue,
-                                                    { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    styles.summaryValue,
+                                                    { fontSize: scaleFont(typography.fontSize.base) },
                                                 ]}
                                             >
-                                                {card.creditLimit != null
-                                                    ? formatCurrency(card.creditLimit, user?.currency, locale)
+                                                {formatMoney(overview.portfolio.totalCurrentCycleSpend)}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.summaryMetric}>
+                                            <Text
+                                                style={[
+                                                    styles.summaryLabel,
+                                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                                ]}
+                                            >
+                                                {t('creditCards.availableCredit')}
+                                            </Text>
+                                            <Text
+                                                style={[
+                                                    styles.summaryValue,
+                                                    { fontSize: scaleFont(typography.fontSize.base) },
+                                                ]}
+                                            >
+                                                {overview.portfolio.cardsWithLimit > 0
+                                                    ? formatMoney(overview.portfolio.totalAvailableCredit)
                                                     : t('common.notAvailable')}
                                             </Text>
                                         </View>
-                                        <View style={styles.metaBlock}>
+                                        <View style={styles.summaryMetric}>
                                             <Text
                                                 style={[
-                                                    styles.metaLabel,
+                                                    styles.summaryLabel,
                                                     { fontSize: scaleFont(typography.fontSize.xs) },
                                                 ]}
                                             >
-                                                {t('creditCards.closingDay')}
+                                                {t('creditCards.dueSoon')}
                                             </Text>
                                             <Text
                                                 style={[
-                                                    styles.metaValue,
-                                                    { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    styles.summaryValue,
+                                                    { fontSize: scaleFont(typography.fontSize.base) },
                                                 ]}
                                             >
-                                                {card.closingDay ?? t('common.notAvailable')}
+                                                {overview.portfolio.paymentDueSoonCount}
                                             </Text>
                                         </View>
-                                        <View style={styles.metaBlock}>
+                                        <View style={styles.summaryMetric}>
                                             <Text
                                                 style={[
-                                                    styles.metaLabel,
+                                                    styles.summaryLabel,
                                                     { fontSize: scaleFont(typography.fontSize.xs) },
                                                 ]}
                                             >
-                                                {t('creditCards.paymentDueDay')}
+                                                {t('creditCards.monthlyRecurring')}
                                             </Text>
                                             <Text
                                                 style={[
-                                                    styles.metaValue,
-                                                    { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    styles.summaryValue,
+                                                    { fontSize: scaleFont(typography.fontSize.base) },
                                                 ]}
                                             >
-                                                {card.paymentDueDay ?? t('common.notAvailable')}
+                                                {formatMoney(overview.portfolio.monthlyRecurringSpend)}
                                             </Text>
                                         </View>
-                                    </View>
-
-                                    <View style={styles.actionsRow}>
-                                        <Button
-                                            title={t('common.edit')}
-                                            variant="secondary"
-                                            onPress={() => handleEditCard(card)}
-                                            containerStyle={styles.actionButton}
-                                            textStyle={styles.actionButtonText}
-                                        />
-                                        {card.isActive ? (
-                                            <Button
-                                                title={t('creditCards.deactivateAction')}
-                                                variant="danger"
-                                                onPress={() => handleDeactivate(card.id, card.name)}
-                                                disabled={isRemoving}
-                                                containerStyle={styles.actionButton}
-                                                textStyle={styles.actionButtonText}
-                                            />
-                                        ) : (
-                                            <Button
-                                                title={t('creditCards.activateAction')}
-                                                onPress={() => handleActivate(card.id)}
-                                                disabled={isUpdating}
-                                                containerStyle={styles.actionButton}
-                                                textStyle={styles.actionButtonText}
-                                            />
-                                        )}
                                     </View>
                                 </View>
-                            ))}
+                            ) : null}
+
+                            {cards.map((card) => {
+                                const cardOverview = overviewById.get(card.id);
+                                const signals = buildSignals(cardOverview);
+                                const nextClosing = formatShortDate(
+                                    cardOverview?.schedule.nextClosingDate ?? null,
+                                    locale,
+                                );
+                                const nextPayment = formatShortDate(
+                                    cardOverview?.schedule.nextPaymentDueDate ?? null,
+                                    locale,
+                                );
+
+                                return (
+                                    <View
+                                        key={card.id}
+                                        style={[
+                                            styles.cardItem,
+                                            {
+                                                borderColor: withAlpha(
+                                                    card.color || colors.primaryAction,
+                                                    0.28,
+                                                ),
+                                            },
+                                        ]}
+                                    >
+                                        <View style={styles.cardTopRow}>
+                                            <View style={styles.cardIdentityRow}>
+                                                <View
+                                                    style={[
+                                                        styles.cardColorDot,
+                                                        {
+                                                            backgroundColor:
+                                                                card.color || colors.primaryAction,
+                                                        },
+                                                    ]}
+                                                />
+                                                <View style={styles.cardTextWrap}>
+                                                    <Text
+                                                        style={[
+                                                            styles.cardTitle,
+                                                            { fontSize: scaleFont(typography.fontSize.base) },
+                                                        ]}
+                                                    >
+                                                        {formatCreditCardLabel(card)}
+                                                    </Text>
+                                                    <Text
+                                                        style={[
+                                                            styles.cardSubtitle,
+                                                            { fontSize: scaleFont(typography.fontSize.xs) },
+                                                        ]}
+                                                    >
+                                                        {formatCreditCardSummary(card)}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <View
+                                                style={[
+                                                    styles.statusPill,
+                                                    card.isActive
+                                                        ? styles.statusPillActive
+                                                        : styles.statusPillInactive,
+                                                ]}
+                                            >
+                                                <Text
+                                                    style={[
+                                                        styles.statusText,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t(
+                                                        card.isActive
+                                                            ? 'creditCards.active'
+                                                            : 'creditCards.inactive',
+                                                    )}
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        {signals.length ? (
+                                            <View style={styles.signalRow}>
+                                                {signals.map((signal) => {
+                                                    const signalColor = signal.tone === 'danger'
+                                                        ? colors.error
+                                                        : signal.tone === 'warning'
+                                                            ? colors.warning
+                                                            : colors.textMuted;
+
+                                                    return (
+                                                        <View
+                                                            key={`${card.id}-${signal.key}`}
+                                                            style={[
+                                                                styles.signalChip,
+                                                                {
+                                                                    backgroundColor: withAlpha(signalColor, 0.14),
+                                                                    borderColor: withAlpha(signalColor, 0.3),
+                                                                },
+                                                            ]}
+                                                        >
+                                                            <Text
+                                                                style={[
+                                                                    styles.signalText,
+                                                                    {
+                                                                        color: signalColor,
+                                                                        fontSize: scaleFont(typography.fontSize.xs),
+                                                                    },
+                                                                ]}
+                                                            >
+                                                                {signal.label}
+                                                            </Text>
+                                                        </View>
+                                                    );
+                                                })}
+                                            </View>
+                                        ) : null}
+
+                                        <View style={styles.metaGrid}>
+                                            <View style={styles.metaBlock}>
+                                                <Text
+                                                    style={[
+                                                        styles.metaLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('creditCards.currentCycle')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaValue,
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    ]}
+                                                >
+                                                    {formatMoney(cardOverview?.currentCycle.spend)}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaHint,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('creditCards.expensesInCycle', {
+                                                        count: cardOverview?.currentCycle.expenseCount ?? 0,
+                                                    })}
+                                                </Text>
+                                            </View>
+
+                                            <View style={styles.metaBlock}>
+                                                <Text
+                                                    style={[
+                                                        styles.metaLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('creditCards.availableCredit')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaValue,
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    ]}
+                                                >
+                                                    {formatMoney(cardOverview?.creditStatus.availableCredit)}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaHint,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('creditCards.limit')} {formatMoney(cardOverview?.creditStatus.limit)}
+                                                </Text>
+                                            </View>
+
+                                            <View style={styles.metaBlock}>
+                                                <Text
+                                                    style={[
+                                                        styles.metaLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('creditCards.utilization')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaValue,
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    ]}
+                                                >
+                                                    {formatUtilization(cardOverview?.creditStatus.utilizationPercent)}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaHint,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {cardOverview?.flags.missingLimit
+                                                        ? t('creditCards.limitMissing')
+                                                        : t('creditCards.walletHint')}
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.metaGrid}>
+                                            <View style={styles.metaBlock}>
+                                                <Text
+                                                    style={[
+                                                        styles.metaLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('creditCards.nextClosing')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaValue,
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    ]}
+                                                >
+                                                    {nextClosing ?? t('common.notAvailable')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaHint,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {formatTimeline(cardOverview?.schedule.daysUntilClosing)}
+                                                </Text>
+                                            </View>
+
+                                            <View style={styles.metaBlock}>
+                                                <Text
+                                                    style={[
+                                                        styles.metaLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('creditCards.nextPayment')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaValue,
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    ]}
+                                                >
+                                                    {nextPayment ?? t('common.notAvailable')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaHint,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {formatTimeline(cardOverview?.schedule.daysUntilPaymentDue)}
+                                                </Text>
+                                            </View>
+
+                                            <View style={styles.metaBlock}>
+                                                <Text
+                                                    style={[
+                                                        styles.metaLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('creditCards.linkedSubscriptions')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaValue,
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    ]}
+                                                >
+                                                    {cardOverview?.subscriptions.activeCount ?? 0}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.metaHint,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {formatMoney(cardOverview?.subscriptions.monthlyRecurringSpend ?? 0)}
+                                                </Text>
+                                            </View>
+                                        </View>
+
+                                        <View style={styles.actionsRow}>
+                                            <Button
+                                                title={t('common.edit')}
+                                                variant="secondary"
+                                                onPress={() => handleEditCard(card)}
+                                                containerStyle={styles.actionButton}
+                                                textStyle={styles.actionButtonText}
+                                            />
+                                            {card.isActive ? (
+                                                <Button
+                                                    title={t('creditCards.deactivateAction')}
+                                                    variant="danger"
+                                                    onPress={() => handleDeactivate(card.id, card.name)}
+                                                    disabled={isRemoving}
+                                                    containerStyle={styles.actionButton}
+                                                    textStyle={styles.actionButtonText}
+                                                />
+                                            ) : (
+                                                <Button
+                                                    title={t('creditCards.activateAction')}
+                                                    onPress={() => handleActivate(card.id)}
+                                                    disabled={isUpdating}
+                                                    containerStyle={styles.actionButton}
+                                                    textStyle={styles.actionButtonText}
+                                                />
+                                            )}
+                                        </View>
+                                    </View>
+                                );
+                            })}
                         </View>
                     )}
                 </ScrollView>
@@ -410,6 +805,66 @@ const createStyles = (colors: any) => StyleSheet.create({
     list: {
         gap: spacing.base,
     },
+    summaryCard: {
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        padding: spacing.base,
+        gap: spacing.base,
+    },
+    summaryHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: spacing.sm,
+    },
+    summaryTextWrap: {
+        flex: 1,
+        gap: spacing.xs,
+    },
+    summaryTitle: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.bold,
+    },
+    summarySubtitle: {
+        color: colors.textSecondary,
+        lineHeight: 20,
+    },
+    utilizationPill: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+        backgroundColor: withAlpha(colors.primaryAction, 0.18),
+        borderWidth: 1,
+        borderColor: withAlpha(colors.primaryAction, 0.32),
+    },
+    utilizationPillText: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    summaryGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+    },
+    summaryMetric: {
+        flexBasis: '48%',
+        flexGrow: 1,
+        backgroundColor: colors.surfaceElevated,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.sm,
+        gap: 4,
+    },
+    summaryLabel: {
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.medium,
+    },
+    summaryValue: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
+    },
     cardItem: {
         backgroundColor: colors.surface,
         borderRadius: borderRadius.xl,
@@ -463,6 +918,20 @@ const createStyles = (colors: any) => StyleSheet.create({
         color: colors.textSecondary,
         fontWeight: typography.fontWeight.semibold,
     },
+    signalRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.xs,
+    },
+    signalChip: {
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 6,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+    },
+    signalText: {
+        fontWeight: typography.fontWeight.semibold,
+    },
     metaGrid: {
         flexDirection: 'row',
         gap: spacing.sm,
@@ -483,6 +952,10 @@ const createStyles = (colors: any) => StyleSheet.create({
     metaValue: {
         color: colors.textPrimary,
         fontWeight: typography.fontWeight.semibold,
+    },
+    metaHint: {
+        color: colors.textSecondary,
+        lineHeight: 16,
     },
     actionsRow: {
         flexDirection: 'row',
