@@ -44,6 +44,24 @@ function parsePickerDate(value?: string) {
     return new Date();
 }
 
+function formatInsightRange(
+    start: string,
+    end: string,
+    language: 'en' | 'es',
+) {
+    const locale = language === 'es' ? 'es-ES' : 'en-US';
+    const startLabel = new Date(`${start}T12:00:00`).toLocaleDateString(locale, {
+        month: 'short',
+        day: 'numeric',
+    });
+    const endLabel = new Date(`${end}T12:00:00`).toLocaleDateString(locale, {
+        month: 'short',
+        day: 'numeric',
+    });
+
+    return `${startLabel} - ${endLabel}`;
+}
+
 function getReadableIconColor(backgroundColor: string): string {
     const normalized = backgroundColor.replace('#', '').trim();
     if (!/^[\da-fA-F]{3}$|^[\da-fA-F]{6}$/.test(normalized)) {
@@ -75,12 +93,14 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
         scaleFont,
         scaleSize,
     } = useResponsive();
-    const { t, language } = useI18n();
+    const { t, tPlural, language } = useI18n();
     const [selectedDailyDate, setSelectedDailyDate] = React.useState(todayISO());
     const [showDatePicker, setShowDatePicker] = React.useState(false);
+    const [savingsHorizonMonths, setSavingsHorizonMonths] = React.useState(6);
     const {
         dailyTotals,
         categories,
+        insights,
         weeklySummary,
         isLoading,
         showSkeleton,
@@ -89,7 +109,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
         weeklyBudgetAmount,
         weeklyPeriodLabel,
         weeklyPeriodRange,
-    } = useAnalytics(selectedDailyDate);
+    } = useAnalytics(selectedDailyDate, savingsHorizonMonths);
     const bottomPadding = getMainTabListBottomPadding({
         insetsBottom: insets.bottom,
         isSmallPhone,
@@ -159,6 +179,73 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
 
         setShowDatePicker((prev) => !prev);
     }, [onChangeSelectedDate, selectedDailyDateValue]);
+    const getChangeSummary = React.useCallback((changeAmount: number, changePercent: number | null) => {
+        if (Math.abs(changeAmount) < 0.005) {
+            return {
+                label: t('analytics.sameAsPrevious'),
+                color: colors.textMuted,
+                backgroundColor: withAlpha(colors.textMuted, 0.12),
+            };
+        }
+
+        const amountLabel = formatCurrency(Math.abs(changeAmount), user?.currency);
+        const percentLabel = changePercent !== null ? ` (${Math.abs(changePercent).toFixed(1)}%)` : '';
+        if (changeAmount > 0) {
+            return {
+                label: t('analytics.moreThanPrevious', {
+                    amount: `${amountLabel}${percentLabel}`,
+                }),
+                color: colors.error,
+                backgroundColor: withAlpha(colors.error, 0.12),
+            };
+        }
+
+        return {
+            label: t('analytics.lessThanPrevious', {
+                amount: `${amountLabel}${percentLabel}`,
+            }),
+            color: colors.success,
+            backgroundColor: withAlpha(colors.success, 0.12),
+        };
+    }, [colors.error, colors.success, colors.textMuted, t, user?.currency]);
+    const renderSpendMetric = React.useCallback((params: {
+        title: string;
+        total: number;
+        start: string;
+        end: string;
+        changeAmount: number;
+        changePercent: number | null;
+    }) => {
+        const changeSummary = getChangeSummary(params.changeAmount, params.changePercent);
+        const rangeLabel = formatInsightRange(params.start, params.end, language);
+
+        return (
+            <View style={styles.insightMetricCard}>
+                <Text style={[styles.insightMetricLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                    {params.title}
+                </Text>
+                <Text style={[styles.insightMetricAmount, { fontSize: scaleFont(typography.fontSize.xl) }]}>
+                    {formatCurrency(params.total, user?.currency)}
+                </Text>
+                <Text style={[styles.insightMetricRange, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                    {rangeLabel}
+                </Text>
+                <View style={[styles.insightChangePill, { backgroundColor: changeSummary.backgroundColor }]}>
+                    <Text
+                        style={[
+                            styles.insightChangeText,
+                            {
+                                fontSize: scaleFont(typography.fontSize.xs),
+                                color: changeSummary.color,
+                            },
+                        ]}
+                    >
+                        {changeSummary.label}
+                    </Text>
+                </View>
+            </View>
+        );
+    }, [getChangeSummary, language, scaleFont, styles.insightChangePill, styles.insightChangeText, styles.insightMetricAmount, styles.insightMetricCard, styles.insightMetricLabel, styles.insightMetricRange, user?.currency]);
     const weeklySummaryCard = (
         <View
             style={[
@@ -211,6 +298,193 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
             </Text>
         </View>
     );
+    const spendingSignalsCard = insights ? (
+        <View
+            style={[
+                styles.glassCard,
+                {
+                    padding: cardPadding,
+                },
+            ]}
+        >
+            <Text style={[styles.cardTitle, { fontSize: scaleFont(typography.fontSize.base) }]}>
+                {t('analytics.spendingSignals')}
+            </Text>
+            <View style={styles.insightGrid}>
+                {renderSpendMetric({
+                    title: t('analytics.weekToDate'),
+                    total: insights.weeklySpend.totalSpent,
+                    start: insights.weeklySpend.start,
+                    end: insights.weeklySpend.end,
+                    changeAmount: insights.weeklySpend.changeAmount,
+                    changePercent: insights.weeklySpend.changePercent,
+                })}
+                {renderSpendMetric({
+                    title: t('analytics.monthToDate'),
+                    total: insights.monthlySpend.totalSpent,
+                    start: insights.monthlySpend.start,
+                    end: insights.monthlySpend.end,
+                    changeAmount: insights.monthlySpend.changeAmount,
+                    changePercent: insights.monthlySpend.changePercent,
+                })}
+            </View>
+            <Text style={[styles.insightFootnote, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                {t('analytics.projectedMonthEnd', {
+                    amount: formatCurrency(insights.monthlySpend.projectedTotal, user?.currency),
+                })}
+            </Text>
+            <View style={styles.topCategoryRow}>
+                <View
+                    style={[
+                        styles.topCategoryIcon,
+                        {
+                            backgroundColor: insights.topCategory?.color
+                                ? withAlpha(insights.topCategory.color, 0.18)
+                                : withAlpha(colors.primaryLight, 0.18),
+                        },
+                    ]}
+                >
+                    <CategoryIcon
+                        icon={insights.topCategory?.icon}
+                        categoryName={insights.topCategory?.name ?? 'Other'}
+                        size={16}
+                        color={getReadableIconColor(insights.topCategory?.color || colors.primaryLight)}
+                    />
+                </View>
+                <Text style={[styles.insightFootnote, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                    {insights.topCategory
+                        ? t('analytics.topCategoryImpact', {
+                            name: insights.topCategory.name,
+                            percent: Math.round(insights.topCategory.percentage),
+                        })
+                        : t('analytics.noCategoryImpact')}
+                </Text>
+            </View>
+        </View>
+    ) : null;
+    const subscriptionSavingsCard = insights ? (
+        <View
+            style={[
+                styles.glassCard,
+                {
+                    padding: cardPadding,
+                },
+            ]}
+        >
+            <Text style={[styles.cardTitle, { fontSize: scaleFont(typography.fontSize.base) }]}>
+                {t('analytics.subscriptionSavingsTitle')}
+            </Text>
+            <View style={styles.horizonRow}>
+                {[3, 6, 12].map((months) => {
+                    const isActive = savingsHorizonMonths === months;
+                    return (
+                        <TouchableOpacity
+                            key={months}
+                            activeOpacity={0.84}
+                            onPress={() => setSavingsHorizonMonths(months)}
+                            style={[
+                                styles.horizonChip,
+                                isActive ? styles.horizonChipActive : null,
+                            ]}
+                        >
+                            <Text
+                                style={[
+                                    styles.horizonChipText,
+                                    isActive ? styles.horizonChipTextActive : null,
+                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                ]}
+                            >
+                                {months}M
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
+            <Text
+                style={[
+                    styles.heroAmount,
+                    { fontSize: scaleFont(typography.fontSize['4xl']) },
+                ]}
+            >
+                {formatCurrency(insights.subscriptionSavings.projectedSavings, user?.currency)}
+            </Text>
+            <Text style={[styles.insightFootnote, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                {t('analytics.saveByCancelling', {
+                    amount: formatCurrency(
+                        insights.subscriptionSavings.projectedSavings,
+                        user?.currency,
+                    ),
+                    months: savingsHorizonMonths,
+                })}
+            </Text>
+            <Text style={[styles.insightMetricRange, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                {tPlural('analytics.activeSubscriptionsMeta', insights.subscriptionSavings.activeSubscriptions, {
+                    amount: formatCurrency(
+                        insights.subscriptionSavings.monthlyRecurringSpend,
+                        user?.currency,
+                    ),
+                })}
+            </Text>
+            {insights.subscriptionSavings.topSubscriptions.length > 0 ? (
+                <View style={styles.subscriptionOpportunityList}>
+                    <Text
+                        style={[
+                            styles.cardTitle,
+                            styles.subsectionTitle,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                    >
+                        {t('analytics.topSubscriptions')}
+                    </Text>
+                    {insights.subscriptionSavings.topSubscriptions.map((subscription) => (
+                        <View key={subscription.id} style={styles.subscriptionOpportunityRow}>
+                            <View style={styles.subscriptionOpportunityInfo}>
+                                <Text
+                                    style={[
+                                        styles.categoryName,
+                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                    ]}
+                                    numberOfLines={1}
+                                >
+                                    {subscription.name}
+                                </Text>
+                                <Text
+                                    style={[
+                                        styles.subscriptionOpportunityMeta,
+                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                    ]}
+                                >
+                                    {formatCurrency(
+                                        subscription.monthlyEquivalent,
+                                        subscription.currency || user?.currency,
+                                    )}
+                                    {language === 'es' ? '/mes' : '/mo'}
+                                </Text>
+                            </View>
+                            <Text
+                                style={[
+                                    styles.subscriptionOpportunitySavings,
+                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                ]}
+                            >
+                                {t('analytics.saveInMonths', {
+                                    amount: formatCurrency(
+                                        subscription.projectedSavings,
+                                        subscription.currency || user?.currency,
+                                    ),
+                                    months: savingsHorizonMonths,
+                                })}
+                            </Text>
+                        </View>
+                    ))}
+                </View>
+            ) : (
+                <Text style={[styles.insightFootnote, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                    {t('analytics.noSubscriptionsToOptimize')}
+                </Text>
+            )}
+        </View>
+    ) : null;
     const dailyTrendCard = (
         <View
             style={[
@@ -441,6 +715,8 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                     ) : (
                         <>
                             {weeklySummaryCard}
+                            {spendingSignalsCard}
+                            {subscriptionSavingsCard}
                             {dailyTrendCard}
                             {categoryCard}
                         </>
@@ -515,6 +791,110 @@ const createStyles = (colors: any) => StyleSheet.create({
         fontWeight: typography.fontWeight.semibold,
         color: colors.textSecondary,
         marginBottom: spacing.md,
+    },
+    insightGrid: {
+        gap: spacing.md,
+    },
+    insightMetricCard: {
+        backgroundColor: colors.surfaceElevated,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.md,
+    },
+    insightMetricLabel: {
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 0.8,
+    },
+    insightMetricAmount: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.bold,
+        marginTop: spacing.xs,
+    },
+    insightMetricRange: {
+        color: colors.textMuted,
+        marginTop: spacing.xs,
+    },
+    insightChangePill: {
+        marginTop: spacing.sm,
+        alignSelf: 'flex-start',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+    },
+    insightChangeText: {
+        fontWeight: typography.fontWeight.semibold,
+    },
+    insightFootnote: {
+        color: colors.textSecondary,
+        marginTop: spacing.md,
+    },
+    topCategoryRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginTop: spacing.sm,
+    },
+    topCategoryIcon: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    horizonRow: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginBottom: spacing.sm,
+    },
+    horizonChip: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs + 2,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceElevated,
+    },
+    horizonChipActive: {
+        backgroundColor: colors.primaryAction,
+        borderColor: colors.primaryAction,
+    },
+    horizonChipText: {
+        color: colors.textSecondary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    horizonChipTextActive: {
+        color: '#FFFFFF',
+    },
+    subsectionTitle: {
+        marginTop: spacing.lg,
+        marginBottom: spacing.sm,
+    },
+    subscriptionOpportunityList: {
+        marginTop: spacing.sm,
+    },
+    subscriptionOpportunityRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: spacing.sm,
+        paddingVertical: spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+    },
+    subscriptionOpportunityInfo: {
+        flex: 1,
+    },
+    subscriptionOpportunityMeta: {
+        color: colors.textMuted,
+        marginTop: 2,
+    },
+    subscriptionOpportunitySavings: {
+        color: colors.success,
+        fontWeight: typography.fontWeight.semibold,
+        textAlign: 'right',
+        flexShrink: 1,
     },
     iosDatePickerCard: {
         marginTop: spacing.md,

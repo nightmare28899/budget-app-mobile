@@ -1,4 +1,9 @@
 import {
+    AnalyticsCategoryImpact,
+    AnalyticsInsights,
+    AnalyticsSpendInsight,
+    AnalyticsSubscriptionOpportunity,
+    AnalyticsSubscriptionSavings,
     BudgetSummary,
     Category,
     CategoryBreakdown,
@@ -35,6 +40,58 @@ function daysInRangeInclusive(start: Date, end: Date) {
     const endUtc = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
     const diff = Math.round((endUtc - startUtc) / (24 * 60 * 60 * 1000));
     return Math.max(diff + 1, 1);
+}
+
+function startOfDay(date: Date) {
+    const next = new Date(date);
+    next.setHours(0, 0, 0, 0);
+    return next;
+}
+
+function endOfDay(date: Date) {
+    const next = new Date(date);
+    next.setHours(23, 59, 59, 999);
+    return next;
+}
+
+function startOfWeek(date: Date) {
+    const next = startOfDay(date);
+    const dayOfWeek = next.getDay();
+    next.setDate(next.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    return next;
+}
+
+function startOfMonth(date: Date) {
+    return startOfDay(new Date(date.getFullYear(), date.getMonth(), 1));
+}
+
+function addDays(date: Date, days: number) {
+    const next = new Date(date);
+    next.setDate(next.getDate() + days);
+    return next;
+}
+
+function getDaysInMonth(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
+
+function roundMoney(value: number) {
+    return Math.round(value * 100) / 100;
+}
+
+function roundPercent(value: number) {
+    return Math.round(value * 10) / 10;
+}
+
+function normalizeHorizonMonths(raw?: number) {
+    return Math.min(24, Math.max(1, Math.floor(raw || 6)));
+}
+
+function formatDateLocal(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 function getBudgetPeriod(user: User | null) {
@@ -368,6 +425,207 @@ export function buildWeeklySummary({
         remaining: weeklyBudget - totalSpent,
         expenseCount: weeklyExpenses.length,
         dailyAverage: totalSpent / 7,
+    };
+}
+
+function buildSpendInsight(
+    expenses: Expense[],
+    currentStart: Date,
+    currentEnd: Date,
+    previousStart: Date,
+    previousEnd: Date,
+): AnalyticsSpendInsight {
+    const currentExpenses = filterExpensesByPeriod(expenses, currentStart, currentEnd);
+    const previousExpenses = filterExpensesByPeriod(expenses, previousStart, previousEnd);
+    const totalSpent = currentExpenses.reduce((sum, expense) => sum + toNum(expense.cost), 0);
+    const previousTotalSpent = previousExpenses.reduce(
+        (sum, expense) => sum + toNum(expense.cost),
+        0,
+    );
+    const changeAmount = totalSpent - previousTotalSpent;
+    const trackedDays = daysInRangeInclusive(currentStart, currentEnd);
+
+    return {
+        start: formatDateLocal(currentStart),
+        end: formatDateLocal(currentEnd),
+        totalSpent: roundMoney(totalSpent),
+        expenseCount: currentExpenses.length,
+        averagePerDay: roundMoney(totalSpent / trackedDays),
+        previousStart: formatDateLocal(previousStart),
+        previousEnd: formatDateLocal(previousEnd),
+        previousTotalSpent: roundMoney(previousTotalSpent),
+        changeAmount: roundMoney(changeAmount),
+        changePercent: previousTotalSpent > 0
+            ? roundPercent((changeAmount / previousTotalSpent) * 100)
+            : null,
+    };
+}
+
+function buildTopCategoryImpact(
+    expenses: Expense[],
+    categories: Category[],
+): AnalyticsCategoryImpact | null {
+    const totals = new Map<string, AnalyticsCategoryImpact>();
+
+    for (const expense of expenses) {
+        const categoryId = expense.categoryId ?? expense.category?.id ?? 'uncategorized';
+        const category =
+            expense.category
+            ?? categories.find((item) => item.id === categoryId)
+            ?? null;
+        const name = category?.name ?? 'Other';
+        const current = totals.get(name);
+
+        totals.set(name, {
+            name,
+            icon: category?.icon ?? 'cube-outline',
+            color: category?.color ?? '#95A5A6',
+            total: (current?.total ?? 0) + toNum(expense.cost),
+            percentage: 0,
+        });
+    }
+
+    const values = Array.from(totals.values()).sort((a, b) => b.total - a.total);
+    if (!values.length) {
+        return null;
+    }
+
+    const grandTotal = values.reduce((sum, item) => sum + item.total, 0);
+    const top = values[0];
+
+    return {
+        ...top,
+        total: roundMoney(top.total),
+        percentage: grandTotal > 0 ? roundPercent((top.total / grandTotal) * 100) : 0,
+    };
+}
+
+function getMonthlyFactor(billingCycle?: Subscription['billingCycle'] | 'DAILY') {
+    switch (billingCycle) {
+        case 'DAILY':
+            return 365 / 12;
+        case 'WEEKLY':
+            return 52 / 12;
+        case 'YEARLY':
+            return 1 / 12;
+        case 'MONTHLY':
+        default:
+            return 1;
+    }
+}
+
+function buildSubscriptionSavings(
+    subscriptions: Subscription[],
+    horizonMonths: number,
+    now: Date,
+): AnalyticsSubscriptionSavings {
+    const activeSubscriptions = subscriptions.filter((subscription) => {
+        if (subscription.isActive === false) {
+            return false;
+        }
+
+        if (!subscription.createdAt) {
+            return true;
+        }
+
+        const createdAt = new Date(subscription.createdAt);
+        return !Number.isNaN(createdAt.getTime()) && createdAt.getTime() <= now.getTime();
+    });
+
+    const topSubscriptions: AnalyticsSubscriptionOpportunity[] = activeSubscriptions
+        .map((subscription) => {
+            const monthlyEquivalent = toNum(subscription.cost) * getMonthlyFactor(subscription.billingCycle);
+
+            return {
+                id: subscription.id,
+                name: subscription.name,
+                currency: subscription.currency,
+                billingCycle: subscription.billingCycle,
+                amount: roundMoney(toNum(subscription.cost)),
+                monthlyEquivalent: roundMoney(monthlyEquivalent),
+                projectedSavings: roundMoney(monthlyEquivalent * horizonMonths),
+                nextPaymentDate: String(subscription.nextPaymentDate).slice(0, 10),
+            };
+        })
+        .sort((a, b) => b.monthlyEquivalent - a.monthlyEquivalent)
+        .slice(0, 3);
+
+    const monthlyRecurringSpend = activeSubscriptions.reduce(
+        (sum, subscription) => sum + toNum(subscription.cost) * getMonthlyFactor(subscription.billingCycle),
+        0,
+    );
+
+    return {
+        horizonMonths,
+        monthlyRecurringSpend: roundMoney(monthlyRecurringSpend),
+        projectedSavings: roundMoney(monthlyRecurringSpend * horizonMonths),
+        activeSubscriptions: activeSubscriptions.length,
+        topSubscriptions,
+    };
+}
+
+export function buildAnalyticsInsights({
+    expenses,
+    subscriptions = [],
+    categories = [],
+    now,
+}: LocalFinanceInput, horizonMonths = 6): AnalyticsInsights {
+    const effectiveNow = now ?? new Date();
+    const visibleExpenses = filterVisibleExpenses(expenses, effectiveNow);
+    const normalizedHorizonMonths = normalizeHorizonMonths(horizonMonths);
+
+    const weeklyCurrentStart = startOfWeek(effectiveNow);
+    const weeklyComparableDays = daysInRangeInclusive(weeklyCurrentStart, effectiveNow);
+    const weeklyPreviousStart = addDays(weeklyCurrentStart, -7);
+    const weeklyPreviousEnd = endOfDay(addDays(weeklyPreviousStart, weeklyComparableDays - 1));
+
+    const monthlyCurrentStart = startOfMonth(effectiveNow);
+    const previousMonthStart = startOfMonth(new Date(effectiveNow.getFullYear(), effectiveNow.getMonth() - 1, 1));
+    const previousMonthEnd = endOfDay(
+        new Date(
+            previousMonthStart.getFullYear(),
+            previousMonthStart.getMonth(),
+            Math.min(effectiveNow.getDate(), getDaysInMonth(previousMonthStart)),
+        ),
+    );
+
+    const weeklySpend = buildSpendInsight(
+        visibleExpenses,
+        weeklyCurrentStart,
+        effectiveNow,
+        weeklyPreviousStart,
+        weeklyPreviousEnd,
+    );
+    const monthlySpendBase = buildSpendInsight(
+        visibleExpenses,
+        monthlyCurrentStart,
+        effectiveNow,
+        previousMonthStart,
+        previousMonthEnd,
+    );
+    const monthlyExpenses = filterExpensesByPeriod(
+        visibleExpenses,
+        monthlyCurrentStart,
+        effectiveNow,
+    );
+    const trackedMonthDays = daysInRangeInclusive(monthlyCurrentStart, effectiveNow);
+    const projectedTotal = trackedMonthDays > 0
+        ? (monthlySpendBase.totalSpent / trackedMonthDays) * getDaysInMonth(effectiveNow)
+        : monthlySpendBase.totalSpent;
+
+    return {
+        referenceDate: formatDateLocal(effectiveNow),
+        weeklySpend,
+        monthlySpend: {
+            ...monthlySpendBase,
+            projectedTotal: roundMoney(projectedTotal),
+        },
+        topCategory: buildTopCategoryImpact(monthlyExpenses, categories),
+        subscriptionSavings: buildSubscriptionSavings(
+            subscriptions,
+            normalizedHorizonMonths,
+            effectiveNow,
+        ),
     };
 }
 

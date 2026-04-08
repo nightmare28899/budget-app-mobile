@@ -5,7 +5,7 @@ import { formatDate } from '../utils/format';
 import { budgetLabel } from '../utils/budget';
 import { useI18n } from './useI18n';
 
-export function useAnalytics(selectedDate?: string) {
+export function useAnalytics(selectedDate?: string, horizonMonths = 6) {
     const { t } = useI18n();
 
     const {
@@ -35,17 +35,28 @@ export function useAnalytics(selectedDate?: string) {
         queryFn: () => analyticsApi.getCategoryBreakdown(undefined, undefined, selectedDate),
     });
 
-    const isLoading = loadingDaily || loadingCats || loadingWeekly;
+    const {
+        data: insights,
+        isLoading: loadingInsights,
+        refetch: refetchInsights,
+    } = useQuery({
+        queryKey: ['analytics', 'insights', selectedDate ?? 'today', horizonMonths],
+        queryFn: () => analyticsApi.getInsights(selectedDate, horizonMonths),
+    });
+
+    const isLoading = loadingDaily || loadingCats || loadingWeekly || loadingInsights;
     const showSkeleton =
         isLoading &&
         !weeklySummary &&
         (!dailyTotals || dailyTotals.length === 0) &&
-        (!categories || categories.length === 0);
+        (!categories || categories.length === 0) &&
+        !insights;
 
     const refetchAll = () => {
         refetchDaily();
         refetchCats();
         refetchWeekly();
+        refetchInsights();
     };
 
     const maxDaily = Math.max(
@@ -70,6 +81,7 @@ export function useAnalytics(selectedDate?: string) {
         dailyTotals,
         categories,
         weeklySummary,
+        insights,
         isLoading,
         showSkeleton,
         refetchAll,

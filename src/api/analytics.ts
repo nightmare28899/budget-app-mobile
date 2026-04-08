@@ -1,5 +1,6 @@
 import apiClient from './client';
 import {
+    AnalyticsInsights,
     DailyTotal,
     CategoryBreakdown,
     WeeklySummary,
@@ -9,6 +10,7 @@ import { normalizeBudgetPeriod } from '../utils/budget';
 import { toNum } from '../utils/number';
 import { isLocalMode } from '../modules/access/localMode';
 import {
+    buildAnalyticsInsights,
     buildBudgetSummary,
     buildCategoryBreakdown,
     buildDailyTotals,
@@ -60,6 +62,62 @@ function normalizeSummary(data: any): BudgetSummary {
         expenseCount: toNum(data?.expenseCount),
         dailyAverage: toNum(data?.dailyAverage),
         weeklyBudget: toNum(data?.weeklyBudget ?? budgetAmount),
+    };
+}
+
+function normalizeSpendInsight(data: any) {
+    return {
+        start: String(data?.start ?? ''),
+        end: String(data?.end ?? ''),
+        totalSpent: toNum(data?.totalSpent),
+        expenseCount: toNum(data?.expenseCount),
+        averagePerDay: toNum(data?.averagePerDay),
+        previousStart: String(data?.previousStart ?? ''),
+        previousEnd: String(data?.previousEnd ?? ''),
+        previousTotalSpent: toNum(data?.previousTotalSpent),
+        changeAmount: toNum(data?.changeAmount),
+        changePercent:
+            data?.changePercent === null || data?.changePercent === undefined
+                ? null
+                : toNum(data?.changePercent),
+    };
+}
+
+function normalizeInsights(data: any): AnalyticsInsights {
+    return {
+        referenceDate: String(data?.referenceDate ?? ''),
+        weeklySpend: normalizeSpendInsight(data?.weeklySpend),
+        monthlySpend: {
+            ...normalizeSpendInsight(data?.monthlySpend),
+            projectedTotal: toNum(data?.monthlySpend?.projectedTotal),
+        },
+        topCategory: data?.topCategory
+            ? {
+                name: String(data.topCategory.name ?? ''),
+                icon: String(data.topCategory.icon ?? 'cube-outline'),
+                color: String(data.topCategory.color ?? '#95A5A6'),
+                total: toNum(data.topCategory.total),
+                percentage: toNum(data.topCategory.percentage),
+            }
+            : null,
+        subscriptionSavings: {
+            horizonMonths: toNum(data?.subscriptionSavings?.horizonMonths),
+            monthlyRecurringSpend: toNum(data?.subscriptionSavings?.monthlyRecurringSpend),
+            projectedSavings: toNum(data?.subscriptionSavings?.projectedSavings),
+            activeSubscriptions: toNum(data?.subscriptionSavings?.activeSubscriptions),
+            topSubscriptions: Array.isArray(data?.subscriptionSavings?.topSubscriptions)
+                ? data.subscriptionSavings.topSubscriptions.map((item: any) => ({
+                    id: String(item?.id ?? ''),
+                    name: String(item?.name ?? ''),
+                    currency: String(item?.currency ?? ''),
+                    billingCycle: item?.billingCycle ?? 'MONTHLY',
+                    amount: toNum(item?.amount),
+                    monthlyEquivalent: toNum(item?.monthlyEquivalent),
+                    projectedSavings: toNum(item?.projectedSavings),
+                    nextPaymentDate: String(item?.nextPaymentDate ?? ''),
+                }))
+                : [],
+        },
     };
 }
 
@@ -168,5 +226,26 @@ export const analyticsApi = {
             { params: { referenceDate } },
         );
         return normalizeSummary(data);
+    },
+
+    getInsights: async (referenceDate?: string, horizonMonths = 6) => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            const anchorDate = referenceDate ? new Date(`${referenceDate}T12:00:00`) : new Date();
+            return buildAnalyticsInsights({
+                user: useAuthStore.getState().user,
+                expenses: state.expenses,
+                subscriptions: state.subscriptions,
+                categories: state.categories,
+                now: anchorDate,
+            }, horizonMonths);
+        }
+
+        const { data } = await apiClient.get<AnalyticsInsights>(
+            '/analytics/insights',
+            { params: { referenceDate, horizonMonths } },
+        );
+
+        return normalizeInsights(data);
     },
 };

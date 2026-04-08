@@ -219,6 +219,56 @@ export interface BudgetSummary {
     weeklyBudget: number;
 }
 
+export interface AnalyticsSpendInsight {
+    start: string;
+    end: string;
+    totalSpent: number;
+    expenseCount: number;
+    averagePerDay: number;
+    previousStart: string;
+    previousEnd: string;
+    previousTotalSpent: number;
+    changeAmount: number;
+    changePercent: number | null;
+}
+
+export interface AnalyticsCategoryImpact {
+    name: string;
+    icon: string;
+    color: string;
+    total: number;
+    percentage: number;
+}
+
+export interface AnalyticsSubscriptionOpportunity {
+    id: string;
+    name: string;
+    currency: string;
+    billingCycle: SubscriptionBillingCycle | 'DAILY';
+    amount: number;
+    monthlyEquivalent: number;
+    projectedSavings: number;
+    nextPaymentDate: string;
+}
+
+export interface AnalyticsSubscriptionSavings {
+    horizonMonths: number;
+    monthlyRecurringSpend: number;
+    projectedSavings: number;
+    activeSubscriptions: number;
+    topSubscriptions: AnalyticsSubscriptionOpportunity[];
+}
+
+export interface AnalyticsInsights {
+    referenceDate: string;
+    weeklySpend: AnalyticsSpendInsight;
+    monthlySpend: AnalyticsSpendInsight & {
+        projectedTotal: number;
+    };
+    topCategory: AnalyticsCategoryImpact | null;
+    subscriptionSavings: AnalyticsSubscriptionSavings;
+}
+
 export interface UpcomingSubscriptionCharge {
     id?: string;
     subscriptionId?: string;
