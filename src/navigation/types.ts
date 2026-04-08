@@ -29,6 +29,7 @@ export type MainTabParamList = {
 
 export type MainDrawerParamList = {
     Tabs: NavigatorScreenParams<MainTabParamList> | undefined;
+    Planner: undefined;
     Expenses: { successMessage?: string } | undefined;
     Income: { successMessage?: string } | undefined;
     Subscriptions: { successMessage?: string } | undefined;

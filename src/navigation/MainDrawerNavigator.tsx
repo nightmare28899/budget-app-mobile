@@ -12,6 +12,7 @@ import { MainDrawerParamList } from './types';
 import { MainTabNavigator } from './MainTabNavigator';
 import { ExpensesScreen } from '../screens/expenses/ExpensesScreen';
 import { IncomesScreen } from '../screens/incomes/IncomesScreen';
+import { PlannerScreen } from '../screens/planner/PlannerScreen';
 import { SubscriptionsScreen } from '../screens/subscriptions/SubscriptionsScreen';
 import { SavingsScreen } from '../screens/savings/SavingsScreen';
 import { CreditCardsScreen } from '../screens/creditCards/CreditCardsScreen';
@@ -97,6 +98,8 @@ export function MainDrawerNavigator() {
                     const iconName =
                         route.name === 'Tabs'
                             ? 'home-outline'
+                            : route.name === 'Planner'
+                                ? 'calendar-outline'
                             : route.name === 'Expenses'
                                 ? 'wallet-outline'
                                 : route.name === 'Income'
@@ -124,6 +127,11 @@ export function MainDrawerNavigator() {
                         navigation.closeDrawer();
                     },
                 })}
+            />
+            <Drawer.Screen
+                name="Planner"
+                component={PlannerScreen}
+                options={{ drawerLabel: t('planner.title') }}
             />
             <Drawer.Screen
                 name="CreditCards"

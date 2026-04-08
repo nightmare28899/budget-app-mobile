@@ -981,7 +981,6 @@ const createStyles = (colors: any) =>
             width: '100%',
         },
         budgetCard: {
-            marginHorizontal: spacing.xl,
             backgroundColor: colors.surfaceCard,
             borderRadius: borderRadius.xl,
             marginBottom: spacing.lg,
