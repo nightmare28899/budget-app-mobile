@@ -44,11 +44,21 @@ export function useDashboard() {
         queryFn: () => incomesApi.getSummary(),
     });
 
+    const {
+        data: dashboardInsights,
+        error: dashboardInsightsError,
+        refetch: refetchDashboardInsights,
+    } = useQuery({
+        queryKey: ['analytics', 'insights', 'dashboard', 6],
+        queryFn: () => analyticsApi.getInsights(undefined, 6),
+    });
+
     useFocusEffect(
         useCallback(() => {
             refetch();
             refetchBudgetSummary();
             refetchIncomeSummary();
+            refetchDashboardInsights();
             activeSwipeableRef.current?.close?.();
             activeSwipeableRef.current = null;
             activeSwipeableIdRef.current = null;
@@ -58,14 +68,15 @@ export function useDashboard() {
                 activeSwipeableRef.current = null;
                 activeSwipeableIdRef.current = null;
             };
-        }, [refetch, refetchBudgetSummary, refetchIncomeSummary]),
+        }, [refetch, refetchBudgetSummary, refetchIncomeSummary, refetchDashboardInsights]),
     );
 
     const refetchAll = useCallback(() => {
         refetch();
         refetchBudgetSummary();
         refetchIncomeSummary();
-    }, [refetch, refetchBudgetSummary, refetchIncomeSummary]);
+        refetchDashboardInsights();
+    }, [refetch, refetchBudgetSummary, refetchIncomeSummary, refetchDashboardInsights]);
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => expensesApi.delete(id),
@@ -92,10 +103,12 @@ export function useDashboard() {
         todayData,
         budgetSummary,
         incomeSummary,
+        dashboardInsights,
         isLoading: loadingToday || loadingBudgetSummary || loadingIncomeSummary,
         todayError,
         budgetSummaryError,
         incomeSummaryError,
+        dashboardInsightsError,
         refetch: refetchAll,
         onDeleteExpense,
         activeSwipeableRef,

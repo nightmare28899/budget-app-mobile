@@ -513,6 +513,14 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
                 <Text style={[styles.cardTitle, { fontSize: scaleFont(typography.fontSize.base) }]}>
                     {t('settings.budgetSettings')}
                 </Text>
+                <Text
+                    style={[
+                        styles.inlineHelperText,
+                        { fontSize: scaleFont(typography.fontSize.sm) },
+                    ]}
+                >
+                    {t('settings.budgetHelp')}
+                </Text>
 
                 <Input
                     label={t('settings.budgetAmount')}

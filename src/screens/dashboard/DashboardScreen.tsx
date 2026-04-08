@@ -66,6 +66,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
         totalExpenses,
         netCashflow,
         savingsRate,
+        actionItems,
         upcomingSubscriptions,
         isUpcomingLoading,
         hasUpcomingError,
@@ -101,10 +102,34 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
         ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
         : null;
     const primaryCardPadding = isSmallPhone
-        ? scaleSize(spacing.lg, 0.5)
-        : scaleSize(spacing.xl, 0.5);
+        ? scaleSize(spacing.xl, 0.46)
+        : isTablet
+            ? scaleSize(spacing['2xl'], 0.58)
+            : scaleSize(spacing['2xl'], 0.5);
     const secondaryCardPadding = scaleSize(spacing.base, 0.5);
+    const budgetAmountFontSize = isTablet
+        ? scaleFont(typography.fontSize['5xl'], 0.52)
+        : isSmallPhone
+            ? scaleFont(typography.fontSize['4xl'])
+            : scaleFont(typography.fontSize['5xl'], 0.42);
+    const budgetCardMinHeight = isTablet
+        ? scaleSize(252, 0.32)
+        : isSmallPhone
+            ? undefined
+            : scaleSize(226, 0.2);
     const cashflowTone = netCashflow >= 0 ? colors.success : colors.error;
+    const resolveActionTone = (tone: 'info' | 'warning' | 'success' | 'danger') => {
+        if (tone === 'success') {
+            return { color: colors.success, background: withAlpha(colors.success, 0.12) };
+        }
+        if (tone === 'warning') {
+            return { color: colors.warning, background: withAlpha(colors.warning, 0.12) };
+        }
+        if (tone === 'danger') {
+            return { color: colors.error, background: withAlpha(colors.error, 0.12) };
+        }
+        return { color: colors.primaryAction, background: withAlpha(colors.primaryAction, 0.12) };
+    };
     const onOpenUpcoming = () => {
         const drawerNavigation = navigation.getParent();
         if (drawerNavigation) {
@@ -122,6 +147,33 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
         if (drawerNavigation) {
             (drawerNavigation.navigate as (...args: [string, object?]) => void)('Savings');
         }
+    };
+    const onOpenSubscriptions = () => {
+        const drawerNavigation = navigation.getParent();
+        if (drawerNavigation) {
+            (drawerNavigation.navigate as (...args: [string, object?]) => void)('Subscriptions');
+            return;
+        }
+
+        navigation.navigate('SubscriptionsTab', { initialTab: 'subscriptions' });
+    };
+    const onActionPress = (actionId: (typeof actionItems)[number]['id']) => {
+        if (actionId === 'add-income') {
+            navigation.navigate('AddEntry', { initialTab: 'income' });
+            return;
+        }
+
+        if (actionId === 'review-spending') {
+            navigation.navigate('Analytics');
+            return;
+        }
+
+        if (actionId === 'trim-subscriptions') {
+            onOpenSubscriptions();
+            return;
+        }
+
+        onOpenSavings();
     };
     const upcomingSectionContent = shouldShowUpcomingSection ? (
         <>
@@ -562,6 +614,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                         styles.budgetCard,
                                         {
                                             padding: primaryCardPadding,
+                                            minHeight: budgetCardMinHeight,
                                         },
                                     ]}
                                 >
@@ -577,7 +630,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                     <Text
                                         style={[
                                             styles.budgetAmount,
-                                            { fontSize: scaleFont(typography.fontSize['4xl']) },
+                                            { fontSize: budgetAmountFontSize },
                                         ]}
                                     >
                                         {formatCurrency(total, user?.currency)}
@@ -750,6 +803,80 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                     </View>
                                 ) : null}
 
+                                {actionItems.length ? (
+                                    <View style={styles.actionSection}>
+                                        <View style={styles.sectionHeader}>
+                                            <Text
+                                                style={[
+                                                    styles.sectionTitle,
+                                                    { fontSize: scaleFont(typography.fontSize.lg) },
+                                                ]}
+                                            >
+                                                {t('dashboard.actionsTitle')}
+                                            </Text>
+                                        </View>
+                                        {actionItems.map((item) => {
+                                            const tone = resolveActionTone(item.tone);
+
+                                            return (
+                                                <TouchableOpacity
+                                                    key={item.id}
+                                                    activeOpacity={0.86}
+                                                    style={styles.actionCard}
+                                                    onPress={() => onActionPress(item.id)}
+                                                >
+                                                    <View
+                                                        style={[
+                                                            styles.actionIconWrap,
+                                                            { backgroundColor: tone.background },
+                                                        ]}
+                                                    >
+                                                        <Icon
+                                                            name={item.icon}
+                                                            size={18}
+                                                            color={tone.color}
+                                                        />
+                                                    </View>
+                                                    <View style={styles.actionCopy}>
+                                                        <Text
+                                                            style={[
+                                                                styles.actionTitle,
+                                                                { fontSize: scaleFont(typography.fontSize.base) },
+                                                            ]}
+                                                        >
+                                                            {item.title}
+                                                        </Text>
+                                                        <Text
+                                                            style={[
+                                                                styles.actionDescription,
+                                                                { fontSize: scaleFont(typography.fontSize.sm) },
+                                                            ]}
+                                                        >
+                                                            {item.description}
+                                                        </Text>
+                                                        <Text
+                                                            style={[
+                                                                styles.actionCta,
+                                                                {
+                                                                    fontSize: scaleFont(typography.fontSize.sm),
+                                                                    color: tone.color,
+                                                                },
+                                                            ]}
+                                                        >
+                                                            {item.ctaLabel}
+                                                        </Text>
+                                                    </View>
+                                                    <Icon
+                                                        name="chevron-forward"
+                                                        size={18}
+                                                        color={colors.textMuted}
+                                                    />
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+                                ) : null}
+
                                 <TouchableOpacity
                                     style={[
                                         styles.savingsShortcutCard,
@@ -857,7 +984,7 @@ const createStyles = (colors: any) =>
             marginHorizontal: spacing.xl,
             backgroundColor: colors.surfaceCard,
             borderRadius: borderRadius.xl,
-            marginBottom: spacing.base,
+            marginBottom: spacing.lg,
             borderWidth: 1,
             borderColor: colors.border,
             overflow: 'hidden',
@@ -881,14 +1008,14 @@ const createStyles = (colors: any) =>
         budgetAmount: {
             color: colors.textPrimary,
             fontWeight: typography.fontWeight.extrabold,
-            marginBottom: spacing.base,
+            marginBottom: spacing.lg,
         },
         progressTrack: {
-            height: 10,
+            height: 12,
             borderRadius: borderRadius.full,
             backgroundColor: withAlpha(colors.primaryAction, 0.12),
             overflow: 'hidden',
-            marginBottom: spacing.base,
+            marginBottom: spacing.lg,
             borderWidth: 1,
             borderColor: withAlpha(colors.primaryAction, 0.18),
         },
@@ -904,8 +1031,8 @@ const createStyles = (colors: any) =>
             borderRadius: borderRadius.lg,
             borderWidth: 1,
             borderColor: colors.border,
-            paddingVertical: spacing.sm,
-            paddingHorizontal: spacing.xs,
+            paddingVertical: spacing.base,
+            paddingHorizontal: spacing.sm,
         },
         budgetStat: {
             flex: 1,
@@ -988,6 +1115,44 @@ const createStyles = (colors: any) =>
         },
         cashflowMetricValueExpense: {
             color: colors.error,
+        },
+        actionSection: {
+            marginBottom: spacing.base,
+            gap: spacing.sm,
+        },
+        actionCard: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.base,
+            borderRadius: borderRadius.xl,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.surfaceElevated,
+            paddingHorizontal: spacing.base,
+            paddingVertical: spacing.base,
+        },
+        actionIconWrap: {
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        actionCopy: {
+            flex: 1,
+            gap: 4,
+        },
+        actionTitle: {
+            color: colors.textPrimary,
+            fontWeight: typography.fontWeight.semibold,
+        },
+        actionDescription: {
+            color: colors.textMuted,
+            lineHeight: 20,
+        },
+        actionCta: {
+            fontWeight: typography.fontWeight.semibold,
+            marginTop: spacing.xs,
         },
         savingsShortcutIconWrap: {
             width: 44,
