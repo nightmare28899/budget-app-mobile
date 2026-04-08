@@ -1038,9 +1038,18 @@ const en = {
   'settings.accountActionsTitle': 'Account actions',
   'settings.seedCategories': 'Seed Default Categories',
   'settings.seedCategoriesDesc': 'Create Food, Transport, Shopping, etc.',
-  'settings.sendWeeklyReport': 'Send Weekly Report',
+  'settings.autoWeeklyReport': 'Automatic weekly report',
+  'settings.autoWeeklyReportDesc':
+    'Email a weekly snapshot every Sunday night using your current account data.',
+  'settings.autoMonthlyReport': 'Automatic monthly report',
+  'settings.autoMonthlyReportDesc':
+    'Email a monthly snapshot on the first day of each month.',
+  'settings.autoReportsFailed':
+    'Could not update your automatic report settings.',
+  'settings.sendWeeklyReport': 'Send Weekly Report Now',
   'settings.sendWeeklyReportPending': 'Sending...',
-  'settings.sendWeeklyReportDesc': 'Receive your spending summary via email',
+  'settings.sendWeeklyReportDesc':
+    'Send the current weekly snapshot to your account email right now.',
   'settings.logout': 'Logout',
   'settings.version': 'BudgetApp v1.0.0',
   'settings.updated': 'Settings updated!',
@@ -2157,9 +2166,18 @@ const es: Record<TranslationKeyInternal, string> = {
   'settings.accountActionsTitle': 'Acciones de la cuenta',
   'settings.seedCategories': 'Crear categorías por defecto',
   'settings.seedCategoriesDesc': 'Crear Comida, Transporte, Compras, etc.',
-  'settings.sendWeeklyReport': 'Enviar reporte semanal',
+  'settings.autoWeeklyReport': 'Reporte semanal automático',
+  'settings.autoWeeklyReportDesc':
+    'Envía por correo un corte semanal cada domingo por la noche con tus datos actuales.',
+  'settings.autoMonthlyReport': 'Reporte mensual automático',
+  'settings.autoMonthlyReportDesc':
+    'Envía por correo un corte mensual el primer día de cada mes.',
+  'settings.autoReportsFailed':
+    'No se pudieron actualizar tus ajustes de reportes automáticos.',
+  'settings.sendWeeklyReport': 'Enviar reporte semanal ahora',
   'settings.sendWeeklyReportPending': 'Enviando...',
-  'settings.sendWeeklyReportDesc': 'Recibe el resumen de gastos por correo',
+  'settings.sendWeeklyReportDesc':
+    'Envía ahora mismo el corte semanal actual al correo de tu cuenta.',
   'settings.logout': 'Cerrar sesión',
   'settings.version': 'BudgetApp v1.0.0',
   'settings.updated': '¡Ajustes actualizados!',

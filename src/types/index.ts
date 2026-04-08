@@ -11,6 +11,8 @@ export interface User {
   budgetPeriodStart?: string | null;
   budgetPeriodEnd?: string | null;
   currency?: string;
+  weeklyReportEnabled?: boolean;
+  monthlyReportEnabled?: boolean;
   avatarUri?: string | null;
   isActive?: boolean;
   deletedAt?: string | null;
