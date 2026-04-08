@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import {
     View,
     StyleSheet,
@@ -10,7 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AuthScreenProps } from '../../navigation/types';
+import { AuthScreenProps, RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { HeroHeader } from '../../components/ui/HeroHeader';
 import { Input } from '../../components/ui/Input';
@@ -36,6 +37,11 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
     const { horizontalPadding, contentMaxWidth, scaleFont } = useResponsive();
     const { t } = useI18n();
     const { scrollRef, createScrollOnFocusHandler } = useScrollToFocusedInput(112);
+    const openTerms = () => {
+        navigation
+            .getParent<NativeStackNavigationProp<RootStackParamList>>()
+            ?.navigate('TermsAndConditions');
+    };
 
     const onLogin = async () => {
         await login(email, password);
@@ -124,6 +130,18 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
                                 {t('auth.continueWithGoogle')}
                             </Text>
                         </TouchableOpacity>
+
+                        <Text
+                            style={[
+                                styles.legalNoticeText,
+                                { fontSize: scaleFont(typography.fontSize.xs) },
+                            ]}
+                        >
+                            {t('legal.googleNotice')}{' '}
+                            <Text style={styles.legalNoticeLink} onPress={openTerms}>
+                                {t('legal.readTerms')}
+                            </Text>
+                        </Text>
                     </View>
 
                     <TouchableOpacity
@@ -200,6 +218,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     googleButtonText: {
         color: colors.textPrimary,
         fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    legalNoticeText: {
+        color: colors.textMuted,
+        textAlign: 'center',
+        lineHeight: 18,
+        marginTop: spacing.xs,
+        paddingHorizontal: spacing.xs,
+    },
+    legalNoticeLink: {
+        color: colors.primaryLight,
         fontWeight: typography.fontWeight.semibold,
     },
     footer: {

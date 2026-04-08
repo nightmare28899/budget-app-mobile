@@ -279,10 +279,11 @@ export function buildDailyTotals(
 ): DailyTotal[] {
     const totalsByDay = new Map<string, number>();
     const safeDays = Math.max(days, 1);
+    const anchorDate = new Date(now);
+    anchorDate.setHours(12, 0, 0, 0);
 
     for (let index = safeDays - 1; index >= 0; index -= 1) {
-        const date = new Date(now);
-        date.setHours(12, 0, 0, 0);
+        const date = new Date(anchorDate);
         date.setDate(date.getDate() - index);
         totalsByDay.set(date.toISOString().slice(0, 10), 0);
     }

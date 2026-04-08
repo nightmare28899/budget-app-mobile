@@ -154,6 +154,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
     const openRegister = () => navigation.navigate('Auth', { screen: 'Register' });
     const openPremium = () => navigation.navigate('PremiumPaywall', { feature: 'credit_cards' });
     const openCreditCards = () => navigation.navigate('Main', { screen: 'CreditCards' });
+    const openTerms = () => navigation.navigate('TermsAndConditions');
 
     const renderSectionTabs = () => (
         <View
@@ -727,6 +728,23 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
                 </View>
 
                 <ThemeLivePreviewCard onPress={onSelectTheme} />
+
+                <TouchableOpacity
+                    style={styles.actionRow}
+                    onPress={openTerms}
+                    activeOpacity={0.7}
+                >
+                    <Icon name="document-text-outline" size={22} color={colors.primaryLight} />
+                    <View style={styles.actionInfo}>
+                        <Text style={[styles.actionText, { fontSize: scaleFont(typography.fontSize.base) }]}>
+                            {t('settings.termsTitle')}
+                        </Text>
+                        <Text style={[styles.actionSubtext, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                            {t('settings.termsDesc')}
+                        </Text>
+                    </View>
+                    <Icon name="chevron-forward" size={20} color={colors.textMuted} />
+                </TouchableOpacity>
 
                 {isAuthenticated ? (
                     <TouchableOpacity

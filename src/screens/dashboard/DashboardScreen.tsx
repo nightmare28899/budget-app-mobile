@@ -44,6 +44,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
         horizontalPadding,
         contentMaxWidth,
         isSmallPhone,
+        isTablet,
         scaleFont,
         scaleSize,
     } = useResponsive();
@@ -82,13 +83,22 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
     const scrollBottomPadding = getMainTabListBottomPadding({
         insetsBottom: insets.bottom,
         isSmallPhone,
+        isTablet,
         scaleSize,
+        extraSpacing: isTablet ? spacing.xl : spacing.base,
     });
     const progressWidth: `${number}%` = `${Math.min(Math.max(usagePercentage, 0), 100)}%`;
     const hasDashboardError = hasHistoryError || hasBudgetError;
     const shouldShowUpcomingSection =
         isUpcomingLoading || hasUpcomingError || upcomingSubscriptions.length > 0;
     const greetingName = user?.name?.trim()?.split(/\s+/)[0] || null;
+    const constrainedContentStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
+    const primaryCardPadding = isSmallPhone
+        ? scaleSize(spacing.lg, 0.5)
+        : scaleSize(spacing.xl, 0.5);
+    const secondaryCardPadding = scaleSize(spacing.base, 0.5);
     const onOpenUpcoming = () => {
         const drawerNavigation = navigation.getParent();
         if (drawerNavigation) {
@@ -107,6 +117,319 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
             (drawerNavigation.navigate as (...args: [string, object?]) => void)('Savings');
         }
     };
+    const upcomingSectionContent = shouldShowUpcomingSection ? (
+        <>
+            <View style={styles.sectionHeader}>
+                <Text
+                    style={[
+                        styles.sectionTitle,
+                        { fontSize: scaleFont(typography.fontSize.lg) },
+                    ]}
+                >
+                    {t('dashboard.upcomingTitle')}
+                </Text>
+                <TouchableOpacity onPress={onOpenUpcoming} activeOpacity={0.85}>
+                    <Text
+                        style={[
+                            styles.seeAll,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                    >
+                        {t('dashboard.seeAll')}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {isUpcomingLoading ? (
+                <Text
+                    style={[
+                        styles.upcomingStateText,
+                        { fontSize: scaleFont(typography.fontSize.sm) },
+                    ]}
+                >
+                    {t('dashboard.upcomingLoading')}
+                </Text>
+            ) : hasUpcomingError ? (
+                <View style={styles.upcomingErrorCard}>
+                    <Text
+                        style={[
+                            styles.upcomingErrorText,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                    >
+                        {t('dashboard.upcomingError')}
+                    </Text>
+                    <TouchableOpacity
+                        onPress={refetch}
+                        activeOpacity={0.84}
+                        style={styles.upcomingRetryButton}
+                    >
+                        <Icon name="refresh-outline" size={14} color={colors.textPrimary} />
+                        <Text
+                            style={[
+                                styles.upcomingRetryText,
+                                { fontSize: scaleFont(typography.fontSize.xs) },
+                            ]}
+                        >
+                            {t('common.retry')}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <>
+                    <Text
+                        style={[
+                            styles.upcomingSummary,
+                            { fontSize: scaleFont(typography.fontSize.xs) },
+                        ]}
+                    >
+                        {t('dashboard.upcomingSummary', {
+                            count: upcomingSubscriptions.length,
+                        })}
+                    </Text>
+                    {upcomingSubscriptions.map((item, index) => {
+                        const paymentMethodOption = getPaymentMethodOption(
+                            item.paymentMethod,
+                        );
+                        const paymentMethodIcon =
+                            paymentMethodOption?.icon
+                            ?? PAYMENT_METHOD_FALLBACK_ICON;
+                        const creditCardLabel = formatCreditCardLabel(
+                            item.creditCard,
+                        );
+
+                        return (
+                            <TouchableOpacity
+                                key={`${item.name}-${item.daysRemaining}-${index}`}
+                                style={styles.upcomingRow}
+                                activeOpacity={0.85}
+                                onPress={onOpenUpcoming}
+                            >
+                                <View
+                                    style={[
+                                        styles.upcomingIconWrap,
+                                        paymentMethodOption
+                                            ? styles.methodChipActive
+                                            : null,
+                                    ]}
+                                >
+                                    <Icon
+                                        name={paymentMethodIcon}
+                                        size={16}
+                                        color={
+                                            paymentMethodOption
+                                                ? colors.success
+                                                : colors.textMuted
+                                        }
+                                    />
+                                </View>
+                                <Text
+                                    style={[
+                                        styles.upcomingRowText,
+                                        {
+                                            fontSize: scaleFont(
+                                                typography.fontSize.sm,
+                                            ),
+                                        },
+                                    ]}
+                                    numberOfLines={1}
+                                >
+                                    {[
+                                        t('dashboard.upcomingRow', {
+                                            name: item.name,
+                                            amount: formatCurrency(
+                                                item.amount,
+                                                item.currency || user?.currency,
+                                                locale,
+                                            ),
+                                            days: item.daysRemaining,
+                                        }),
+                                        creditCardLabel,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' • ')}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </>
+            )}
+        </>
+    ) : null;
+    const recentSectionContent = (
+        <>
+            <View style={styles.sectionHeader}>
+                <Text
+                    style={[
+                        styles.sectionTitle,
+                        { fontSize: scaleFont(typography.fontSize.lg) },
+                    ]}
+                >
+                    {t('dashboard.recentTransactions')}
+                </Text>
+                <TouchableOpacity
+                    onPress={() =>
+                        navigation.navigate('History', { screen: 'HistoryHome' })
+                    }
+                >
+                    <Text
+                        style={[
+                            styles.seeAll,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                    >
+                        {t('dashboard.seeAll')}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {!recentUnifiedHistory.length ? (
+                <EmptyState
+                    icon="time-outline"
+                    title={t('history.noRecordsTitle')}
+                    description={t('history.noRecordsDesc')}
+                />
+            ) : (
+                recentUnifiedHistory.map((item) => {
+                    const isSubscriptionRecord =
+                        item.type === 'subscription' ||
+                        (item.type === 'expense' && item.expense?.isSubscription);
+                    const paymentMethod = item.type === 'expense'
+                        ? item.expense?.paymentMethod
+                        : item.subscription?.paymentMethod;
+                    const paymentMethodOption = getPaymentMethodOption(
+                        paymentMethod,
+                    );
+                    const paymentMethodIcon =
+                        paymentMethodOption?.icon
+                        ?? PAYMENT_METHOD_FALLBACK_ICON;
+                    const creditCardLabel = formatCreditCardLabel(
+                        item.type === 'expense'
+                            ? item.expense?.creditCard
+                            : item.subscription?.creditCard,
+                    );
+                    const recordCurrency = item.type === 'expense'
+                        ? item.expense?.currency
+                        : item.subscription?.currency;
+                    const installmentProgress = item.type === 'expense'
+                        ? getInstallmentProgress(item.expense)
+                        : null;
+                    const installmentLabel = item.type === 'expense'
+                        && isInstallmentExpense(item.expense)
+                        && installmentProgress?.currentInstallment
+                        && installmentProgress?.installmentCount
+                        ? t('expense.installmentPositionLabel', {
+                            current: installmentProgress.currentInstallment,
+                            count: installmentProgress.installmentCount,
+                        })
+                        : null;
+
+                    return (
+                        <TouchableOpacity
+                            key={item.id}
+                            style={styles.recentRow}
+                            activeOpacity={0.85}
+                            onPress={() => {
+                                if (item.type === 'expense' && item.expense?.id) {
+                                    navigation.navigate('ExpenseDetail', { id: item.expense.id });
+                                    return;
+                                }
+                                if (item.type === 'subscription' && item.subscription) {
+                                    navigation.navigate('AddSubscription', {
+                                        subscription: item.subscription,
+                                    });
+                                }
+                            }}
+                        >
+                            <View
+                                style={[
+                                    styles.recentIconWrap,
+                                    isSubscriptionRecord
+                                        ? styles.recentIconSubscription
+                                        : styles.recentIconExpense,
+                                ]}
+                            >
+                                <Icon
+                                    name={isSubscriptionRecord
+                                        ? 'card-outline'
+                                        : 'create-outline'}
+                                    size={16}
+                                    color={
+                                        isSubscriptionRecord
+                                            ? colors.primaryAction
+                                            : colors.success
+                                    }
+                                />
+                            </View>
+                            <View style={styles.recentInfo}>
+                                <Text
+                                    style={[
+                                        styles.recentTitle,
+                                        { fontSize: scaleFont(typography.fontSize.base) },
+                                    ]}
+                                    numberOfLines={1}
+                                >
+                                    {item.type === 'expense'
+                                        ? item.expense?.title
+                                        : item.subscription?.name}
+                                </Text>
+                                <Text
+                                    style={[
+                                        styles.recentMeta,
+                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                    ]}
+                                    numberOfLines={1}
+                                >
+                                    {[
+                                        isSubscriptionRecord
+                                            ? t('history.subscriptionBadge')
+                                            : t('history.manualExpense'),
+                                        installmentLabel,
+                                        formatDate(item.date, 'MMM D, YYYY'),
+                                        creditCardLabel,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' • ')}
+                                </Text>
+                            </View>
+                            <View style={styles.recentTrailing}>
+                                <View
+                                    style={[
+                                        styles.recentPaymentMethodChip,
+                                        paymentMethodOption
+                                            ? styles.methodChipActive
+                                            : null,
+                                    ]}
+                                >
+                                    <Icon
+                                        name={paymentMethodIcon}
+                                        size={14}
+                                        color={
+                                            paymentMethodOption
+                                                ? colors.success
+                                                : colors.textMuted
+                                        }
+                                    />
+                                </View>
+                                <Text
+                                    style={[
+                                        styles.recentAmount,
+                                        {
+                                            fontSize: scaleFont(
+                                                typography.fontSize.base,
+                                            ),
+                                        },
+                                    ]}
+                                >
+                                    -{formatCurrency(item.amount, recordCurrency, locale)}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    );
+                })
+            )}
+        </>
+    );
 
     return (
         <View style={styles.container}>
@@ -119,6 +442,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                             paddingTop: insets.top + spacing.base,
                             paddingHorizontal: horizontalPadding,
                         },
+                        constrainedContentStyle,
                     ]}
                 >
                     <View style={styles.greetingContainer}>
@@ -184,9 +508,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                         style={[
                             styles.contentInner,
                             { paddingHorizontal: horizontalPadding },
-                            contentMaxWidth
-                                ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                                : null,
+                            constrainedContentStyle,
                         ]}
                     >
                         {showSkeleton ? (
@@ -234,9 +556,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                         styles.budgetCard,
                                         {
                                             marginHorizontal: 0,
-                                            padding: isSmallPhone
-                                                ? scaleSize(spacing.lg, 0.5)
-                                                : scaleSize(spacing.xl, 0.5),
+                                            padding: primaryCardPadding,
                                         },
                                     ]}
                                 >
@@ -333,7 +653,13 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                 </View>
 
                                 <TouchableOpacity
-                                    style={styles.savingsShortcutCard}
+                                    style={[
+                                        styles.savingsShortcutCard,
+                                        {
+                                            paddingHorizontal: secondaryCardPadding,
+                                            paddingVertical: secondaryCardPadding,
+                                        },
+                                    ]}
                                     activeOpacity={0.86}
                                     onPress={onOpenSavings}
                                 >
@@ -361,317 +687,14 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                     <Icon name="chevron-forward" size={18} color={colors.textPrimary} />
                                 </TouchableOpacity>
 
-                                {shouldShowUpcomingSection && (
-                                    <View style={[styles.section, styles.upcomingSection, { paddingHorizontal: 0 }]}>
-                                        <View style={styles.sectionHeader}>
-                                            <Text
-                                                style={[
-                                                    styles.sectionTitle,
-                                                    { fontSize: scaleFont(typography.fontSize.lg) },
-                                                ]}
-                                            >
-                                                {t('dashboard.upcomingTitle')}
-                                            </Text>
-                                            <TouchableOpacity onPress={onOpenUpcoming} activeOpacity={0.85}>
-                                                <Text
-                                                    style={[
-                                                        styles.seeAll,
-                                                        { fontSize: scaleFont(typography.fontSize.sm) },
-                                                    ]}
-                                                >
-                                                    {t('dashboard.seeAll')}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        </View>
-
-                                    {isUpcomingLoading ? (
-                                        <Text
-                                            style={[
-                                                styles.upcomingStateText,
-                                                { fontSize: scaleFont(typography.fontSize.sm) },
-                                            ]}
-                                        >
-                                            {t('dashboard.upcomingLoading')}
-                                        </Text>
-                                    ) : hasUpcomingError ? (
-                                        <View style={styles.upcomingErrorCard}>
-                                            <Text
-                                                style={[
-                                                    styles.upcomingErrorText,
-                                                    { fontSize: scaleFont(typography.fontSize.sm) },
-                                                ]}
-                                            >
-                                                {t('dashboard.upcomingError')}
-                                            </Text>
-                                            <TouchableOpacity
-                                                onPress={refetch}
-                                                activeOpacity={0.84}
-                                                style={styles.upcomingRetryButton}
-                                            >
-                                                <Icon name="refresh-outline" size={14} color={colors.textPrimary} />
-                                                <Text
-                                                    style={[
-                                                        styles.upcomingRetryText,
-                                                        { fontSize: scaleFont(typography.fontSize.xs) },
-                                                    ]}
-                                                >
-                                                    {t('common.retry')}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    ) : (
-                                        <>
-                                            <Text
-                                                style={[
-                                                    styles.upcomingSummary,
-                                                    { fontSize: scaleFont(typography.fontSize.xs) },
-                                                ]}
-                                            >
-                                                {t('dashboard.upcomingSummary', {
-                                                    count: upcomingSubscriptions.length,
-                                                })}
-                                            </Text>
-                                            {upcomingSubscriptions.map((item, index) => {
-                                                const paymentMethodOption = getPaymentMethodOption(
-                                                    item.paymentMethod,
-                                                );
-                                                const paymentMethodIcon =
-                                                    paymentMethodOption?.icon
-                                                    ?? PAYMENT_METHOD_FALLBACK_ICON;
-                                                const creditCardLabel = formatCreditCardLabel(
-                                                    item.creditCard,
-                                                );
-
-                                                return (
-                                                    <TouchableOpacity
-                                                        key={`${item.name}-${item.daysRemaining}-${index}`}
-                                                        style={styles.upcomingRow}
-                                                        activeOpacity={0.85}
-                                                        onPress={onOpenUpcoming}
-                                                    >
-                                                        <View
-                                                            style={[
-                                                                styles.upcomingIconWrap,
-                                                                paymentMethodOption
-                                                                    ? styles.methodChipActive
-                                                                    : null,
-                                                            ]}
-                                                        >
-                                                            <Icon
-                                                                name={paymentMethodIcon}
-                                                                size={16}
-                                                                color={
-                                                                    paymentMethodOption
-                                                                        ? colors.success
-                                                                        : colors.textMuted
-                                                                }
-                                                            />
-                                                        </View>
-                                                        <Text
-                                                            style={[
-                                                                styles.upcomingRowText,
-                                                                {
-                                                                    fontSize: scaleFont(
-                                                                        typography.fontSize.sm,
-                                                                    ),
-                                                                },
-                                                            ]}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {[
-                                                                t('dashboard.upcomingRow', {
-                                                                    name: item.name,
-                                                                    amount: formatCurrency(
-                                                                        item.amount,
-                                                                        item.currency || user?.currency,
-                                                                        locale,
-                                                                    ),
-                                                                    days: item.daysRemaining,
-                                                                }),
-                                                                creditCardLabel,
-                                                            ]
-                                                                .filter(Boolean)
-                                                                .join(' • ')}
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                );
-                                            })}
-                                        </>
-                                    )}
+                                {upcomingSectionContent ? (
+                                    <View style={[styles.section, styles.upcomingSection, styles.sectionNoHorizontalPadding]}>
+                                        {upcomingSectionContent}
                                     </View>
-                                )}
+                                ) : null}
 
-                                <View style={[styles.section, styles.recentSection, { paddingHorizontal: 0 }]}>
-                                    <View style={styles.sectionHeader}>
-                                        <Text
-                                            style={[
-                                                styles.sectionTitle,
-                                                { fontSize: scaleFont(typography.fontSize.lg) },
-                                            ]}
-                                        >
-                                            {t('dashboard.recentTransactions')}
-                                        </Text>
-                                        <TouchableOpacity
-                                            onPress={() =>
-                                                navigation.navigate('History', { screen: 'HistoryHome' })
-                                            }
-                                        >
-                                            <Text
-                                                style={[
-                                                    styles.seeAll,
-                                                    { fontSize: scaleFont(typography.fontSize.sm) },
-                                                ]}
-                                            >
-                                                {t('dashboard.seeAll')}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
-
-                                    {!recentUnifiedHistory.length ? (
-                                        <EmptyState
-                                            icon="time-outline"
-                                            title={t('history.noRecordsTitle')}
-                                            description={t('history.noRecordsDesc')}
-                                        />
-                                    ) : (
-                                        recentUnifiedHistory.map((item) => {
-                                            const isSubscriptionRecord =
-                                                item.type === 'subscription' ||
-                                                (item.type === 'expense' && item.expense?.isSubscription);
-                                            const paymentMethod = item.type === 'expense'
-                                                ? item.expense?.paymentMethod
-                                                : item.subscription?.paymentMethod;
-                                            const paymentMethodOption = getPaymentMethodOption(
-                                                paymentMethod,
-                                            );
-                                            const paymentMethodIcon =
-                                                paymentMethodOption?.icon
-                                                ?? PAYMENT_METHOD_FALLBACK_ICON;
-                                            const creditCardLabel = formatCreditCardLabel(
-                                                item.type === 'expense'
-                                                    ? item.expense?.creditCard
-                                                    : item.subscription?.creditCard,
-                                            );
-                                            const recordCurrency = item.type === 'expense'
-                                                ? item.expense?.currency
-                                                : item.subscription?.currency;
-                                            const installmentProgress = item.type === 'expense'
-                                                ? getInstallmentProgress(item.expense)
-                                                : null;
-                                            const installmentLabel = item.type === 'expense'
-                                                && isInstallmentExpense(item.expense)
-                                                && installmentProgress?.currentInstallment
-                                                && installmentProgress?.installmentCount
-                                                ? t('expense.installmentPositionLabel', {
-                                                    current: installmentProgress.currentInstallment,
-                                                    count: installmentProgress.installmentCount,
-                                                })
-                                                : null;
-
-                                            return (
-                                                <TouchableOpacity
-                                                    key={item.id}
-                                                    style={styles.recentRow}
-                                                    activeOpacity={0.85}
-                                                    onPress={() => {
-                                                        if (item.type === 'expense' && item.expense?.id) {
-                                                            navigation.navigate('ExpenseDetail', { id: item.expense.id });
-                                                            return;
-                                                        }
-                                                        if (item.type === 'subscription' && item.subscription) {
-                                                            navigation.navigate('AddSubscription', {
-                                                                subscription: item.subscription,
-                                                            });
-                                                        }
-                                                    }}
-                                                >
-                                                    <View
-                                                        style={[
-                                                            styles.recentIconWrap,
-                                                            isSubscriptionRecord
-                                                                ? styles.recentIconSubscription
-                                                                : styles.recentIconExpense,
-                                                        ]}
-                                                    >
-                                                        <Icon
-                                                            name={isSubscriptionRecord
-                                                                ? 'card-outline'
-                                                                : 'create-outline'}
-                                                            size={16}
-                                                            color={
-                                                                isSubscriptionRecord
-                                                                    ? colors.primaryAction
-                                                                    : colors.success
-                                                            }
-                                                        />
-                                                    </View>
-                                                    <View style={styles.recentInfo}>
-                                                        <Text
-                                                            style={[
-                                                                styles.recentTitle,
-                                                                { fontSize: scaleFont(typography.fontSize.base) },
-                                                            ]}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {item.type === 'expense'
-                                                                ? item.expense?.title
-                                                                : item.subscription?.name}
-                                                        </Text>
-                                                        <Text
-                                                            style={[
-                                                                styles.recentMeta,
-                                                                { fontSize: scaleFont(typography.fontSize.sm) },
-                                                            ]}
-                                                            numberOfLines={1}
-                                                        >
-                                                            {[
-                                                                isSubscriptionRecord
-                                                                    ? t('history.subscriptionBadge')
-                                                                    : t('history.manualExpense'),
-                                                                installmentLabel,
-                                                                formatDate(item.date, 'MMM D, YYYY'),
-                                                                creditCardLabel,
-                                                            ]
-                                                                .filter(Boolean)
-                                                                .join(' • ')}
-                                                        </Text>
-                                                    </View>
-                                                    <View style={styles.recentTrailing}>
-                                                        <View
-                                                            style={[
-                                                                styles.recentPaymentMethodChip,
-                                                                paymentMethodOption
-                                                                    ? styles.methodChipActive
-                                                                    : null,
-                                                            ]}
-                                                        >
-                                                            <Icon
-                                                                name={paymentMethodIcon}
-                                                                size={14}
-                                                                color={
-                                                                    paymentMethodOption
-                                                                        ? colors.success
-                                                                        : colors.textMuted
-                                                                }
-                                                            />
-                                                        </View>
-                                                        <Text
-                                                            style={[
-                                                                styles.recentAmount,
-                                                                {
-                                                                    fontSize: scaleFont(
-                                                                        typography.fontSize.base,
-                                                                    ),
-                                                                },
-                                                            ]}
-                                                        >
-                                                            -{formatCurrency(item.amount, recordCurrency, locale)}
-                                                        </Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                            );
-                                        })
-                                    )}
+                                <View style={[styles.section, styles.recentSection, styles.sectionNoHorizontalPadding]}>
+                                    {recentSectionContent}
                                 </View>
                             </>
                         )}
@@ -876,6 +899,9 @@ const createStyles = (colors: any) =>
         },
         section: {
             paddingHorizontal: spacing.xl,
+        },
+        sectionNoHorizontalPadding: {
+            paddingHorizontal: 0,
         },
         upcomingSection: {
             marginTop: spacing.lg,

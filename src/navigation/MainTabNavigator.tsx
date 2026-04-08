@@ -23,12 +23,12 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function GlobalActionFab() {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-    const { isSmallPhone, scaleSize } = useResponsive();
+    const { isSmallPhone, isTablet, scaleSize } = useResponsive();
     const styles = useThemedStyles(createStyles);
-    const { colors } = useTheme();
-    const fabSize = getMainTabFabSize({ isSmallPhone, scaleSize });
+    const fabSize = getMainTabFabSize({ isSmallPhone, isTablet, scaleSize });
     const fabBottomOffset = getMainTabFabBottomOffset({
         isSmallPhone,
+        isTablet,
     });
 
     const onOpenAddEntry = () => {
@@ -65,14 +65,32 @@ function GlobalActionFab() {
 
 export function MainTabNavigator() {
     const insets = useSafeAreaInsets();
-    const { isSmallPhone } = useResponsive();
+    const {
+        width,
+        isSmallPhone,
+        isTablet,
+        tabBarMaxWidth,
+    } = useResponsive();
     const styles = useThemedStyles(createStyles);
     const { colors } = useTheme();
     const { t } = useI18n();
-    const centerGap = isSmallPhone ? 24 : 32;
+    const centerGap = isTablet ? 36 : isSmallPhone ? 24 : 32;
     const tabBarHeight = getMainTabBarHeight({
         isSmallPhone,
+        isTablet,
     });
+    const tabBarSideOffset = isTablet && tabBarMaxWidth
+        ? Math.max(Math.round((width - tabBarMaxWidth) / 2), spacing.base)
+        : spacing.base;
+    const tabBarFrameStyle = isTablet && tabBarMaxWidth
+        ? {
+            width: tabBarMaxWidth,
+            left: tabBarSideOffset,
+        }
+        : {
+            left: spacing.base,
+            right: spacing.base,
+        };
 
     return (
         <View style={styles.container}>
@@ -86,7 +104,9 @@ export function MainTabNavigator() {
                             height: tabBarHeight,
                             paddingBottom: Math.max(insets.bottom, spacing.sm),
                             paddingTop: isSmallPhone ? spacing.xs : spacing.sm,
+                            paddingHorizontal: spacing.lg,
                         },
+                        tabBarFrameStyle,
                     ],
                     tabBarActiveTintColor: colors.primaryAction,
                     tabBarInactiveTintColor: colors.textMuted,
@@ -167,8 +187,6 @@ const createStyles = (colors: any) =>
         },
         tabBar: {
             position: 'absolute',
-            left: spacing.base,
-            right: spacing.base,
             bottom: spacing.xs,
             borderRadius: 30,
             backgroundColor: withAlpha(colors.surfaceCard, 0.96),

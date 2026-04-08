@@ -63,6 +63,7 @@ export const authApi = {
         password: string,
         avatar?: RegisterAvatarPayload,
         role: string = 'user',
+        termsAccepted: boolean = true,
     ) => {
         if (!avatar?.uri) {
             const { data } = await apiClient.post<RegisterResponse>(
@@ -72,6 +73,7 @@ export const authApi = {
                     name,
                     password,
                     role,
+                    termsAccepted,
                 },
             );
 
@@ -83,6 +85,7 @@ export const authApi = {
         formData.append('name', name);
         formData.append('password', password);
         formData.append('role', role);
+        formData.append('termsAccepted', String(termsAccepted));
 
         if (avatar?.uri) {
             const filename = avatar.name || avatar.uri.split('/').pop() || 'avatar.jpg';
@@ -122,9 +125,10 @@ export const authApi = {
         return normalizeAuthResponse(data);
     },
 
-    loginWithGoogle: async (firebaseIdToken: string) => {
+    loginWithGoogle: async (firebaseIdToken: string, termsAccepted: boolean = true) => {
         const { data } = await apiClient.post<AuthResponse>('/auth/google', {
             firebaseIdToken,
+            termsAccepted,
         });
         return normalizeAuthResponse(data);
     },

@@ -9,9 +9,10 @@ import {
     Image,
     TouchableOpacity,
 } from 'react-native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { AuthScreenProps } from '../../navigation/types';
+import { AuthScreenProps, RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useImagePicker } from '../../hooks/useImagePicker';
 import { HeroHeader } from '../../components/ui/HeroHeader';
@@ -55,6 +56,11 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         scaleFont,
         scaleSize,
     } = useResponsive();
+    const openTerms = () => {
+        navigation
+            .getParent<NativeStackNavigationProp<RootStackParamList>>()
+            ?.navigate('TermsAndConditions');
+    };
 
     const onRegister = async () => {
         const success = await register(email, name, password, confirmPassword, profileImage);
@@ -214,6 +220,25 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                             containerStyle={styles.registerButton}
                         />
 
+                        <View style={styles.legalNotice}>
+                            <Icon
+                                name="document-text-outline"
+                                size={16}
+                                color={colors.primaryLight}
+                            />
+                            <Text
+                                style={[
+                                    styles.legalNoticeText,
+                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                ]}
+                            >
+                                {t('legal.registerNotice')}{' '}
+                                <Text style={styles.legalNoticeLink} onPress={openTerms}>
+                                    {t('legal.readTerms')}
+                                </Text>
+                            </Text>
+                        </View>
+
                         {pendingRegistrationsCount > 0 && (
                             <View style={styles.offlineNotice}>
                                 <Text
@@ -327,6 +352,22 @@ const createStyles = (colors: any) => StyleSheet.create({
     },
     registerButton: {
         marginTop: spacing.sm,
+    },
+    legalNotice: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.xs,
+        marginTop: spacing.xs,
+    },
+    legalNoticeText: {
+        flex: 1,
+        color: colors.textMuted,
+        lineHeight: 18,
+    },
+    legalNoticeLink: {
+        color: colors.primaryLight,
+        fontWeight: typography.fontWeight.semibold,
     },
     offlineNotice: {
         marginTop: spacing.base,

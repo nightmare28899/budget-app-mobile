@@ -48,6 +48,7 @@ export function CardsScreen({ navigation, route }: MainTabScreenProps<'Subscript
         horizontalPadding,
         contentMaxWidth,
         isSmallPhone,
+        isTablet,
         scaleFont,
         scaleSize,
     } = useResponsive();
@@ -132,7 +133,9 @@ export function CardsScreen({ navigation, route }: MainTabScreenProps<'Subscript
     const listBottomPadding = getMainTabListBottomPadding({
         insetsBottom: insets.bottom,
         isSmallPhone,
+        isTablet,
         scaleSize,
+        extraSpacing: isTablet ? spacing.xl : spacing.base,
     });
 
     const todayKey = useMemo(() => {
@@ -270,16 +273,16 @@ export function CardsScreen({ navigation, route }: MainTabScreenProps<'Subscript
                     {subtitle}
                 </Text>
             </View>
-            <View
-                style={[
-                    styles.summaryCard,
-                    {
-                        padding: isSmallPhone
-                            ? scaleSize(spacing.lg, 0.45)
-                            : scaleSize(spacing.xl, 0.45),
-                    },
-                    { marginHorizontal: horizontalPadding },
-                    constrainedContentStyle,
+                <View
+                    style={[
+                        styles.summaryCard,
+                        {
+                            padding: isSmallPhone
+                                ? scaleSize(spacing.lg, 0.45)
+                                : scaleSize(spacing.xl, 0.45),
+                        },
+                        { marginHorizontal: horizontalPadding },
+                        constrainedContentStyle,
                 ]}
             >
                 <View style={styles.summaryGlow} />
@@ -364,7 +367,12 @@ export function CardsScreen({ navigation, route }: MainTabScreenProps<'Subscript
                         constrainedContentStyle,
                     ]}
                 >
-                    <Text style={[styles.headerTitle, { fontSize: scaleFont(typography.fontSize.xl) }]}>
+                    <Text
+                        style={[
+                            styles.headerTitle,
+                            { fontSize: scaleFont(typography.fontSize.xl) },
+                        ]}
+                    >
                         {t('tab.activity')}
                     </Text>
                 </View>

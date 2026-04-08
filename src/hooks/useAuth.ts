@@ -95,7 +95,7 @@ export function useAuth() {
         queryClient.removeQueries({ queryKey: ['subscriptions'] });
         queryClient.removeQueries({ queryKey: ['users', 'me'] });
 
-        void Promise.allSettled([
+        Promise.allSettled([
             queryClient.fetchQuery({
                 queryKey: ['users', 'me'],
                 queryFn: usersApi.getMe,
@@ -106,7 +106,7 @@ export function useAuth() {
             }),
             queryClient.fetchQuery({
                 queryKey: ['analytics', 'budget-summary'],
-                queryFn: analyticsApi.getBudgetSummary,
+                queryFn: () => analyticsApi.getBudgetSummary(),
             }),
             queryClient.fetchQuery({
                 queryKey: ['history', 'all'],
@@ -197,7 +197,7 @@ export function useAuth() {
             logGoogleAuth('firebase-id-token-received', {
                 tokenLength: firebaseIdToken.length,
             });
-            const res = await authApi.loginWithGoogle(firebaseIdToken);
+            const res = await authApi.loginWithGoogle(firebaseIdToken, true);
             logGoogleAuth('backend-google-login-success', {
                 userId: res.user.id,
                 email: res.user.email,
@@ -294,6 +294,8 @@ export function useAuth() {
                 trimmedName,
                 password,
                 avatarPayload,
+                'user',
+                true,
             );
             const successMessage = extractApiMessage(res) || t('auth.accountCreatedSuccess');
             const avatarFromApi = extractAvatarUri(res.user);

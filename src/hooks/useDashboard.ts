@@ -30,7 +30,7 @@ export function useDashboard() {
         refetch: refetchBudgetSummary,
     } = useQuery({
         queryKey: ['analytics', 'budget-summary'],
-        queryFn: analyticsApi.getBudgetSummary,
+        queryFn: () => analyticsApi.getBudgetSummary(),
     });
 
     useFocusEffect(

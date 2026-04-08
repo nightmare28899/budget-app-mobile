@@ -16,6 +16,7 @@ import { SavingsGoalDetailScreen } from '../screens/savings/SavingsGoalDetailScr
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { CreditCardFormScreen } from '../screens/creditCards/CreditCardFormScreen';
 import { PremiumPaywallScreen } from '../screens/premium/PremiumPaywallScreen';
+import { TermsAndConditionsScreen } from '../screens/legal/TermsAndConditionsScreen';
 import { useAuthStore } from '../store/authStore';
 import { usersApi } from '../api/users';
 import { useTheme } from '../theme';
@@ -251,6 +252,22 @@ export function RootNavigator() {
                         headerShown: false,
                         animation: 'slide_from_right',
                     }}
+                />
+                <Stack.Screen
+                    name="TermsAndConditions"
+                    component={TermsAndConditionsScreen}
+                    options={({ navigation }) => ({
+                        headerShown: true,
+                        headerTitle: t('legal.termsTitle'),
+                        headerTitleAlign: 'center',
+                        headerStyle: { backgroundColor: colors.surface },
+                        headerTintColor: colors.textPrimary,
+                        headerBackVisible: false,
+                        headerLeft: () => (
+                            <ScreenBackButton onPress={() => navigation.goBack()} />
+                        ),
+                        animation: 'slide_from_right',
+                    })}
                 />
                 <Stack.Screen
                     name="PremiumPaywall"

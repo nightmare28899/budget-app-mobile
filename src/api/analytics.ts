@@ -64,21 +64,22 @@ function normalizeSummary(data: any): BudgetSummary {
 }
 
 export const analyticsApi = {
-    getDailyTotals: async (days = 7) => {
+    getDailyTotals: async (days = 7, endDate?: string) => {
         if (isLocalMode()) {
             const state = ensureGuestDataHydrated();
-            return buildDailyTotals(state.expenses, days);
+            const anchorDate = endDate ? new Date(`${endDate}T12:00:00`) : new Date();
+            return buildDailyTotals(state.expenses, days, anchorDate);
         }
 
         const { data } = await apiClient.get<DailyTotal[]>('/analytics/daily', {
-            params: { days },
+            params: { days, endDate },
         });
-        const todayKey = dateOnly(new Date());
+        const maxAllowedKey = endDate || dateOnly(new Date());
         return Array.isArray(data)
             ? data
                 .filter((item) => {
                     const entryDate = dateOnly(item?.date);
-                    return !!entryDate && entryDate <= todayKey;
+                    return !!entryDate && entryDate <= maxAllowedKey;
                 })
                 .map((item) => ({
                     ...item,
@@ -87,30 +88,40 @@ export const analyticsApi = {
             : [];
     },
 
-    getCategoryBreakdown: async (from?: string, to?: string) => {
+    getCategoryBreakdown: async (from?: string, to?: string, referenceDate?: string) => {
         if (isLocalMode()) {
             const state = ensureGuestDataHydrated();
-            const expenses = state.expenses.filter((expense) => {
-                const expenseDate = String(expense.date).slice(0, 10);
-                if (from && expenseDate < from) {
-                    return false;
-                }
-                if (to && expenseDate > to) {
-                    return false;
-                }
-                return true;
-            });
+            if (from || to) {
+                const expenses = state.expenses.filter((expense) => {
+                    const expenseDate = String(expense.date).slice(0, 10);
+                    if (from && expenseDate < from) {
+                        return false;
+                    }
+                    if (to && expenseDate > to) {
+                        return false;
+                    }
+                    return true;
+                });
 
+                return buildCategoryBreakdown({
+                    user: useAuthStore.getState().user,
+                    expenses,
+                    categories: state.categories,
+                });
+            }
+
+            const anchorDate = referenceDate ? new Date(`${referenceDate}T12:00:00`) : new Date();
             return buildCategoryBreakdown({
                 user: useAuthStore.getState().user,
-                expenses,
+                expenses: state.expenses,
                 categories: state.categories,
+                now: anchorDate,
             });
         }
 
         const { data } = await apiClient.get<CategoryBreakdown[]>(
             '/analytics/categories',
-            { params: { from, to } },
+            { params: { from, to, referenceDate } },
         );
         return Array.isArray(data)
             ? data.map((item) => ({
@@ -122,33 +133,39 @@ export const analyticsApi = {
             : [];
     },
 
-    getBudgetSummary: async () => {
+    getBudgetSummary: async (referenceDate?: string) => {
         if (isLocalMode()) {
             const state = ensureGuestDataHydrated();
+            const anchorDate = referenceDate ? new Date(`${referenceDate}T12:00:00`) : new Date();
             return buildBudgetSummary({
                 user: useAuthStore.getState().user,
                 expenses: state.expenses,
                 subscriptions: state.subscriptions,
+                now: anchorDate,
             });
         }
 
         const { data } = await apiClient.get<BudgetSummary>(
             '/analytics/budget-summary',
+            { params: { referenceDate } },
         );
         return normalizeSummary(data);
     },
 
-    getWeeklySummary: async () => {
+    getWeeklySummary: async (referenceDate?: string) => {
         if (isLocalMode()) {
             const state = ensureGuestDataHydrated();
+            const anchorDate = referenceDate ? new Date(`${referenceDate}T12:00:00`) : new Date();
             return buildWeeklySummary({
                 user: useAuthStore.getState().user,
                 expenses: state.expenses,
+                now: anchorDate,
             });
         }
 
         const { data } = await apiClient.get<WeeklySummary>(
             '/analytics/weekly-summary',
+            { params: { referenceDate } },
         );
         return normalizeSummary(data);
     },

@@ -1,16 +1,22 @@
 import React from 'react';
 import {
+    Platform,
+    TouchableOpacity,
     View,
     Text,
     StyleSheet,
     ScrollView,
     RefreshControl,
 } from 'react-native';
+import DateTimePicker, {
+    DateTimePickerAndroid,
+    DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MainTabScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency, formatDate, todayISO } from '../../utils/format';
 import {
     spacing,
     typography,
@@ -28,6 +34,15 @@ import { useAnalytics } from '../../hooks/useAnalytics';
 import { HomeBackground } from '../../components/ui/HomeBackground';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
 import { withAlpha } from '../../utils/subscriptions';
+
+function parsePickerDate(value?: string) {
+    if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(year, month - 1, day, 12, 0, 0, 0);
+    }
+
+    return new Date();
+}
 
 function getReadableIconColor(backgroundColor: string): string {
     const normalized = backgroundColor.replace('#', '').trim();
@@ -56,10 +71,13 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
         horizontalPadding,
         contentMaxWidth,
         isSmallPhone,
+        isTablet,
         scaleFont,
         scaleSize,
     } = useResponsive();
     const { t, language } = useI18n();
+    const [selectedDailyDate, setSelectedDailyDate] = React.useState(todayISO());
+    const [showDatePicker, setShowDatePicker] = React.useState(false);
     const {
         dailyTotals,
         categories,
@@ -71,17 +89,23 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
         weeklyBudgetAmount,
         weeklyPeriodLabel,
         weeklyPeriodRange,
-    } = useAnalytics();
+    } = useAnalytics(selectedDailyDate);
     const bottomPadding = getMainTabListBottomPadding({
         insetsBottom: insets.bottom,
         isSmallPhone,
+        isTablet,
         scaleSize,
+        extraSpacing: isTablet ? spacing.xl : spacing.base,
     });
     const weeklyTotal = weeklySummary?.totalSpent ?? 0;
     const weeklyAverage = weeklySummary?.dailyAverage ?? 0;
     const progress =
         weeklyBudgetAmount > 0 ? Math.min(weeklyTotal / weeklyBudgetAmount, 1) : 0;
-    const formattedDate = new Date().toLocaleDateString(
+    const selectedDailyDateValue = React.useMemo(
+        () => parsePickerDate(selectedDailyDate),
+        [selectedDailyDate],
+    );
+    const formattedDate = selectedDailyDateValue.toLocaleDateString(
         language === 'es' ? 'es-ES' : 'en-US',
         { month: 'short', day: 'numeric' },
     );
@@ -89,6 +113,9 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
     const maxLabel = formatCurrency(maxDaily, user?.currency);
     const midLabel = formatCurrency(maxDaily / 2, user?.currency);
     const dailyTrendTitle = t('analytics.dailyTrendTitle');
+    const cardPadding = isSmallPhone
+        ? scaleSize(spacing.lg, 0.5)
+        : scaleSize(spacing.xl, 0.5);
     const donutSize = isSmallPhone ? 118 : 140;
     const donutHole = isSmallPhone ? 78 : 96;
     const donutThickness = isSmallPhone ? 10 : 12;
@@ -102,6 +129,254 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
     const constrainedContentStyle = contentMaxWidth
         ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
         : null;
+    const onChangeSelectedDate = React.useCallback(
+        (event: DateTimePickerEvent, value?: Date) => {
+            if (Platform.OS === 'android' && event.type !== 'set') {
+                return;
+            }
+
+            if (!value) {
+                return;
+            }
+
+            const maxDate = new Date();
+            maxDate.setHours(23, 59, 59, 999);
+            const nextDate = value.getTime() > maxDate.getTime() ? maxDate : value;
+            setSelectedDailyDate(formatDate(nextDate, 'YYYY-MM-DD'));
+        },
+        [],
+    );
+    const onOpenDatePicker = React.useCallback(() => {
+        if (Platform.OS === 'android') {
+            DateTimePickerAndroid.open({
+                mode: 'date',
+                value: selectedDailyDateValue,
+                maximumDate: new Date(),
+                onChange: onChangeSelectedDate,
+            });
+            return;
+        }
+
+        setShowDatePicker((prev) => !prev);
+    }, [onChangeSelectedDate, selectedDailyDateValue]);
+    const weeklySummaryCard = (
+        <View
+            style={[
+                styles.glassCard,
+                {
+                    padding: cardPadding,
+                },
+            ]}
+        >
+            <Text style={[styles.eyebrow, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                {t('analytics.thisWeek')}
+            </Text>
+            <Text
+                style={[
+                    styles.heroAmount,
+                    { fontSize: scaleFont(typography.fontSize['4xl']) },
+                ]}
+            >
+                {formatCurrency(weeklyTotal, user?.currency)}
+            </Text>
+            {!!weeklyPeriodLabel && (
+                <Text
+                    style={[
+                        styles.periodMeta,
+                        { fontSize: scaleFont(typography.fontSize.xs) },
+                    ]}
+                >
+                    {weeklyPeriodLabel}
+                    {weeklyPeriodRange ? ` • ${weeklyPeriodRange}` : ''}
+                </Text>
+            )}
+            <View style={styles.progressLabels}>
+                <Text style={[styles.progressText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                    {`${t('analytics.budget')} (${formatCurrency(weeklyBudgetAmount, user?.currency)})`}
+                </Text>
+                <Text style={[styles.progressText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                    {`${t('analytics.expenses')} (${formatCurrency(weeklyTotal, user?.currency)})`}
+                </Text>
+            </View>
+            <View style={styles.progressTrack}>
+                <View
+                    style={[
+                        styles.progressFill,
+                        { width: `${progress * 100}%`, backgroundColor: colors.success },
+                    ]}
+                />
+            </View>
+            <Text style={[styles.miniText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                {t('analytics.dailyAvg')}: {formatCurrency(weeklyAverage, user?.currency)}
+            </Text>
+        </View>
+    );
+    const dailyTrendCard = (
+        <View
+            style={[
+                styles.glassCard,
+                {
+                    padding: cardPadding,
+                },
+            ]}
+        >
+            <Text style={[styles.cardTitle, { fontSize: scaleFont(typography.fontSize.base) }]}>
+                {dailyTrendTitle}
+            </Text>
+            <View style={styles.trendChart}>
+                <View style={styles.axisColumn}>
+                    <Text style={[styles.axisLabel, { fontSize: scaleFont(10) }]}>{maxLabel}</Text>
+                    <Text style={[styles.axisLabel, { fontSize: scaleFont(10) }]}>{midLabel}</Text>
+                    <Text style={[styles.axisLabel, { fontSize: scaleFont(10) }]}>
+                        {formatCurrency(0, user?.currency)}
+                    </Text>
+                </View>
+                <View style={styles.chartArea}>
+                    {dailyTotals && dailyTotals.length > 0 ? (
+                        <View style={styles.barChart}>
+                            {dailyTotals.map((day, i) => {
+                                const barHeight = maxDaily > 0 ? (day.total / maxDaily) * 120 : 0;
+                                const dayLabel = new Date(day.date + 'T12:00:00').toLocaleDateString(
+                                    language === 'es' ? 'es-ES' : 'en',
+                                    {
+                                        weekday: 'short',
+                                    },
+                                );
+                                const isToday = i === (dailyTotals?.length ?? 0) - 1;
+                                return (
+                                    <View key={day.date} style={styles.barColumn}>
+                                        <View
+                                            style={[
+                                                styles.bar,
+                                                isSmallPhone ? styles.barSmall : styles.barRegular,
+                                                {
+                                                    height: Math.max(barHeight, 6),
+                                                    backgroundColor: isToday
+                                                        ? colors.success
+                                                        : withAlpha(colors.primaryLight, 0.4),
+                                                },
+                                            ]}
+                                        />
+                                        <Text style={[styles.barLabel, { fontSize: scaleFont(10) }]}>
+                                            {dayLabel}
+                                        </Text>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    ) : (
+                        <EmptyState
+                            icon="bar-chart-outline"
+                            title={t('analytics.noDailyDataTitle')}
+                            description={t('analytics.noDailyDataDesc')}
+                        />
+                    )}
+                </View>
+            </View>
+        </View>
+    );
+    const categoryCard = (
+        <View
+            style={[
+                styles.glassCard,
+                {
+                    padding: cardPadding,
+                },
+            ]}
+        >
+            <Text style={[styles.cardTitle, { fontSize: scaleFont(typography.fontSize.base) }]}>
+                {t('analytics.byCategory')}
+            </Text>
+            <View style={styles.categoryWrap}>
+                <View
+                    style={[
+                        styles.donut,
+                        {
+                            width: donutSize,
+                            height: donutSize,
+                            borderRadius: donutSize / 2,
+                        },
+                    ]}
+                >
+                    {donutSegments.map((segment, index) => (
+                        <View
+                            key={`${segment.color}-${index}`}
+                            style={[
+                                styles.donutSegment,
+                                {
+                                    borderTopColor: segment.color,
+                                    borderWidth: donutThickness,
+                                    width: donutSize,
+                                    height: donutSize,
+                                    borderRadius: donutSize / 2,
+                                    transform: [{ rotate: `${index * 90}deg` }],
+                                },
+                            ]}
+                        />
+                    ))}
+                    <View
+                        style={[
+                            styles.donutHole,
+                            {
+                                width: donutHole,
+                                height: donutHole,
+                                borderRadius: donutHole / 2,
+                            },
+                        ]}
+                    />
+                </View>
+                <View style={styles.categoryList}>
+                    {sortedCategories.map((cat) => (
+                        <View key={cat.name} style={styles.categoryRow}>
+                            <View style={styles.categoryLeft}>
+                                <View
+                                    style={[
+                                        styles.categoryIcon,
+                                        { backgroundColor: cat.color || colors.primaryLight },
+                                    ]}
+                                >
+                                    <CategoryIcon
+                                        icon={cat.icon}
+                                        categoryName={cat.name}
+                                        size={14}
+                                        color={getReadableIconColor(cat.color || colors.primaryLight)}
+                                    />
+                                </View>
+                                <View>
+                                    <Text
+                                        style={[
+                                            styles.categoryName,
+                                            { fontSize: scaleFont(typography.fontSize.base) },
+                                        ]}
+                                    >
+                                        {cat.name}
+                                    </Text>
+                                    <Text
+                                        style={[
+                                            styles.categoryAmount,
+                                            { fontSize: scaleFont(typography.fontSize.xs) },
+                                        ]}
+                                    >
+                                        {formatCurrency(cat.total, user?.currency)}
+                                    </Text>
+                                </View>
+                            </View>
+                            <Text style={[styles.categoryPercent, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                                {Math.round(cat.percentage)}%
+                            </Text>
+                        </View>
+                    ))}
+                    {sortedCategories.length === 0 && (
+                        <EmptyState
+                            icon="pie-chart-outline"
+                            title={t('analytics.noCategoryDataTitle')}
+                            description={t('analytics.noCategoryDataDesc')}
+                        />
+                    )}
+                </View>
+            </View>
+        </View>
+    );
 
     return (
         <View style={styles.container}>
@@ -120,12 +395,27 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                     <Text style={[styles.headerSubtitle, { fontSize: scaleFont(typography.fontSize.md) }]}>
                         {t('analytics.subtitle')}
                     </Text>
-                    <View style={styles.datePill}>
+                    <TouchableOpacity
+                        activeOpacity={0.84}
+                        style={styles.datePill}
+                        onPress={onOpenDatePicker}
+                    >
                         <Icon name="calendar-outline" size={14} color={colors.textMuted} />
                         <Text style={[styles.dateText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
                             {dateLabel}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
+                    {Platform.OS === 'ios' && showDatePicker ? (
+                        <View style={styles.iosDatePickerCard}>
+                            <DateTimePicker
+                                mode="date"
+                                display="spinner"
+                                value={selectedDailyDateValue}
+                                maximumDate={new Date()}
+                                onChange={onChangeSelectedDate}
+                            />
+                        </View>
+                    ) : null}
                 </View>
 
                 <ScrollView
@@ -150,226 +440,9 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                         <AnalyticsSkeleton horizontalPadding={0} />
                     ) : (
                         <>
-                            <View
-                                style={[
-                                    styles.glassCard,
-                                    {
-                                        padding: isSmallPhone
-                                            ? scaleSize(spacing.lg, 0.5)
-                                            : scaleSize(spacing.xl, 0.5),
-                                    },
-                                ]}
-                            >
-                                <Text style={[styles.eyebrow, { fontSize: scaleFont(typography.fontSize.xs) }]}>
-                                    {t('analytics.thisWeek')}
-                                </Text>
-                                <Text
-                                    style={[
-                                        styles.heroAmount,
-                                        { fontSize: scaleFont(typography.fontSize['4xl']) },
-                                    ]}
-                                >
-                                    {formatCurrency(weeklyTotal, user?.currency)}
-                                </Text>
-                                {!!weeklyPeriodLabel && (
-                                    <Text
-                                        style={[
-                                            styles.periodMeta,
-                                            { fontSize: scaleFont(typography.fontSize.xs) },
-                                        ]}
-                                    >
-                                        {weeklyPeriodLabel}
-                                        {weeklyPeriodRange ? ` • ${weeklyPeriodRange}` : ''}
-                                    </Text>
-                                )}
-                                <View style={styles.progressLabels}>
-                                    <Text style={[styles.progressText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
-                                        {`${t('analytics.budget')} (${formatCurrency(weeklyBudgetAmount, user?.currency)})`}
-                                    </Text>
-                                    <Text style={[styles.progressText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
-                                        {`${t('analytics.expenses')} (${formatCurrency(weeklyTotal, user?.currency)})`}
-                                    </Text>
-                                </View>
-                                <View style={styles.progressTrack}>
-                                    <View
-                                        style={[
-                                            styles.progressFill,
-                                            { width: `${progress * 100}%`, backgroundColor: colors.success },
-                                        ]}
-                                    />
-                                </View>
-                                <Text style={[styles.miniText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
-                                    {t('analytics.dailyAvg')}: {formatCurrency(weeklyAverage, user?.currency)}
-                                </Text>
-                            </View>
-
-                            <View
-                                style={[
-                                    styles.glassCard,
-                                    {
-                                        padding: isSmallPhone
-                                            ? scaleSize(spacing.lg, 0.5)
-                                            : scaleSize(spacing.xl, 0.5),
-                                    },
-                                ]}
-                            >
-                                <Text style={[styles.cardTitle, { fontSize: scaleFont(typography.fontSize.base) }]}>
-                                    {dailyTrendTitle}
-                                </Text>
-                                <View style={styles.trendChart}>
-                                    <View style={styles.axisColumn}>
-                                        <Text style={[styles.axisLabel, { fontSize: scaleFont(10) }]}>{maxLabel}</Text>
-                                        <Text style={[styles.axisLabel, { fontSize: scaleFont(10) }]}>{midLabel}</Text>
-                                        <Text style={[styles.axisLabel, { fontSize: scaleFont(10) }]}>
-                                            {formatCurrency(0, user?.currency)}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.chartArea}>
-                                        {dailyTotals && dailyTotals.length > 0 ? (
-                                            <View style={styles.barChart}>
-                                                {dailyTotals.map((day, i) => {
-                                                    const barHeight = maxDaily > 0 ? (day.total / maxDaily) * 120 : 0;
-                                                    const dayLabel = new Date(day.date + 'T12:00:00').toLocaleDateString(
-                                                        language === 'es' ? 'es-ES' : 'en',
-                                                        {
-                                                            weekday: 'short',
-                                                        },
-                                                    );
-                                                    const isToday = i === (dailyTotals?.length ?? 0) - 1;
-                                                    return (
-                                                        <View key={day.date} style={styles.barColumn}>
-                                                            <View
-                                                                style={[
-                                                                    styles.bar,
-                                                                    {
-                                                                        height: Math.max(barHeight, 6),
-                                                                        width: isSmallPhone ? 16 : 20,
-                                                                        backgroundColor: isToday
-                                                                            ? colors.success
-                                                                            : withAlpha(colors.primaryLight, 0.4),
-                                                                    },
-                                                                ]}
-                                                            />
-                                                            <Text style={[styles.barLabel, { fontSize: scaleFont(10) }]}>
-                                                                {dayLabel}
-                                                            </Text>
-                                                        </View>
-                                                    );
-                                                })}
-                                            </View>
-                                        ) : (
-                                            <EmptyState
-                                                icon="bar-chart-outline"
-                                                title={t('analytics.noDailyDataTitle')}
-                                                description={t('analytics.noDailyDataDesc')}
-                                            />
-                                        )}
-                                    </View>
-                                </View>
-                            </View>
-
-                            <View
-                                style={[
-                                    styles.glassCard,
-                                    {
-                                        padding: isSmallPhone
-                                            ? scaleSize(spacing.lg, 0.5)
-                                            : scaleSize(spacing.xl, 0.5),
-                                    },
-                                ]}
-                            >
-                                <Text style={[styles.cardTitle, { fontSize: scaleFont(typography.fontSize.base) }]}>
-                                    {t('analytics.byCategory')}
-                                </Text>
-                                <View style={styles.categoryWrap}>
-                                    <View
-                                        style={[
-                                            styles.donut,
-                                            {
-                                                width: donutSize,
-                                                height: donutSize,
-                                                borderRadius: donutSize / 2,
-                                            },
-                                        ]}
-                                    >
-                                        {donutSegments.map((segment, index) => (
-                                            <View
-                                                key={`${segment.color}-${index}`}
-                                                style={[
-                                                    styles.donutSegment,
-                                                    {
-                                                        borderTopColor: segment.color,
-                                                        borderWidth: donutThickness,
-                                                        width: donutSize,
-                                                        height: donutSize,
-                                                        borderRadius: donutSize / 2,
-                                                        transform: [{ rotate: `${index * 90}deg` }],
-                                                    },
-                                                ]}
-                                            />
-                                        ))}
-                                        <View
-                                            style={[
-                                                styles.donutHole,
-                                                {
-                                                    width: donutHole,
-                                                    height: donutHole,
-                                                    borderRadius: donutHole / 2,
-                                                },
-                                            ]}
-                                        />
-                                    </View>
-                                    <View style={styles.categoryList}>
-                                        {sortedCategories.map((cat) => (
-                                            <View key={cat.name} style={styles.categoryRow}>
-                                                <View style={styles.categoryLeft}>
-                                                    <View
-                                                        style={[
-                                                            styles.categoryIcon,
-                                                            { backgroundColor: cat.color || colors.primaryLight },
-                                                        ]}
-                                                    >
-                                                        <CategoryIcon
-                                                            icon={cat.icon}
-                                                            categoryName={cat.name}
-                                                            size={14}
-                                                            color={getReadableIconColor(cat.color || colors.primaryLight)}
-                                                        />
-                                                    </View>
-                                                    <View>
-                                                        <Text
-                                                            style={[
-                                                                styles.categoryName,
-                                                                { fontSize: scaleFont(typography.fontSize.base) },
-                                                            ]}
-                                                        >
-                                                            {cat.name}
-                                                        </Text>
-                                                        <Text
-                                                            style={[
-                                                                styles.categoryAmount,
-                                                                { fontSize: scaleFont(typography.fontSize.xs) },
-                                                            ]}
-                                                        >
-                                                            {formatCurrency(cat.total, user?.currency)}
-                                                        </Text>
-                                                    </View>
-                                                </View>
-                                                <Text style={[styles.categoryPercent, { fontSize: scaleFont(typography.fontSize.sm) }]}>
-                                                    {Math.round(cat.percentage)}%
-                                                </Text>
-                                            </View>
-                                        ))}
-                                        {sortedCategories.length === 0 && (
-                                            <EmptyState
-                                                icon="pie-chart-outline"
-                                                title={t('analytics.noCategoryDataTitle')}
-                                                description={t('analytics.noCategoryDataDesc')}
-                                            />
-                                        )}
-                                    </View>
-                                </View>
-                            </View>
+                            {weeklySummaryCard}
+                            {dailyTrendCard}
+                            {categoryCard}
                         </>
                     )}
                 </ScrollView>
@@ -443,6 +516,14 @@ const createStyles = (colors: any) => StyleSheet.create({
         color: colors.textSecondary,
         marginBottom: spacing.md,
     },
+    iosDatePickerCard: {
+        marginTop: spacing.md,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surfaceElevated,
+        borderWidth: 1,
+        borderColor: colors.border,
+        overflow: 'hidden',
+    },
     periodMeta: {
         fontSize: typography.fontSize.xs,
         color: colors.textMuted,
@@ -507,6 +588,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     bar: {
         borderRadius: borderRadius.sm,
         minHeight: 4,
+    },
+    barSmall: {
+        width: 16,
+    },
+    barRegular: {
+        width: 20,
     },
     barLabel: {
         color: colors.textMuted,

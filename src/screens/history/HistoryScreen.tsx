@@ -63,6 +63,8 @@ export function HistoryScreen({
         horizontalPadding,
         contentMaxWidth,
         isSmallPhone,
+        isTablet,
+        modalMaxWidth,
         scaleFont,
         scaleSize,
     } = useResponsive();
@@ -74,7 +76,9 @@ export function HistoryScreen({
     const listBottomPadding = getMainTabListBottomPadding({
         insetsBottom: insets.bottom,
         isSmallPhone,
+        isTablet,
         scaleSize,
+        extraSpacing: isTablet ? spacing.xl : spacing.base,
     });
 
     const onSuccessHandled = useCallback(() => {
@@ -87,6 +91,7 @@ export function HistoryScreen({
         setSelectedCategoryId,
         categoryOptions,
         sections,
+        records,
         isLoading,
         isRefetching,
         refetch,
@@ -108,6 +113,12 @@ export function HistoryScreen({
         { id: 'all', name: t('filters.allCategories'), type: 'all' as const },
         ...categoryOptions,
     ];
+    const activeFilterLabel = selectedFilterOption?.name ?? t('filters.allCategories');
+    const activeFilterIcon = !selectedFilterOption
+        ? 'funnel-outline'
+        : selectedFilterOption.type === 'subscription'
+            ? 'repeat-outline'
+            : 'pricetag-outline';
 
     const renderTransaction = useCallback(
         (record: HistoryRecord) => {
@@ -283,7 +294,7 @@ export function HistoryScreen({
             <AnimatedScreen style={styles.flex1} delay={8} duration={200} travelY={6}>
                 <View
                     style={[
-                        styles.compactHeader,
+                        styles.header,
                         {
                             paddingTop: insets.top + spacing.base,
                             paddingHorizontal: horizontalPadding,
@@ -294,7 +305,10 @@ export function HistoryScreen({
                     <View style={styles.headerRow}>
                         <View style={styles.headerTextWrap}>
                             <Text
-                                style={[styles.headerTitle, { fontSize: scaleFont(typography.fontSize.xl) }]}
+                                style={[
+                                    styles.headerTitle,
+                                    { fontSize: scaleFont(typography.fontSize['2xl']) },
+                                ]}
                             >
                                 {t('history.title')}
                             </Text>
@@ -307,8 +321,8 @@ export function HistoryScreen({
 
                         <TouchableOpacity
                             style={[
-                                styles.headerIconButton,
-                                showFilters ? styles.headerIconButtonActive : null,
+                                styles.summaryAction,
+                                showFilters ? styles.summaryActionActive : null,
                             ]}
                             onPress={() => setShowFilters((prev) => !prev)}
                             activeOpacity={0.82}
@@ -317,6 +331,41 @@ export function HistoryScreen({
                             <Icon name="funnel-outline" size={18} color={colors.textPrimary} />
                         </TouchableOpacity>
                     </View>
+                    <View style={styles.filterPill}>
+                        <Icon name={activeFilterIcon} size={14} color={colors.textMuted} />
+                        <Text style={[styles.filterPillText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                            {activeFilterLabel}
+                        </Text>
+                    </View>
+                </View>
+
+                <View
+                    style={[
+                        styles.summaryCard,
+                        {
+                            padding: isSmallPhone
+                                ? scaleSize(spacing.lg, 0.45)
+                                : scaleSize(spacing.xl, 0.45),
+                        },
+                        { marginHorizontal: horizontalPadding },
+                        constrainedContentStyle,
+                    ]}
+                >
+                    <View style={styles.summaryGlow} />
+                    <Text style={[styles.summaryLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                        {t('history.recordsLabel')}
+                    </Text>
+                    <Text
+                        style={[
+                            styles.summaryValue,
+                            { fontSize: scaleFont(typography.fontSize['4xl']) },
+                        ]}
+                    >
+                        {records.length}
+                    </Text>
+                    <Text style={[styles.summaryMeta, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                        {summaryText}
+                    </Text>
                 </View>
 
                 {showFilters ? (
@@ -371,11 +420,14 @@ export function HistoryScreen({
                     <View
                         style={[
                             styles.listContent,
-                            { paddingBottom: listBottomPadding },
+                            {
+                                paddingBottom: listBottomPadding,
+                                paddingHorizontal: horizontalPadding,
+                            },
                             constrainedContentStyle,
                         ]}
                     >
-                        <HistorySkeleton horizontalPadding={horizontalPadding} />
+                        <HistorySkeleton horizontalPadding={0} />
                     </View>
                 ) : (
                     <SectionList
@@ -393,7 +445,6 @@ export function HistoryScreen({
                             <View
                                 style={[
                                     styles.sectionHeader,
-                                    { marginHorizontal: horizontalPadding },
                                     constrainedContentStyle,
                                 ]}
                             >
@@ -415,7 +466,6 @@ export function HistoryScreen({
                         renderItem={({ item }) => (
                             <View
                                 style={[
-                                    { marginHorizontal: horizontalPadding },
                                     constrainedContentStyle,
                                 ]}
                             >
@@ -423,15 +473,20 @@ export function HistoryScreen({
                             </View>
                         )}
                         ListEmptyComponent={
-                            <EmptyState
-                                icon="document-text-outline"
-                                title={t('history.noRecordsTitle')}
-                                description={t('history.noRecordsDesc')}
-                            />
+                            <View style={constrainedContentStyle}>
+                                <EmptyState
+                                    icon="document-text-outline"
+                                    title={t('history.noRecordsTitle')}
+                                    description={t('history.noRecordsDesc')}
+                                />
+                            </View>
                         }
                         contentContainerStyle={[
                             styles.listContent,
-                            { paddingBottom: listBottomPadding },
+                            {
+                                paddingBottom: listBottomPadding,
+                                paddingHorizontal: horizontalPadding,
+                            },
                         ]}
                     />
                 )}
@@ -449,7 +504,7 @@ export function HistoryScreen({
                         style={styles.filterModalBackdrop}
                         onPress={() => setShowFilterPicker(false)}
                     />
-                    <View style={styles.filterModalCard}>
+                    <View style={[styles.filterModalCard, { maxWidth: modalMaxWidth }]}>
                         <Text
                             style={[styles.filterModalTitle, { fontSize: scaleFont(typography.fontSize.base) }]}
                         >
@@ -519,18 +574,18 @@ const createStyles = (colors: any) => StyleSheet.create({
     flex1: {
         flex: 1,
     },
-    compactHeader: {
-        marginBottom: spacing.base,
-        paddingBottom: spacing.base,
+    header: {
+        marginBottom: spacing.md,
+        paddingBottom: spacing.sm,
         backgroundColor: 'transparent',
     },
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
     },
     headerTextWrap: {
         flex: 1,
-        marginHorizontal: spacing.sm,
     },
     headerTitle: {
         color: colors.textPrimary,
@@ -538,19 +593,68 @@ const createStyles = (colors: any) => StyleSheet.create({
     },
     headerSubtitle: {
         color: colors.textMuted,
-        marginTop: 1,
+        marginTop: spacing.xs,
     },
-    headerIconButton: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
+    filterPill: {
+        marginTop: spacing.md,
+        alignSelf: 'flex-start',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        paddingHorizontal: spacing.md,
+        paddingVertical: 6,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceElevated,
+    },
+    filterPillText: {
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.semibold,
+        flexShrink: 1,
+    },
+    summaryCard: {
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceCard,
+        overflow: 'hidden',
+        marginBottom: spacing.md,
+    },
+    summaryGlow: {
+        position: 'absolute',
+        right: -24,
+        top: -24,
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: withAlpha(colors.primaryAction, 0.15),
+    },
+    summaryLabel: {
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 0.6,
+    },
+    summaryValue: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.bold,
+        marginTop: spacing.xs,
+    },
+    summaryMeta: {
+        color: colors.textMuted,
+        marginTop: spacing.xs,
+    },
+    summaryAction: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.surfaceCard,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    headerIconButtonActive: {
+    summaryActionActive: {
         backgroundColor: withAlpha(colors.primary, 0.24),
         borderColor: withAlpha(colors.primary, 0.58),
     },
@@ -671,7 +775,6 @@ const createStyles = (colors: any) => StyleSheet.create({
     },
     filterModalCard: {
         width: '100%',
-        maxWidth: 420,
         maxHeight: '70%',
         backgroundColor: colors.surfaceCard,
         borderRadius: borderRadius.xl,

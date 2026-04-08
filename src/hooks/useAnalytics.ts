@@ -5,16 +5,25 @@ import { formatDate } from '../utils/format';
 import { budgetLabel } from '../utils/budget';
 import { useI18n } from './useI18n';
 
-export function useAnalytics() {
+export function useAnalytics(selectedDate?: string) {
     const { t } = useI18n();
+
+    const {
+        data: weeklySummary,
+        isLoading: loadingWeekly,
+        refetch: refetchWeekly,
+    } = useQuery({
+        queryKey: ['analytics', 'weekly', selectedDate ?? 'today'],
+        queryFn: () => analyticsApi.getWeeklySummary(selectedDate),
+    });
 
     const {
         data: dailyTotals,
         isLoading: loadingDaily,
         refetch: refetchDaily,
     } = useQuery({
-        queryKey: ['analytics', 'daily'],
-        queryFn: () => analyticsApi.getDailyTotals(7),
+        queryKey: ['analytics', 'daily', selectedDate ?? 'today'],
+        queryFn: () => analyticsApi.getDailyTotals(7, selectedDate),
     });
 
     const {
@@ -22,17 +31,8 @@ export function useAnalytics() {
         isLoading: loadingCats,
         refetch: refetchCats,
     } = useQuery({
-        queryKey: ['analytics', 'categories'],
-        queryFn: () => analyticsApi.getCategoryBreakdown(),
-    });
-
-    const {
-        data: weeklySummary,
-        isLoading: loadingWeekly,
-        refetch: refetchWeekly,
-    } = useQuery({
-        queryKey: ['analytics', 'weekly'],
-        queryFn: analyticsApi.getWeeklySummary,
+        queryKey: ['analytics', 'categories', selectedDate ?? 'today'],
+        queryFn: () => analyticsApi.getCategoryBreakdown(undefined, undefined, selectedDate),
     });
 
     const isLoading = loadingDaily || loadingCats || loadingWeekly;
