@@ -14,7 +14,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { PlanAccessSection } from '../../components/profile/PlanAccessSection';
 import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { Button } from '../../components/ui/Button';
-import { CurrencySelector } from '../../components/ui/CurrencySelector';
 import { HeroHeader } from '../../components/ui/HeroHeader';
 import { HomeBackground } from '../../components/ui/HomeBackground';
 import { Input } from '../../components/ui/Input';
@@ -33,7 +32,7 @@ import {
     useThemedStyles,
 } from '../../theme';
 import { ThemeMode } from '../../theme/themes';
-import { getCurrencyLocale, getCurrencySymbol } from '../../utils/currency';
+import { getCurrencyLocale } from '../../utils/currency';
 import { formatCurrency } from '../../utils/format';
 import { budgetLabel } from '../../utils/budget';
 import { useAppAccess } from '../../hooks/useAppAccess';
@@ -68,15 +67,6 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
         avatarLoadFailed,
         setAvatarLoadFailed,
         fallbackInitial,
-        budgetAmount,
-        setBudgetAmount,
-        currency,
-        setCurrency,
-        budgetPeriod,
-        budgetPeriodStart,
-        setBudgetPeriodStart,
-        budgetPeriodEnd,
-        setBudgetPeriodEnd,
         isSavingSettings,
         isSendingWeeklyReport,
         themeMode,
@@ -84,8 +74,6 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
         resolvedThemeId,
         themeOptions,
         getThemeModeLabel,
-        onSelectBudgetPeriod,
-        onSave,
         onSaveProfile,
         onLogout,
         onSeedCategories,
@@ -98,7 +86,6 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
 
     const [activeTab, setActiveTab] = React.useState<ProfileSectionTab>('profile');
     const locale = getCurrencyLocale(language);
-    const currencySymbol = getCurrencySymbol(currency, locale);
     const quickThemeModes: ThemeMode[] = ['system', ...themeOptions.map((item) => item.id)];
     const accessLabel = isGuest ? t('guest.statusGuest') : t('guest.statusAccount');
     const planStatusLabel = hasPremium ? t('premium.activeStatus') : t('premium.inactiveStatus');
@@ -155,6 +142,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
     const openPremium = () => navigation.navigate('PremiumPaywall', { feature: 'credit_cards' });
     const openCreditCards = () => navigation.navigate('Main', { screen: 'CreditCards' });
     const openTerms = () => navigation.navigate('TermsAndConditions');
+    const openPlanOverview = () => navigation.navigate('PlanOverview');
 
     const renderSectionTabs = () => (
         <View
@@ -519,91 +507,25 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
                         { fontSize: scaleFont(typography.fontSize.sm) },
                     ]}
                 >
-                    {t('settings.budgetHelp')}
+                    {t('plan.subtitle')}
                 </Text>
-
-                <Input
-                    label={t('settings.budgetAmount')}
-                    value={budgetAmount}
-                    onChangeText={setBudgetAmount}
-                    keyboardType="decimal-pad"
-                    leftContent={<Text style={styles.currencySign}>{currencySymbol}</Text>}
-                    onFocus={createScrollOnFocusHandler(124)}
-                    containerStyle={{ marginBottom: 2 }}
-                />
-
-                <CurrencySelector
-                    label={t('common.currency')}
-                    value={currency}
-                    onChange={setCurrency}
-                    helperText={t('settings.currencyHelp')}
-                    containerStyle={styles.currencySelector}
-                />
-
-                <View style={styles.periodSelectorContainer}>
-                    <Text style={styles.label}>{t('settings.budgetPeriod')}</Text>
-                    <TouchableOpacity
-                        style={styles.periodSelector}
-                        onPress={onSelectBudgetPeriod}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.periodSelectorText}>
-                            {budgetLabel(budgetPeriod, t)}
-                        </Text>
-                        <Icon
-                            name="chevron-down"
-                            size={18}
-                            color={colors.textMuted}
-                        />
-                    </TouchableOpacity>
-                </View>
-
-                {budgetPeriod === 'period' && (
-                    <>
-                        <Input
-                            label={t('settings.periodStart')}
-                            value={budgetPeriodStart}
-                            onChangeText={setBudgetPeriodStart}
-                            placeholder={t('filters.datePlaceholder')}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            onFocus={createScrollOnFocusHandler(132)}
-                        />
-
-                        <Input
-                            label={t('settings.periodEnd')}
-                            value={budgetPeriodEnd}
-                            onChangeText={setBudgetPeriodEnd}
-                            placeholder={t('filters.datePlaceholder')}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            onFocus={createScrollOnFocusHandler(148)}
-                            containerStyle={{ marginTop: spacing.xs }}
-                        />
-                        <Text style={styles.periodHint}>
-                            {t('settings.periodDateFormat')}
-                        </Text>
-                    </>
-                )}
 
                 <Text style={styles.budgetHint}>
                     {t('settings.currentBudget', {
                         value: formatCurrency(
                             user?.budgetAmount ?? user?.dailyBudget ?? 0,
-                            currency,
+                            user?.currency,
                             locale,
                         ),
-                        period: budgetLabel(user?.budgetPeriod ?? budgetPeriod, t),
+                        period: budgetLabel(user?.budgetPeriod, t),
                     })}
                 </Text>
+                <Button
+                    title={t('settings.planOpenCta')}
+                    onPress={openPlanOverview}
+                    containerStyle={styles.inlineActionButton}
+                />
             </View>
-
-            <Button
-                title={t('settings.saveChanges')}
-                onPress={onSave}
-                loading={isSavingSettings}
-                containerStyle={[styles.saveButton, { marginHorizontal: 0 }]}
-            />
 
             <View
                 style={[

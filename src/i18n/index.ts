@@ -888,7 +888,9 @@ const en = {
     'settings.themeLivePreviewButton': 'Open theme selector',
     'plan.title': 'Plan & access',
     'plan.subtitle':
-        'Review your current access level, backup state, and the Premium tools available on this account.',
+        'Adjust your spending plan here, then review access, backup state, and the Premium tools available on this account.',
+    'plan.spendingHint':
+        'Category budgets follow the same currency and spending window you define here.',
     'plan.heroPremiumDescription':
         'This account has Premium active, including saved credit cards and installment plans.',
     'plan.heroFreeDescription':
@@ -1804,7 +1806,9 @@ const es: Record<TranslationKeyInternal, string> = {
     'settings.themeLivePreviewButton': 'Abrir selector de tema',
     'plan.title': 'Plan y acceso',
     'plan.subtitle':
-        'Revisa tu nivel de acceso actual, el estado del respaldo y las herramientas Premium disponibles en esta cuenta.',
+        'Ajusta aquí tu plan de gasto y luego revisa tu acceso, respaldo y las herramientas Premium disponibles en esta cuenta.',
+    'plan.spendingHint':
+        'Los presupuestos por categoría siguen la misma moneda y ventana de gasto que definas aquí.',
     'plan.heroPremiumDescription':
         'Esta cuenta tiene Premium activo, incluyendo tarjetas guardadas y planes de mensualidades.',
     'plan.heroFreeDescription':
