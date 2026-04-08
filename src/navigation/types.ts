@@ -2,7 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { DrawerScreenProps } from '@react-navigation/drawer';
 import { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/native';
-import type { CreditCard, Subscription } from '../types';
+import type { CreditCard, Income, Subscription } from '../types';
 import type { PremiumFeature } from '../types/premium';
 
 export type AuthStackParamList = {
@@ -30,6 +30,7 @@ export type MainTabParamList = {
 export type MainDrawerParamList = {
     Tabs: NavigatorScreenParams<MainTabParamList> | undefined;
     Expenses: { successMessage?: string } | undefined;
+    Income: { successMessage?: string } | undefined;
     Subscriptions: { successMessage?: string } | undefined;
     CreditCards: undefined;
     Savings: undefined;
@@ -45,10 +46,11 @@ export type RootStackParamList = {
     PlanOverview: undefined;
     AddEntry:
     | {
-        initialTab?: 'expense' | 'subscription';
+        initialTab?: 'expense' | 'income' | 'subscription';
     }
     | undefined;
     AddExpense: { embedded?: boolean } | undefined;
+    AddIncome: { income?: Income; embedded?: boolean } | undefined;
     AddSubscription: { subscription?: Subscription; embedded?: boolean } | undefined;
     CreditCardForm: { card?: CreditCard } | undefined;
     SavingsGoalDetail: { goalId: string; title?: string };

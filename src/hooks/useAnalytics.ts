@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { analyticsApi } from '../api/analytics';
+import { incomesApi } from '../api/incomes';
 import { formatDate } from '../utils/format';
 import { budgetLabel } from '../utils/budget';
 import { useI18n } from './useI18n';
@@ -44,19 +45,35 @@ export function useAnalytics(selectedDate?: string, horizonMonths = 6) {
         queryFn: () => analyticsApi.getInsights(selectedDate, horizonMonths),
     });
 
-    const isLoading = loadingDaily || loadingCats || loadingWeekly || loadingInsights;
+    const {
+        data: incomeSummary,
+        isLoading: loadingIncomeSummary,
+        refetch: refetchIncomeSummary,
+    } = useQuery({
+        queryKey: ['income-summary', selectedDate ?? 'today'],
+        queryFn: () => incomesApi.getSummary(selectedDate),
+    });
+
+    const isLoading =
+        loadingDaily ||
+        loadingCats ||
+        loadingWeekly ||
+        loadingInsights ||
+        loadingIncomeSummary;
     const showSkeleton =
         isLoading &&
         !weeklySummary &&
         (!dailyTotals || dailyTotals.length === 0) &&
         (!categories || categories.length === 0) &&
-        !insights;
+        !insights &&
+        !incomeSummary;
 
     const refetchAll = () => {
         refetchDaily();
         refetchCats();
         refetchWeekly();
         refetchInsights();
+        refetchIncomeSummary();
     };
 
     const maxDaily = Math.max(
@@ -81,6 +98,7 @@ export function useAnalytics(selectedDate?: string, horizonMonths = 6) {
         dailyTotals,
         categories,
         weeklySummary,
+        incomeSummary,
         insights,
         isLoading,
         showSkeleton,

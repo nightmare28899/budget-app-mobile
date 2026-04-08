@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainDrawerParamList } from './types';
 import { MainTabNavigator } from './MainTabNavigator';
 import { ExpensesScreen } from '../screens/expenses/ExpensesScreen';
+import { IncomesScreen } from '../screens/incomes/IncomesScreen';
 import { SubscriptionsScreen } from '../screens/subscriptions/SubscriptionsScreen';
 import { SavingsScreen } from '../screens/savings/SavingsScreen';
 import { CreditCardsScreen } from '../screens/creditCards/CreditCardsScreen';
@@ -98,6 +99,8 @@ export function MainDrawerNavigator() {
                             ? 'home-outline'
                             : route.name === 'Expenses'
                                 ? 'wallet-outline'
+                                : route.name === 'Income'
+                                    ? 'trending-up-outline'
                                 : route.name === 'Subscriptions'
                                     ? 'albums-outline'
                                     : route.name === 'CreditCards'
@@ -131,6 +134,11 @@ export function MainDrawerNavigator() {
                 name="Expenses"
                 component={ExpensesScreen}
                 options={{ drawerLabel: t('expenses.title') }}
+            />
+            <Drawer.Screen
+                name="Income"
+                component={IncomesScreen}
+                options={{ drawerLabel: t('income.title') }}
             />
             <Drawer.Screen
                 name="Subscriptions"

@@ -3,6 +3,7 @@ import { useCallback, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { expensesApi } from '../api/expenses';
 import { analyticsApi } from '../api/analytics';
+import { incomesApi } from '../api/incomes';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useI18n } from './useI18n';
 
@@ -33,10 +34,21 @@ export function useDashboard() {
         queryFn: () => analyticsApi.getBudgetSummary(),
     });
 
+    const {
+        data: incomeSummary,
+        isLoading: loadingIncomeSummary,
+        error: incomeSummaryError,
+        refetch: refetchIncomeSummary,
+    } = useQuery({
+        queryKey: ['income-summary', 'current'],
+        queryFn: () => incomesApi.getSummary(),
+    });
+
     useFocusEffect(
         useCallback(() => {
             refetch();
             refetchBudgetSummary();
+            refetchIncomeSummary();
             activeSwipeableRef.current?.close?.();
             activeSwipeableRef.current = null;
             activeSwipeableIdRef.current = null;
@@ -46,13 +58,14 @@ export function useDashboard() {
                 activeSwipeableRef.current = null;
                 activeSwipeableIdRef.current = null;
             };
-        }, [refetch, refetchBudgetSummary]),
+        }, [refetch, refetchBudgetSummary, refetchIncomeSummary]),
     );
 
     const refetchAll = useCallback(() => {
         refetch();
         refetchBudgetSummary();
-    }, [refetch, refetchBudgetSummary]);
+        refetchIncomeSummary();
+    }, [refetch, refetchBudgetSummary, refetchIncomeSummary]);
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => expensesApi.delete(id),
@@ -60,6 +73,7 @@ export function useDashboard() {
             queryClient.invalidateQueries({ queryKey: ['expenses'] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
             queryClient.invalidateQueries({ queryKey: ['history'] });
+            queryClient.invalidateQueries({ queryKey: ['income-summary'] });
         },
     });
 
@@ -77,9 +91,11 @@ export function useDashboard() {
     return {
         todayData,
         budgetSummary,
-        isLoading: loadingToday || loadingBudgetSummary,
+        incomeSummary,
+        isLoading: loadingToday || loadingBudgetSummary || loadingIncomeSummary,
         todayError,
         budgetSummaryError,
+        incomeSummaryError,
         refetch: refetchAll,
         onDeleteExpense,
         activeSwipeableRef,

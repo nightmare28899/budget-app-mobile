@@ -14,6 +14,7 @@ import { authApi } from '../api/auth';
 import { usersApi } from '../api/users';
 import { expensesApi } from '../api/expenses';
 import { analyticsApi } from '../api/analytics';
+import { incomesApi } from '../api/incomes';
 import { historyApi } from '../api/history';
 import { subscriptionsApi } from '../api/subscriptions';
 import { extractApiMessage, isLikelyJsonParseError } from '../utils/api';
@@ -90,6 +91,8 @@ export function useAuth() {
 
     const warmAuthenticatedDashboard = () => {
         queryClient.removeQueries({ queryKey: ['expenses'] });
+        queryClient.removeQueries({ queryKey: ['incomes'] });
+        queryClient.removeQueries({ queryKey: ['income-summary'] });
         queryClient.removeQueries({ queryKey: ['analytics'] });
         queryClient.removeQueries({ queryKey: ['history'] });
         queryClient.removeQueries({ queryKey: ['subscriptions'] });
@@ -107,6 +110,10 @@ export function useAuth() {
             queryClient.fetchQuery({
                 queryKey: ['analytics', 'budget-summary'],
                 queryFn: () => analyticsApi.getBudgetSummary(),
+            }),
+            queryClient.fetchQuery({
+                queryKey: ['income-summary', 'current'],
+                queryFn: () => incomesApi.getSummary(),
             }),
             queryClient.fetchQuery({
                 queryKey: ['history', 'all'],

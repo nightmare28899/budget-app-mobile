@@ -9,6 +9,7 @@ import { ExpenseDetailScreen } from '../screens/history/ExpenseDetailScreen';
 import { EditExpenseScreen } from '../screens/editExpense/EditExpenseScreen';
 import { AddEntryScreen } from '../screens/addExpense/AddEntryScreen';
 import { AddExpenseScreen } from '../screens/addExpense/AddExpenseScreen';
+import { AddIncomeScreen } from '../screens/addExpense/AddIncomeScreen';
 import { AddSubscriptionScreen } from '../screens/addExpense/AddSubscriptionScreen';
 import { PlanOverviewScreen } from '../screens/profile/PlanOverviewScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
@@ -203,6 +204,14 @@ export function RootNavigator() {
                         <Stack.Screen
                             name="AddExpense"
                             component={AddExpenseScreen}
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_bottom',
+                            }}
+                        />
+                        <Stack.Screen
+                            name="AddIncome"
+                            component={AddIncomeScreen}
                             options={{
                                 headerShown: false,
                                 animation: 'slide_from_bottom',

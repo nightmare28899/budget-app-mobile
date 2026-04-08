@@ -555,6 +555,7 @@ export function useSettings() {
             queryClient.invalidateQueries({ queryKey: ['users', 'me'] });
             queryClient.invalidateQueries({ queryKey: ['expenses'] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
+            queryClient.invalidateQueries({ queryKey: ['income-summary'] });
             alert(t('common.success'), t('settings.updated'));
             const nextBudgetAmount = toNum(data?.budgetAmount ?? data?.dailyBudget);
             setBudgetAmount(

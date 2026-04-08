@@ -3,6 +3,7 @@ import {
     Category,
     CreditCard,
     Expense,
+    Income,
     SavingsGoal,
     SavingsTransaction,
     Subscription,
@@ -15,12 +16,13 @@ const storage = createSecureStorage(STORAGE_ID);
 migrateLegacyStringStore(STORAGE_ID, storage);
 const SNAPSHOT_KEY = 'guestDataSnapshot';
 const GUEST_USER_ID = 'guest-local';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 type GuestDataSnapshot = {
     schemaVersion: number;
     categories: Category[];
     expenses: Expense[];
+    incomes: Income[];
     subscriptions: Subscription[];
     creditCards: CreditCard[];
     savingsGoals: SavingsGoal[];
@@ -30,6 +32,7 @@ interface GuestDataState {
     isHydrated: boolean;
     categories: Category[];
     expenses: Expense[];
+    incomes: Income[];
     subscriptions: Subscription[];
     creditCards: CreditCard[];
     savingsGoals: SavingsGoal[];
@@ -39,6 +42,9 @@ interface GuestDataState {
     addExpenses: (expenses: Expense[]) => Expense[];
     updateExpense: (id: string, updater: (expense: Expense) => Expense) => Expense | null;
     removeExpenses: (ids: string[]) => string[];
+    addIncome: (income: Income) => Income;
+    updateIncome: (id: string, updater: (income: Income) => Income) => Income | null;
+    removeIncome: (id: string) => Income | null;
     addSubscription: (subscription: Subscription) => Subscription;
     updateSubscription: (
         id: string,
@@ -77,6 +83,7 @@ function buildInitialSnapshot(): GuestDataSnapshot {
         schemaVersion: SCHEMA_VERSION,
         categories: createGuestCategoryDefaults(),
         expenses: [],
+        incomes: [],
         subscriptions: [],
         creditCards: [],
         savingsGoals: [],
@@ -97,6 +104,7 @@ function normalizeSnapshot(value?: Partial<GuestDataSnapshot> | null): GuestData
                 ? value.categories
                 : base.categories,
         expenses: Array.isArray(value.expenses) ? value.expenses : [],
+        incomes: Array.isArray(value.incomes) ? value.incomes : [],
         subscriptions: Array.isArray(value.subscriptions) ? value.subscriptions : [],
         creditCards: Array.isArray(value.creditCards) ? value.creditCards : [],
         savingsGoals: Array.isArray(value.savingsGoals) ? value.savingsGoals : [],
@@ -122,12 +130,18 @@ function persistSnapshot(snapshot: GuestDataSnapshot) {
 
 function buildSnapshotFromState(state: Pick<
     GuestDataState,
-    'categories' | 'expenses' | 'subscriptions' | 'creditCards' | 'savingsGoals'
+    | 'categories'
+    | 'expenses'
+    | 'incomes'
+    | 'subscriptions'
+    | 'creditCards'
+    | 'savingsGoals'
 >): GuestDataSnapshot {
     return {
         schemaVersion: SCHEMA_VERSION,
         categories: state.categories,
         expenses: state.expenses,
+        incomes: state.incomes,
         subscriptions: state.subscriptions,
         creditCards: state.creditCards,
         savingsGoals: state.savingsGoals,
@@ -138,6 +152,7 @@ export const useGuestDataStore = create<GuestDataState>((set, get) => ({
     isHydrated: false,
     categories: [],
     expenses: [],
+    incomes: [],
     subscriptions: [],
     creditCards: [],
     savingsGoals: [],
@@ -149,6 +164,7 @@ export const useGuestDataStore = create<GuestDataState>((set, get) => ({
             isHydrated: true,
             categories: snapshot.categories,
             expenses: snapshot.expenses,
+            incomes: snapshot.incomes,
             subscriptions: snapshot.subscriptions,
             creditCards: snapshot.creditCards,
             savingsGoals: snapshot.savingsGoals,
@@ -162,6 +178,7 @@ export const useGuestDataStore = create<GuestDataState>((set, get) => ({
             isHydrated: true,
             categories: snapshot.categories,
             expenses: snapshot.expenses,
+            incomes: snapshot.incomes,
             subscriptions: snapshot.subscriptions,
             creditCards: snapshot.creditCards,
             savingsGoals: snapshot.savingsGoals,
@@ -188,6 +205,57 @@ export const useGuestDataStore = create<GuestDataState>((set, get) => ({
         persistSnapshot(snapshot);
         set({ expenses: next });
         return expenses;
+    },
+
+    addIncome: (income) => {
+        const next = [...get().incomes, income];
+        const snapshot = buildSnapshotFromState({
+            ...get(),
+            incomes: next,
+        });
+        persistSnapshot(snapshot);
+        set({ incomes: next });
+        return income;
+    },
+
+    updateIncome: (id, updater) => {
+        let updatedIncome: Income | null = null;
+        const next = get().incomes.map((income) => {
+            if (income.id !== id) {
+                return income;
+            }
+
+            updatedIncome = updater(income);
+            return updatedIncome;
+        });
+
+        if (!updatedIncome) {
+            return null;
+        }
+
+        const snapshot = buildSnapshotFromState({
+            ...get(),
+            incomes: next,
+        });
+        persistSnapshot(snapshot);
+        set({ incomes: next });
+        return updatedIncome;
+    },
+
+    removeIncome: (id) => {
+        const existingIncome = get().incomes.find((income) => income.id === id) ?? null;
+        if (!existingIncome) {
+            return null;
+        }
+
+        const next = get().incomes.filter((income) => income.id !== id);
+        const snapshot = buildSnapshotFromState({
+            ...get(),
+            incomes: next,
+        });
+        persistSnapshot(snapshot);
+        set({ incomes: next });
+        return existingIncome;
     },
 
     updateExpense: (id, updater) => {

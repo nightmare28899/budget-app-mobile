@@ -62,11 +62,16 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
         budget,
         reservedSubscriptions,
         safeToSpend,
+        totalIncome,
+        totalExpenses,
+        netCashflow,
+        savingsRate,
         upcomingSubscriptions,
         isUpcomingLoading,
         hasUpcomingError,
         hasHistoryError,
         hasBudgetError,
+        hasCashflowError,
         recentUnifiedHistory,
         isLoading,
         historyLoading,
@@ -99,6 +104,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
         ? scaleSize(spacing.lg, 0.5)
         : scaleSize(spacing.xl, 0.5);
     const secondaryCardPadding = scaleSize(spacing.base, 0.5);
+    const cashflowTone = netCashflow >= 0 ? colors.success : colors.error;
     const onOpenUpcoming = () => {
         const drawerNavigation = navigation.getParent();
         if (drawerNavigation) {
@@ -555,7 +561,6 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                     style={[
                                         styles.budgetCard,
                                         {
-                                            marginHorizontal: 0,
                                             padding: primaryCardPadding,
                                         },
                                     ]}
@@ -651,6 +656,99 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                         </View>
                                     </View>
                                 </View>
+
+                                {!hasCashflowError ? (
+                                    <View
+                                        style={[
+                                            styles.cashflowCard,
+                                            {
+                                                paddingHorizontal: secondaryCardPadding,
+                                                paddingVertical: secondaryCardPadding,
+                                            },
+                                        ]}
+                                    >
+                                        <View style={styles.cashflowHeader}>
+                                            <Text
+                                                style={[
+                                                    styles.cashflowTitle,
+                                                    { fontSize: scaleFont(typography.fontSize.base) },
+                                                ]}
+                                            >
+                                                {t('dashboard.cashflowTitle')}
+                                            </Text>
+                                            <Text
+                                                style={[
+                                                    styles.cashflowSubtitle,
+                                                    { fontSize: scaleFont(typography.fontSize.sm) },
+                                                ]}
+                                            >
+                                                {savingsRate !== null
+                                                    ? t('dashboard.savingsRate', {
+                                                        percent: Math.round(savingsRate),
+                                                    })
+                                                    : t('dashboard.cashflowEmptyHint')}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.cashflowGrid}>
+                                            <View style={styles.cashflowMetric}>
+                                                <Text
+                                                    style={[
+                                                        styles.cashflowMetricLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('dashboard.incomeLabel')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.cashflowMetricValue,
+                                                        styles.cashflowMetricValueIncome,
+                                                        { fontSize: scaleFont(typography.fontSize.base) },
+                                                    ]}
+                                                >
+                                                    {formatCurrency(totalIncome, user?.currency, locale)}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.cashflowMetric}>
+                                                <Text
+                                                    style={[
+                                                        styles.cashflowMetricLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('dashboard.expensesLabel')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.cashflowMetricValue,
+                                                        styles.cashflowMetricValueExpense,
+                                                        { fontSize: scaleFont(typography.fontSize.base) },
+                                                    ]}
+                                                >
+                                                    {formatCurrency(totalExpenses, user?.currency, locale)}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.cashflowMetric}>
+                                                <Text
+                                                    style={[
+                                                        styles.cashflowMetricLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('dashboard.netLabel')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.cashflowMetricValue,
+                                                        { fontSize: scaleFont(typography.fontSize.base), color: cashflowTone },
+                                                    ]}
+                                                >
+                                                    {formatCurrency(netCashflow, user?.currency, locale)}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                ) : null}
 
                                 <TouchableOpacity
                                     style={[
@@ -841,6 +939,55 @@ const createStyles = (colors: any) =>
             paddingHorizontal: spacing.base,
             paddingVertical: spacing.base,
             marginBottom: spacing.base,
+        },
+        cashflowCard: {
+            backgroundColor: colors.surfaceElevated,
+            borderRadius: borderRadius.xl,
+            borderWidth: 1,
+            borderColor: colors.border,
+            marginBottom: spacing.base,
+            gap: spacing.base,
+        },
+        cashflowHeader: {
+            gap: 4,
+        },
+        cashflowTitle: {
+            color: colors.textPrimary,
+            fontWeight: typography.fontWeight.semibold,
+        },
+        cashflowSubtitle: {
+            color: colors.textMuted,
+            lineHeight: 20,
+        },
+        cashflowGrid: {
+            flexDirection: 'row',
+            gap: spacing.sm,
+        },
+        cashflowMetric: {
+            flex: 1,
+            borderRadius: borderRadius.lg,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.surfaceCard,
+            paddingHorizontal: spacing.sm,
+            paddingVertical: spacing.sm,
+            gap: spacing.xs,
+        },
+        cashflowMetricLabel: {
+            color: colors.textMuted,
+            textTransform: 'uppercase',
+            fontWeight: typography.fontWeight.medium,
+            letterSpacing: 0.4,
+        },
+        cashflowMetricValue: {
+            color: colors.textPrimary,
+            fontWeight: typography.fontWeight.bold,
+        },
+        cashflowMetricValueIncome: {
+            color: colors.success,
+        },
+        cashflowMetricValueExpense: {
+            color: colors.error,
         },
         savingsShortcutIconWrap: {
             width: 44,

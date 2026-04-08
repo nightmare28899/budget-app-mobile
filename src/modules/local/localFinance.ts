@@ -11,6 +11,8 @@ import {
     Expense,
     HistoryPayload,
     HistorySummary,
+    Income,
+    IncomeSummary,
     TodaySummary,
     Subscription,
     User,
@@ -30,6 +32,7 @@ import { toNum } from '../../utils/number';
 type LocalFinanceInput = {
     user: User | null;
     expenses: Expense[];
+    incomes?: Income[];
     subscriptions?: Subscription[];
     categories?: Category[];
     now?: Date;
@@ -138,6 +141,31 @@ function filterVisibleExpenses(expenses: Expense[], now = new Date()) {
     return expenses.filter((expense) => {
         const expenseDate = dateOnly(expense.date);
         return !!expenseDate && expenseDate <= todayKey;
+    });
+}
+
+function filterIncomesByPeriod(incomes: Income[], start: Date, end: Date) {
+    const startTime = new Date(start);
+    startTime.setHours(0, 0, 0, 0);
+    const endTime = new Date(end);
+    endTime.setHours(23, 59, 59, 999);
+
+    return incomes.filter((income) => {
+        const parsed = new Date(income.date);
+        if (Number.isNaN(parsed.getTime())) {
+            return false;
+        }
+
+        return parsed >= startTime && parsed <= endTime;
+    });
+}
+
+function filterVisibleIncomes(incomes: Income[], now = new Date()) {
+    const todayKey = dateOnly(now);
+
+    return incomes.filter((income) => {
+        const incomeDate = dateOnly(income.date);
+        return !!incomeDate && incomeDate <= todayKey;
     });
 }
 
@@ -282,6 +310,55 @@ export function buildBudgetSummary({
         expenseCount: expensesInPeriod.length,
         dailyAverage: totalDays > 0 ? totalSpent / totalDays : totalSpent,
         weeklyBudget: calculateWeeklyBudget(user, effectiveNow),
+    };
+}
+
+export function buildIncomeSummary({
+    user,
+    expenses,
+    incomes = [],
+    now,
+}: LocalFinanceInput): IncomeSummary {
+    const effectiveNow = now ?? new Date();
+    const { periodType, range } = getCurrentPeriod({
+        user,
+        expenses,
+        incomes,
+        now: effectiveNow,
+    });
+    const trackedEnd = endOfDay(effectiveNow) < range.end ? endOfDay(effectiveNow) : range.end;
+    const visibleExpenses = filterVisibleExpenses(expenses, effectiveNow);
+    const visibleIncomes = filterVisibleIncomes(incomes, effectiveNow);
+    const expensesInPeriod = filterExpensesByPeriod(
+        visibleExpenses,
+        range.start,
+        trackedEnd,
+    );
+    const incomesInPeriod = filterIncomesByPeriod(
+        visibleIncomes,
+        range.start,
+        trackedEnd,
+    );
+    const totalIncome = incomesInPeriod.reduce((sum, income) => sum + toNum(income.amount), 0);
+    const totalExpenses = expensesInPeriod.reduce((sum, expense) => sum + toNum(expense.cost), 0);
+    const net = totalIncome - totalExpenses;
+
+    return {
+        period: {
+            type: periodType,
+            start: range.start.toISOString().slice(0, 10),
+            end: trackedEnd.toISOString().slice(0, 10),
+        },
+        totalIncome: roundMoney(totalIncome),
+        totalExpenses: roundMoney(totalExpenses),
+        net: roundMoney(net),
+        incomeCount: incomesInPeriod.length,
+        averageIncome:
+            incomesInPeriod.length > 0
+                ? roundMoney(totalIncome / incomesInPeriod.length)
+                : 0,
+        savingsRate:
+            totalIncome > 0 ? roundPercent((net / totalIncome) * 100) : null,
     };
 }
 

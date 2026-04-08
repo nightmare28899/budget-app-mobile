@@ -290,6 +290,7 @@ export function useExpensesScreen({
                 queryClient.invalidateQueries({ queryKey: ['expenses'] }),
                 queryClient.invalidateQueries({ queryKey: ['analytics'] }),
                 queryClient.invalidateQueries({ queryKey: ['history'] }),
+                queryClient.invalidateQueries({ queryKey: ['income-summary'] }),
             ]);
         },
     });

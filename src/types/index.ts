@@ -83,6 +83,18 @@ export interface Expense {
     updatedAt: string;
 }
 
+export interface Income {
+    id: string;
+    title: string;
+    amount: number;
+    currency: string;
+    note?: string | null;
+    date: string;
+    userId: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface ExpensesFilters {
     from?: string;
     to?: string;
@@ -217,6 +229,16 @@ export interface BudgetSummary {
     expenseCount: number;
     dailyAverage: number;
     weeklyBudget: number;
+}
+
+export interface IncomeSummary {
+    period: { type: BudgetPeriod; start: string | null; end: string | null };
+    totalIncome: number;
+    totalExpenses: number;
+    net: number;
+    incomeCount: number;
+    averageIncome: number;
+    savingsRate: number | null;
 }
 
 export interface AnalyticsSpendInsight {
@@ -390,6 +412,26 @@ export interface CreateExpensePayload {
 }
 
 export type UpdateExpensePayload = Partial<CreateExpensePayload>;
+
+export interface CreateIncomePayload {
+    title: string;
+    amount: number;
+    currency?: string;
+    note?: string;
+    date?: string;
+}
+
+export type UpdateIncomePayload = Partial<CreateIncomePayload>;
+
+export interface IncomeListResponse {
+    incomes: Income[];
+    total: number;
+    count: number;
+    currencyBreakdown: Array<{
+        currency: string;
+        total: number;
+    }>;
+}
 
 export interface CreateCreditCardPayload {
     name: string;

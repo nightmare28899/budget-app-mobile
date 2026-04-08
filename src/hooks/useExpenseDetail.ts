@@ -21,6 +21,7 @@ export function useExpenseDetail(id: string, onDeleted: () => void) {
                 queryClient.invalidateQueries({ queryKey: ['expenses'] }),
                 queryClient.invalidateQueries({ queryKey: ['history'] }),
                 queryClient.invalidateQueries({ queryKey: ['analytics'] }),
+                queryClient.invalidateQueries({ queryKey: ['income-summary'] }),
             ]);
             onDeleted();
         },

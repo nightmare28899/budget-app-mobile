@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootScreenProps } from '../../navigation/types';
 import { AddExpenseScreen } from './AddExpenseScreen';
+import { AddIncomeScreen } from './AddIncomeScreen';
 import { AddSubscriptionScreen } from './AddSubscriptionScreen';
 import {
     typography,
@@ -15,7 +16,7 @@ import {
 import { withAlpha } from '../../utils/subscriptions';
 import { useI18n } from '../../hooks/useI18n';
 
-type AddEntryTab = 'expense' | 'subscription';
+type AddEntryTab = 'expense' | 'income' | 'subscription';
 
 export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'>) {
     const { t } = useI18n();
@@ -24,7 +25,17 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
     const insets = useSafeAreaInsets();
 
     const initialTab = useMemo<AddEntryTab>(
-        () => (route.params?.initialTab === 'subscription' ? 'subscription' : 'expense'),
+        () => {
+            if (route.params?.initialTab === 'subscription') {
+                return 'subscription';
+            }
+
+            if (route.params?.initialTab === 'income') {
+                return 'income';
+            }
+
+            return 'expense';
+        },
         [route.params?.initialTab],
     );
     const [activeTab, setActiveTab] = useState<AddEntryTab>(initialTab);
@@ -67,6 +78,28 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                         activeOpacity={0.85}
                         style={[
                             styles.segmentButton,
+                            activeTab === 'income' ? styles.segmentButtonActive : null,
+                        ]}
+                        onPress={() => setActiveTab('income')}
+                    >
+                        <Icon
+                            name="trending-up-outline"
+                            size={16}
+                            color={activeTab === 'income' ? colors.textPrimary : colors.textMuted}
+                        />
+                        <Text
+                            style={[
+                                styles.segmentLabel,
+                                activeTab === 'income' ? styles.segmentLabelActive : null,
+                            ]}
+                        >
+                            {t('addEntry.incomeTab')}
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        activeOpacity={0.85}
+                        style={[
+                            styles.segmentButton,
                             activeTab === 'subscription' ? styles.segmentButtonActive : null,
                         ]}
                         onPress={() => setActiveTab('subscription')}
@@ -99,6 +132,15 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                         route={{
                             key: 'AddExpense',
                             name: 'AddExpense',
+                            params: { embedded: true },
+                        } as any}
+                    />
+                ) : activeTab === 'income' ? (
+                    <AddIncomeScreen
+                        navigation={navigation as any}
+                        route={{
+                            key: 'AddIncome',
+                            name: 'AddIncome',
                             params: { embedded: true },
                         } as any}
                     />

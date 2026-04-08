@@ -102,6 +102,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
         categories,
         insights,
         weeklySummary,
+        incomeSummary,
         isLoading,
         showSkeleton,
         refetchAll,
@@ -119,6 +120,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
     });
     const weeklyTotal = weeklySummary?.totalSpent ?? 0;
     const weeklyAverage = weeklySummary?.dailyAverage ?? 0;
+    const cashflowTone = (incomeSummary?.net ?? 0) >= 0 ? colors.success : colors.error;
     const progress =
         weeklyBudgetAmount > 0 ? Math.min(weeklyTotal / weeklyBudgetAmount, 1) : 0;
     const selectedDailyDateValue = React.useMemo(
@@ -298,6 +300,70 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
             </Text>
         </View>
     );
+    const cashflowCard = incomeSummary ? (
+        <View
+            style={[
+                styles.glassCard,
+                {
+                    padding: cardPadding,
+                },
+            ]}
+        >
+            <Text style={[styles.cardTitle, { fontSize: scaleFont(typography.fontSize.base) }]}>
+                {t('analytics.cashflowTitle')}
+            </Text>
+            <View style={styles.cashflowGrid}>
+                <View style={styles.cashflowMetric}>
+                    <Text style={[styles.cashflowMetricLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                        {t('dashboard.incomeLabel')}
+                    </Text>
+                    <Text
+                        style={[
+                            styles.cashflowMetricValue,
+                            styles.cashflowMetricValueIncome,
+                            { fontSize: scaleFont(typography.fontSize.lg) },
+                        ]}
+                    >
+                        {formatCurrency(incomeSummary.totalIncome, user?.currency)}
+                    </Text>
+                </View>
+                <View style={styles.cashflowMetric}>
+                    <Text style={[styles.cashflowMetricLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                        {t('dashboard.expensesLabel')}
+                    </Text>
+                    <Text
+                        style={[
+                            styles.cashflowMetricValue,
+                            styles.cashflowMetricValueExpense,
+                            { fontSize: scaleFont(typography.fontSize.lg) },
+                        ]}
+                    >
+                        {formatCurrency(incomeSummary.totalExpenses, user?.currency)}
+                    </Text>
+                </View>
+                <View style={styles.cashflowMetric}>
+                    <Text style={[styles.cashflowMetricLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                        {t('dashboard.netLabel')}
+                    </Text>
+                    <Text
+                        style={[
+                            styles.cashflowMetricValue,
+                            { fontSize: scaleFont(typography.fontSize.lg), color: cashflowTone },
+                        ]}
+                    >
+                        {formatCurrency(incomeSummary.net, user?.currency)}
+                    </Text>
+                </View>
+            </View>
+            <Text style={[styles.cashflowFootnote, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                {incomeSummary.savingsRate !== null
+                    ? t('analytics.savingsRate', {
+                        percent: Math.round(incomeSummary.savingsRate),
+                    })
+                    : t('analytics.cashflowEmptyHint')}
+            </Text>
+        </View>
+    ) : null;
     const spendingSignalsCard = insights ? (
         <View
             style={[
@@ -715,6 +781,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                     ) : (
                         <>
                             {weeklySummaryCard}
+                            {cashflowCard}
                             {spendingSignalsCard}
                             {subscriptionSavingsCard}
                             {dailyTrendCard}
@@ -794,6 +861,41 @@ const createStyles = (colors: any) => StyleSheet.create({
     },
     insightGrid: {
         gap: spacing.md,
+    },
+    cashflowGrid: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+        marginTop: spacing.xs,
+        marginBottom: spacing.sm,
+    },
+    cashflowMetric: {
+        flex: 1,
+        backgroundColor: colors.surfaceElevated,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.sm,
+        gap: spacing.xs,
+    },
+    cashflowMetricLabel: {
+        color: colors.textMuted,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        fontWeight: typography.fontWeight.medium,
+    },
+    cashflowMetricValue: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.bold,
+    },
+    cashflowMetricValueIncome: {
+        color: colors.success,
+    },
+    cashflowMetricValueExpense: {
+        color: colors.error,
+    },
+    cashflowFootnote: {
+        color: colors.textSecondary,
+        marginTop: spacing.xs,
     },
     insightMetricCard: {
         backgroundColor: colors.surfaceElevated,

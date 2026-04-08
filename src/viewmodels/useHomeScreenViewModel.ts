@@ -24,9 +24,11 @@ export function useHomeScreenViewModel({
     const {
         todayData,
         budgetSummary,
+        incomeSummary,
         isLoading,
         todayError,
         budgetSummaryError,
+        incomeSummaryError,
         refetch,
     } = useDashboard();
 
@@ -103,6 +105,10 @@ export function useHomeScreenViewModel({
         typeof budgetSummary?.safeToSpend === 'number'
             ? toNum(budgetSummary.safeToSpend)
             : budget - reservedSubscriptions;
+    const totalIncome = toNum(incomeSummary?.totalIncome);
+    const totalExpenses = toNum(incomeSummary?.totalExpenses ?? budgetSummary?.totalSpent);
+    const netCashflow = toNum(incomeSummary?.net);
+    const savingsRate = incomeSummary?.savingsRate ?? null;
 
     const recentUnifiedHistory = useMemo(
         () => getRecentUnifiedHistory(historyData, recentLimit),
@@ -123,6 +129,7 @@ export function useHomeScreenViewModel({
         (!!todayError || !!budgetSummaryError) &&
         !todayData &&
         !budgetSummary;
+    const hasCashflowError = !!incomeSummaryError && !incomeSummary;
 
     return {
         total,
@@ -132,11 +139,16 @@ export function useHomeScreenViewModel({
         periodEnd,
         reservedSubscriptions,
         safeToSpend,
+        totalIncome,
+        totalExpenses,
+        netCashflow,
+        savingsRate,
         upcomingSubscriptions: upcomingSubscriptions ?? [],
         isUpcomingLoading,
         hasUpcomingError,
         hasHistoryError,
         hasBudgetError,
+        hasCashflowError,
         recentUnifiedHistory,
         isLoading,
         historyLoading,

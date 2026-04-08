@@ -156,6 +156,7 @@ export function useExpenseForm(expenseId?: string) {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
             queryClient.invalidateQueries({ queryKey: ['history'] });
+            queryClient.invalidateQueries({ queryKey: ['income-summary'] });
         },
         onError: (err: any) => {
             handleMutationError(err?.response?.data, t('expense.failedSave'));
@@ -169,6 +170,7 @@ export function useExpenseForm(expenseId?: string) {
             queryClient.invalidateQueries({ queryKey: ['expense', expenseId] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
             queryClient.invalidateQueries({ queryKey: ['history'] });
+            queryClient.invalidateQueries({ queryKey: ['income-summary'] });
         },
         onError: (err: any) => {
             handleMutationError(err?.response?.data, t('expense.failedUpdate'));
