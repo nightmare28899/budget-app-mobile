@@ -703,7 +703,7 @@ const createStyles = (colors: any) => StyleSheet.create({
         height: spacing.lg,
     },
     compactSubscriptionCard: {
-        marginBottom: 2,
+        marginBottom: spacing.sm,
     },
     inlineErrorCard: {
         marginBottom: spacing.lg,

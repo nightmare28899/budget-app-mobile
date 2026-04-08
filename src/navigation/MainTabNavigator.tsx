@@ -84,8 +84,8 @@ export function MainTabNavigator() {
         : spacing.base;
     const tabBarFrameStyle = isTablet && tabBarMaxWidth
         ? {
-            width: tabBarMaxWidth,
             left: tabBarSideOffset,
+            right: tabBarSideOffset,
         }
         : {
             left: spacing.base,
