@@ -157,9 +157,20 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
 
         navigation.navigate('SubscriptionsTab', { initialTab: 'subscriptions' });
     };
+    const onOpenCategoryBudgets = () => {
+        const drawerNavigation = navigation.getParent();
+        if (drawerNavigation) {
+            (drawerNavigation.navigate as (...args: [string, object?]) => void)('CategoryBudgets');
+        }
+    };
     const onActionPress = (actionId: (typeof actionItems)[number]['id']) => {
         if (actionId === 'add-income') {
             navigation.navigate('AddEntry', { initialTab: 'income' });
+            return;
+        }
+
+        if (actionId === 'review-category-budgets') {
+            onOpenCategoryBudgets();
             return;
         }
 

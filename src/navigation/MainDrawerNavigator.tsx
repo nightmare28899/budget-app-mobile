@@ -13,6 +13,7 @@ import { MainTabNavigator } from './MainTabNavigator';
 import { ExpensesScreen } from '../screens/expenses/ExpensesScreen';
 import { IncomesScreen } from '../screens/incomes/IncomesScreen';
 import { PlannerScreen } from '../screens/planner/PlannerScreen';
+import { CategoryBudgetsScreen } from '../screens/categoryBudgets/CategoryBudgetsScreen';
 import { SubscriptionsScreen } from '../screens/subscriptions/SubscriptionsScreen';
 import { SavingsScreen } from '../screens/savings/SavingsScreen';
 import { CreditCardsScreen } from '../screens/creditCards/CreditCardsScreen';
@@ -100,6 +101,8 @@ export function MainDrawerNavigator() {
                             ? 'home-outline'
                             : route.name === 'Planner'
                                 ? 'calendar-outline'
+                            : route.name === 'CategoryBudgets'
+                                ? 'pie-chart-outline'
                             : route.name === 'Expenses'
                                 ? 'wallet-outline'
                                 : route.name === 'Income'
@@ -132,6 +135,11 @@ export function MainDrawerNavigator() {
                 name="Planner"
                 component={PlannerScreen}
                 options={{ drawerLabel: t('planner.title') }}
+            />
+            <Drawer.Screen
+                name="CategoryBudgets"
+                component={CategoryBudgetsScreen}
+                options={{ drawerLabel: t('categoryBudgets.title') }}
             />
             <Drawer.Screen
                 name="CreditCards"

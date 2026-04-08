@@ -6,6 +6,9 @@ import {
     AnalyticsSubscriptionSavings,
     BudgetSummary,
     Category,
+    CategoryBudgetOverview,
+    CategoryBudgetStatus,
+    CategoryBudgetStatusTone,
     CategoryBreakdown,
     DailyTotal,
     Expense,
@@ -84,6 +87,36 @@ function roundMoney(value: number) {
 
 function roundPercent(value: number) {
     return Math.round(value * 10) / 10;
+}
+
+function getCategoryBudgetTone(spent: number, budgetAmount: number): CategoryBudgetStatusTone {
+    if (budgetAmount <= 0) {
+        return 'no_budget';
+    }
+
+    if (spent > budgetAmount) {
+        return 'off_track';
+    }
+
+    if (spent >= budgetAmount * 0.8) {
+        return 'watch';
+    }
+
+    return 'on_track';
+}
+
+function getCategoryBudgetSortWeight(status: CategoryBudgetStatusTone) {
+    switch (status) {
+        case 'off_track':
+            return 0;
+        case 'watch':
+            return 1;
+        case 'on_track':
+            return 2;
+        case 'no_budget':
+        default:
+            return 3;
+    }
 }
 
 function normalizeHorizonMonths(raw?: number) {
@@ -476,6 +509,97 @@ export function buildCategoryBreakdown({
         ...item,
         percentage: grandTotal > 0 ? (item.total / grandTotal) * 100 : 0,
     }));
+}
+
+export function buildCategoryBudgetOverview({
+    user,
+    expenses,
+    categories = [],
+    now,
+}: LocalFinanceInput): CategoryBudgetOverview {
+    const effectiveNow = now ?? new Date();
+    const { periodType, range } = getCurrentPeriod({
+        user,
+        expenses,
+        categories,
+        now: effectiveNow,
+    });
+    const visibleExpenses = filterVisibleExpenses(expenses, effectiveNow);
+    const scopedExpenses = filterExpensesByPeriod(visibleExpenses, range.start, range.end);
+    const totals = new Map<string, { spent: number; expenseCount: number }>();
+
+    for (const expense of scopedExpenses) {
+        const categoryId = expense.categoryId ?? expense.category?.id;
+        if (!categoryId) {
+            continue;
+        }
+
+        const current = totals.get(categoryId);
+        totals.set(categoryId, {
+            spent: (current?.spent ?? 0) + toNum(expense.cost),
+            expenseCount: (current?.expenseCount ?? 0) + 1,
+        });
+    }
+
+    const items: CategoryBudgetStatus[] = categories
+        .map((category) => {
+            const spent = totals.get(category.id)?.spent ?? 0;
+            const expenseCount = totals.get(category.id)?.expenseCount ?? 0;
+            const budgetAmount = roundMoney(toNum(category.budgetAmount));
+
+            return {
+                categoryId: category.id,
+                name: category.name,
+                icon: category.icon ?? 'cube-outline',
+                color: category.color ?? '#95A5A6',
+                budgetAmount,
+                spent: roundMoney(spent),
+                remaining: budgetAmount > 0 ? roundMoney(budgetAmount - spent) : 0,
+                percentage: budgetAmount > 0 ? roundPercent((spent / budgetAmount) * 100) : 0,
+                expenseCount,
+                status: getCategoryBudgetTone(spent, budgetAmount),
+            };
+        })
+        .sort((left, right) => {
+            const toneDiff =
+                getCategoryBudgetSortWeight(left.status) - getCategoryBudgetSortWeight(right.status);
+            if (toneDiff !== 0) {
+                return toneDiff;
+            }
+
+            if (left.budgetAmount !== right.budgetAmount) {
+                return right.budgetAmount - left.budgetAmount;
+            }
+
+            if (left.spent !== right.spent) {
+                return right.spent - left.spent;
+            }
+
+            return left.name.localeCompare(right.name);
+        });
+
+    const budgetedItems = items.filter((item) => item.budgetAmount > 0);
+
+    return {
+        period: {
+            type: periodType,
+            start: range.start.toISOString().slice(0, 10),
+            end: range.end.toISOString().slice(0, 10),
+        },
+        totalBudgeted: roundMoney(
+            budgetedItems.reduce((sum, item) => sum + item.budgetAmount, 0),
+        ),
+        totalSpentBudgeted: roundMoney(
+            budgetedItems.reduce((sum, item) => sum + item.spent, 0),
+        ),
+        totalRemaining: roundMoney(
+            budgetedItems.reduce((sum, item) => sum + item.remaining, 0),
+        ),
+        categoriesWithBudget: budgetedItems.length,
+        overBudgetCount: budgetedItems.filter((item) => item.status === 'off_track').length,
+        watchCount: budgetedItems.filter((item) => item.status === 'watch').length,
+        items,
+    };
 }
 
 export function buildWeeklySummary({

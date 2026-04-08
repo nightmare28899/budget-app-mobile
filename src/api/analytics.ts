@@ -1,5 +1,6 @@
 import apiClient from './client';
 import {
+    CategoryBudgetOverview,
     AnalyticsInsights,
     DailyTotal,
     CategoryBreakdown,
@@ -12,6 +13,7 @@ import { isLocalMode } from '../modules/access/localMode';
 import {
     buildAnalyticsInsights,
     buildBudgetSummary,
+    buildCategoryBudgetOverview,
     buildCategoryBreakdown,
     buildDailyTotals,
     buildWeeklySummary,
@@ -121,6 +123,35 @@ function normalizeInsights(data: any): AnalyticsInsights {
     };
 }
 
+function normalizeCategoryBudgetOverview(data: any): CategoryBudgetOverview {
+    const period = normalizePeriod(data?.period);
+    const items = Array.isArray(data?.items)
+        ? data.items.map((item: any) => ({
+            categoryId: String(item?.categoryId ?? ''),
+            name: String(item?.name ?? ''),
+            icon: String(item?.icon ?? 'cube-outline'),
+            color: String(item?.color ?? '#95A5A6'),
+            budgetAmount: toNum(item?.budgetAmount),
+            spent: toNum(item?.spent),
+            remaining: toNum(item?.remaining),
+            percentage: toNum(item?.percentage),
+            expenseCount: toNum(item?.expenseCount),
+            status: item?.status ?? 'no_budget',
+        }))
+        : [];
+
+    return {
+        period,
+        totalBudgeted: toNum(data?.totalBudgeted),
+        totalSpentBudgeted: toNum(data?.totalSpentBudgeted),
+        totalRemaining: toNum(data?.totalRemaining),
+        categoriesWithBudget: toNum(data?.categoriesWithBudget),
+        overBudgetCount: toNum(data?.overBudgetCount),
+        watchCount: toNum(data?.watchCount),
+        items,
+    };
+}
+
 export const analyticsApi = {
     getDailyTotals: async (days = 7, endDate?: string) => {
         if (isLocalMode()) {
@@ -189,6 +220,26 @@ export const analyticsApi = {
                 percentage: toNum(item?.percentage),
             }))
             : [];
+    },
+
+    getCategoryBudgetOverview: async (referenceDate?: string) => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            const anchorDate = referenceDate ? new Date(`${referenceDate}T12:00:00`) : new Date();
+            return buildCategoryBudgetOverview({
+                user: useAuthStore.getState().user,
+                expenses: state.expenses,
+                categories: state.categories,
+                now: anchorDate,
+            });
+        }
+
+        const { data } = await apiClient.get<CategoryBudgetOverview>(
+            '/analytics/category-budgets',
+            { params: { referenceDate } },
+        );
+
+        return normalizeCategoryBudgetOverview(data);
     },
 
     getBudgetSummary: async (referenceDate?: string) => {

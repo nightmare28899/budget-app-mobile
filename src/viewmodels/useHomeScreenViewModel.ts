@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { analyticsApi } from '../api/analytics';
 import { historyApi } from '../api/history';
 import { subscriptionsApi } from '../api/subscriptions';
 import { useDashboard } from '../hooks/useDashboard';
@@ -21,7 +22,12 @@ type UseHomeScreenViewModelParams = {
 };
 
 type HomeActionItem = {
-    id: 'add-income' | 'review-spending' | 'trim-subscriptions' | 'move-to-savings';
+    id:
+    | 'add-income'
+    | 'review-category-budgets'
+    | 'review-spending'
+    | 'trim-subscriptions'
+    | 'move-to-savings';
     icon: string;
     tone: 'info' | 'warning' | 'success' | 'danger';
     title: string;
@@ -45,6 +51,14 @@ export function useHomeScreenViewModel({
         incomeSummaryError,
         refetch,
     } = useDashboard();
+
+    const {
+        data: categoryBudgetOverview,
+        refetch: refetchCategoryBudgetOverview,
+    } = useQuery({
+        queryKey: ['analytics', 'category-budgets', 'dashboard'],
+        queryFn: () => analyticsApi.getCategoryBudgetOverview(),
+    });
 
     const {
         data: historyData,
@@ -145,6 +159,30 @@ export function useHomeScreenViewModel({
             });
         }
 
+        if ((categoryBudgetOverview?.overBudgetCount ?? 0) > 0) {
+            items.push({
+                id: 'review-category-budgets',
+                icon: 'pie-chart-outline',
+                tone: 'danger',
+                title: t('dashboard.actionCategoryBudgetsTitle'),
+                description: t('dashboard.actionCategoryBudgetsOverDescription', {
+                    count: categoryBudgetOverview?.overBudgetCount ?? 0,
+                }),
+                ctaLabel: t('dashboard.actionCategoryBudgetsCta'),
+            });
+        } else if ((categoryBudgetOverview?.watchCount ?? 0) > 0) {
+            items.push({
+                id: 'review-category-budgets',
+                icon: 'pie-chart-outline',
+                tone: 'warning',
+                title: t('dashboard.actionCategoryBudgetsTitle'),
+                description: t('dashboard.actionCategoryBudgetsWatchDescription', {
+                    count: categoryBudgetOverview?.watchCount ?? 0,
+                }),
+                ctaLabel: t('dashboard.actionCategoryBudgetsCta'),
+            });
+        }
+
         if (
             dashboardInsights?.weeklySpend &&
             dashboardInsights.weeklySpend.changeAmount > 0 &&
@@ -219,6 +257,8 @@ export function useHomeScreenViewModel({
 
         return items.slice(0, 3);
     }, [
+        categoryBudgetOverview?.overBudgetCount,
+        categoryBudgetOverview?.watchCount,
         currency,
         dashboardInsights,
         locale,
@@ -230,9 +270,10 @@ export function useHomeScreenViewModel({
 
     const refetchAll = useCallback(() => {
         refetch();
+        refetchCategoryBudgetOverview();
         refetchHistory();
         refetchUpcoming();
-    }, [refetch, refetchHistory, refetchUpcoming]);
+    }, [refetch, refetchCategoryBudgetOverview, refetchHistory, refetchUpcoming]);
 
     const showSkeleton = (isLoading || historyLoading) && !todayData && !historyData;
     const isUpcomingLoading = upcomingLoading || upcomingRefetching;

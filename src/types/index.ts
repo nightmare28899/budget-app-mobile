@@ -52,7 +52,38 @@ export interface Category {
     name: string;
     icon?: string;
     color?: string;
+    budgetAmount?: number | null;
     userId: string;
+}
+
+export type CategoryBudgetStatusTone =
+    | 'no_budget'
+    | 'on_track'
+    | 'watch'
+    | 'off_track';
+
+export interface CategoryBudgetStatus {
+    categoryId: string;
+    name: string;
+    icon: string;
+    color: string;
+    budgetAmount: number;
+    spent: number;
+    remaining: number;
+    percentage: number;
+    expenseCount: number;
+    status: CategoryBudgetStatusTone;
+}
+
+export interface CategoryBudgetOverview {
+    period: { type: BudgetPeriod; start: string | null; end: string | null };
+    totalBudgeted: number;
+    totalSpentBudgeted: number;
+    totalRemaining: number;
+    categoriesWithBudget: number;
+    overBudgetCount: number;
+    watchCount: number;
+    items: CategoryBudgetStatus[];
 }
 
 export interface Expense {

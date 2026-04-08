@@ -10,10 +10,22 @@ export interface CreateCategoryPayload {
     name: string;
     icon?: string;
     color?: string;
+    budgetAmount?: number;
 }
+
+export type UpdateCategoryPayload = Partial<CreateCategoryPayload>;
 
 function toStringOrUndefined(value: unknown): string | undefined {
     return typeof value === 'string' && value.trim().length ? value : undefined;
+}
+
+function toNullableNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
 }
 
 function toCategory(raw: any): Category | null {
@@ -32,6 +44,7 @@ function toCategory(raw: any): Category | null {
         name,
         icon: toStringOrUndefined(raw.icon),
         color: toStringOrUndefined(raw.color),
+        budgetAmount: toNullableNumber(raw?.budgetAmount),
         userId: toStringOrUndefined(raw.userId) ?? '',
     };
 }
@@ -132,6 +145,8 @@ export const categoriesApi = {
                 name: normalizedName,
                 icon: toStringOrUndefined(payload.icon),
                 color: toStringOrUndefined(payload.color),
+                budgetAmount:
+                    typeof payload.budgetAmount === 'number' ? payload.budgetAmount : null,
                 userId: getGuestUserId(),
             };
 
@@ -139,6 +154,59 @@ export const categoriesApi = {
         }
 
         const { data } = await apiClient.post('/categories', payload);
+        const normalized = toCategory(extractSingleCategory(data));
+        if (!normalized) {
+            throw new Error('Invalid category payload received from API.');
+        }
+        return normalized;
+    },
+
+    update: async (id: string, payload: UpdateCategoryPayload) => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            const nextName = typeof payload.name === 'string' ? payload.name.trim() : undefined;
+
+            if (nextName) {
+                const duplicate = state.categories.find(
+                    (item) =>
+                        item.id !== id &&
+                        item.name.trim().toLowerCase() === nextName.toLowerCase(),
+                );
+
+                if (duplicate) {
+                    const error: any = new Error('Category already exists');
+                    error.response = { status: 409, data: { message: 'Category already exists' } };
+                    throw error;
+                }
+            }
+
+            const updated = state.updateCategory(id, (current) => ({
+                ...current,
+                name: nextName ?? current.name,
+                icon:
+                    payload.icon !== undefined
+                        ? toStringOrUndefined(payload.icon)
+                        : current.icon,
+                color:
+                    payload.color !== undefined
+                        ? toStringOrUndefined(payload.color)
+                        : current.color,
+                budgetAmount:
+                    payload.budgetAmount !== undefined
+                        ? payload.budgetAmount
+                        : current.budgetAmount ?? null,
+            }));
+
+            if (!updated) {
+                const error: any = new Error('Category not found');
+                error.response = { status: 404, data: { message: 'Category not found' } };
+                throw error;
+            }
+
+            return updated;
+        }
+
+        const { data } = await apiClient.patch(`/categories/${id}`, payload);
         const normalized = toCategory(extractSingleCategory(data));
         if (!normalized) {
             throw new Error('Invalid category payload received from API.');
