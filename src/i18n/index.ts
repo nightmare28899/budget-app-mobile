@@ -285,14 +285,15 @@ const en = {
     'dashboard.loadError': 'Some home data could not be loaded. Pull to refresh or retry.',
     'dashboard.cashflowTitle': 'Cashflow',
     'dashboard.savingsRate': 'Savings rate: {percent}%',
-    'dashboard.cashflowEmptyHint': 'Log your income to understand what you can safely move or save.',
+    'dashboard.cashflowEmptyHint':
+        'Add at least one income so the app can calculate net cashflow, compare it against expenses, and estimate what you could move to savings safely.',
     'dashboard.incomeLabel': 'Income',
     'dashboard.expensesLabel': 'Expenses',
     'dashboard.netLabel': 'Net',
     'dashboard.actionsTitle': 'Recommended next steps',
     'dashboard.actionAddIncomeTitle': 'Add your first income',
     'dashboard.actionAddIncomeDescription':
-        'You already track spending. Add salary, transfers, or side income to unlock real cashflow.',
+        'The app uses income minus expenses and planned bills to estimate what you can move or save without adding pressure to the month.',
     'dashboard.actionAddIncomeCta': 'Add income',
     'dashboard.actionCategoryBudgetsTitle': 'Review category limits',
     'dashboard.actionCategoryBudgetsOverDescription':
@@ -314,6 +315,66 @@ const en = {
     'dashboard.actionMoveSavingsDescription':
         'At your current pace you could set aside {amount} without touching planned bills.',
     'dashboard.actionMoveSavingsCta': 'Open savings',
+    'notifications.title': 'Notifications',
+    'notifications.subtitle':
+        'Review the financial signals that need attention and the suggestions that could improve your month.',
+    'notifications.summaryTotal': 'Total',
+    'notifications.summaryAttention': 'Need attention',
+    'notifications.summarySuggestions': 'Suggestions',
+    'notifications.loadError': 'Some alerts could not be refreshed. Pull down to try again.',
+    'notifications.emptyTitle': 'Everything looks calm',
+    'notifications.emptyDescription':
+        'When the app detects pressure points or useful opportunities, they will show up here.',
+    'notifications.attentionSection': 'Needs attention',
+    'notifications.suggestionSection': 'Suggestions',
+    'notifications.attentionEmpty': 'No urgent items right now.',
+    'notifications.suggestionEmpty': 'No extra suggestions right now.',
+    'notifications.incomeTitle': 'Add income to unlock real cashflow',
+    'notifications.incomeDescription':
+        'Without income, the app can only show spending. Adding salary, transfers, or side income unlocks net cashflow and safer savings suggestions.',
+    'notifications.addIncomeCta': 'Add income',
+    'notifications.categoryOverBudgetTitle': 'Category limits are already over',
+    'notifications.categoryOverBudgetDescription':
+        '{count} categories have already passed their budget in this spending plan.',
+    'notifications.categoryWatchTitle': 'Some category limits need review',
+    'notifications.categoryWatchDescription':
+        '{count} categories are close to their limit in this spending plan.',
+    'notifications.reviewBudgetsCta': 'Review limits',
+    'notifications.spendingPaceTitle': 'This week needs a slowdown',
+    'notifications.spendingPaceDescription':
+        'You are spending {amount} more than the previous week. Try to keep the rest of the period within {safeAmount}.',
+    'notifications.spendingPaceNoRoomDescription':
+        'You are spending {amount} more than the previous week and already used the safe room for this period.',
+    'notifications.reviewSpendingCta': 'Open analytics',
+    'notifications.upcomingSubscriptionsTitle': '{count} subscription charges are near',
+    'notifications.upcomingSubscriptionsDescription':
+        '{name} and other charges could take around {amount} in the next few days.',
+    'notifications.openUpcomingCta': 'Open upcoming',
+    'notifications.cardPaymentTitle': '{name} needs a payment soon',
+    'notifications.cardPaymentDescription':
+        'This card already carries {amount} in the current cycle and the due date is {date}.',
+    'notifications.openCardsCta': 'Open cards',
+    'notifications.cardOverLimitTitle': '{name} is over the registered limit',
+    'notifications.cardOverLimitDescription':
+        'You already exceeded the registered limit by {amount}. Review this card before the next payment.',
+    'notifications.cardUsageTitle': '{name} is getting heavy',
+    'notifications.cardUsageDescription':
+        'This card is already using {percent} of its limit and has {amount} left available.',
+    'notifications.cardLimitMissingTitle': 'Some cards still miss a limit',
+    'notifications.cardLimitMissingDescription':
+        '{count} active cards do not have a registered limit, so usage alerts are less precise.',
+    'notifications.subscriptionSavingsTitle': 'Subscriptions could free cash',
+    'notifications.subscriptionSavingsDescription':
+        'Canceling or trimming services could free up {amount} over the next {months} months.',
+    'notifications.trimSubscriptionsCta': 'Review subscriptions',
+    'notifications.savingsGoalTitle': '{name} is getting close',
+    'notifications.savingsGoalDescription':
+        'You still need {amount} and the target date is within {days} days.',
+    'notifications.openSavingsGoalCta': 'Open goal',
+    'notifications.startSavingsTitle': 'Start a savings goal',
+    'notifications.startSavingsDescription':
+        'You already have room in your month. Turn up to {amount} into a visible goal instead of leaving it loose.',
+    'notifications.openSavingsCta': 'Open savings',
     'planner.title': 'Monthly Planner',
     'planner.subtitle':
         'Review this month before charges, payments, and spending catch you off guard.',
@@ -1212,14 +1273,15 @@ const es: Record<TranslationKeyInternal, string> = {
     'dashboard.savingsDescription': 'Crea metas y agrega dinero en unos pocos toques.',
     'dashboard.cashflowTitle': 'Flujo de efectivo',
     'dashboard.savingsRate': 'Tasa de ahorro: {percent}%',
-    'dashboard.cashflowEmptyHint': 'Registra tus ingresos para entender cuánto puedes mover o ahorrar con seguridad.',
+    'dashboard.cashflowEmptyHint':
+        'Agrega al menos un ingreso para que la app calcule tu flujo neto, lo compare contra tus gastos y estime cuánto podrías mover a ahorro con seguridad.',
     'dashboard.incomeLabel': 'Ingresos',
     'dashboard.expensesLabel': 'Gastos',
     'dashboard.netLabel': 'Neto',
     'dashboard.actionsTitle': 'Siguientes pasos recomendados',
     'dashboard.actionAddIncomeTitle': 'Agrega tu primer ingreso',
     'dashboard.actionAddIncomeDescription':
-        'Ya registras gastos. Agrega sueldo, transferencias o ingresos extra para desbloquear tu flujo real.',
+        'La app usa ingresos menos gastos y pagos planeados para estimar cuánto puedes mover o ahorrar sin meter presión al mes.',
     'dashboard.actionAddIncomeCta': 'Agregar ingreso',
     'dashboard.actionCategoryBudgetsTitle': 'Revisa tus límites por categoría',
     'dashboard.actionCategoryBudgetsOverDescription':
@@ -1241,6 +1303,66 @@ const es: Record<TranslationKeyInternal, string> = {
     'dashboard.actionMoveSavingsDescription':
         'Con tu ritmo actual podrías apartar {amount} sin tocar tus pagos planeados.',
     'dashboard.actionMoveSavingsCta': 'Abrir ahorro',
+    'notifications.title': 'Notificaciones',
+    'notifications.subtitle':
+        'Revisa las señales financieras que necesitan atención y las sugerencias que podrían mejorar tu mes.',
+    'notifications.summaryTotal': 'Total',
+    'notifications.summaryAttention': 'Atención',
+    'notifications.summarySuggestions': 'Sugerencias',
+    'notifications.loadError': 'No se pudieron refrescar algunas alertas. Desliza hacia abajo para intentar otra vez.',
+    'notifications.emptyTitle': 'Todo se ve en calma',
+    'notifications.emptyDescription':
+        'Cuando la app detecte presión o una oportunidad útil, aparecerá aquí.',
+    'notifications.attentionSection': 'Necesita atención',
+    'notifications.suggestionSection': 'Sugerencias',
+    'notifications.attentionEmpty': 'No hay nada urgente por ahora.',
+    'notifications.suggestionEmpty': 'No hay sugerencias extra por ahora.',
+    'notifications.incomeTitle': 'Agrega ingresos para desbloquear tu flujo real',
+    'notifications.incomeDescription':
+        'Sin ingresos, la app solo puede mostrar gasto. Al agregar sueldo, transferencias o ingresos extra se desbloquea el flujo neto y las sugerencias de ahorro más seguras.',
+    'notifications.addIncomeCta': 'Agregar ingreso',
+    'notifications.categoryOverBudgetTitle': 'Ya rebasaste límites por categoría',
+    'notifications.categoryOverBudgetDescription':
+        'Ya hay {count} categorías que superaron su presupuesto dentro de este plan.',
+    'notifications.categoryWatchTitle': 'Algunas categorías necesitan revisión',
+    'notifications.categoryWatchDescription':
+        'Hay {count} categorías cerca de su límite dentro de este plan.',
+    'notifications.reviewBudgetsCta': 'Revisar límites',
+    'notifications.spendingPaceTitle': 'Esta semana necesita freno',
+    'notifications.spendingPaceDescription':
+        'Vas gastando {amount} más que la semana anterior. Intenta dejar el resto del período dentro de {safeAmount}.',
+    'notifications.spendingPaceNoRoomDescription':
+        'Vas gastando {amount} más que la semana anterior y ya consumiste el margen seguro de este período.',
+    'notifications.reviewSpendingCta': 'Abrir analíticas',
+    'notifications.upcomingSubscriptionsTitle': 'Se acercan {count} cobros recurrentes',
+    'notifications.upcomingSubscriptionsDescription':
+        '{name} y otros cobros podrían llevarse alrededor de {amount} en los próximos días.',
+    'notifications.openUpcomingCta': 'Abrir próximos',
+    'notifications.cardPaymentTitle': '{name} requiere pago pronto',
+    'notifications.cardPaymentDescription':
+        'Esta tarjeta ya lleva {amount} en el ciclo actual y la fecha límite es {date}.',
+    'notifications.openCardsCta': 'Abrir tarjetas',
+    'notifications.cardOverLimitTitle': '{name} supera el límite registrado',
+    'notifications.cardOverLimitDescription':
+        'Ya rebasaste el límite registrado por {amount}. Revisa esta tarjeta antes del próximo pago.',
+    'notifications.cardUsageTitle': '{name} ya va pesada',
+    'notifications.cardUsageDescription':
+        'Esta tarjeta ya usa {percent} de su límite y le quedan {amount} disponibles.',
+    'notifications.cardLimitMissingTitle': 'Aún faltan límites en algunas tarjetas',
+    'notifications.cardLimitMissingDescription':
+        '{count} tarjetas activas no tienen límite registrado, así que las alertas de uso son menos precisas.',
+    'notifications.subscriptionSavingsTitle': 'Tus suscripciones pueden liberar flujo',
+    'notifications.subscriptionSavingsDescription':
+        'Cancelar o recortar servicios podría liberar {amount} en los próximos {months} meses.',
+    'notifications.trimSubscriptionsCta': 'Revisar suscripciones',
+    'notifications.savingsGoalTitle': '{name} ya está cerca',
+    'notifications.savingsGoalDescription':
+        'Todavía te faltan {amount} y la fecha objetivo llega en {days} días.',
+    'notifications.openSavingsGoalCta': 'Abrir meta',
+    'notifications.startSavingsTitle': 'Empieza una meta de ahorro',
+    'notifications.startSavingsDescription':
+        'Ya tienes margen dentro del mes. Convierte hasta {amount} en una meta visible en lugar de dejarlo suelto.',
+    'notifications.openSavingsCta': 'Abrir ahorro',
     'planner.title': 'Planner mensual',
     'planner.subtitle':
         'Revisa este mes antes de que los cobros, pagos y gastos te agarren sin margen.',

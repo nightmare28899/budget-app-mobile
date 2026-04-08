@@ -163,6 +163,12 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
             (drawerNavigation.navigate as (...args: [string, object?]) => void)('CategoryBudgets');
         }
     };
+    const onOpenNotifications = () => {
+        const drawerNavigation = navigation.getParent();
+        if (drawerNavigation) {
+            (drawerNavigation.navigate as (...args: [string, object?]) => void)('Notifications');
+        }
+    };
     const onActionPress = (actionId: (typeof actionItems)[number]['id']) => {
         if (actionId === 'add-income') {
             navigation.navigate('AddEntry', { initialTab: 'income' });
@@ -529,34 +535,43 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                             {t('dashboard.subtitle')}
                         </Text>
                     </View>
-                    <TouchableOpacity
-                        style={[
-                            styles.profileBadge,
-                            {
-                                width: profileBadgeSize,
-                                height: profileBadgeSize,
-                                borderRadius: profileBadgeSize / 2,
-                            },
-                        ]}
-                        onPress={() => navigation.navigate('Profile')}
-                        activeOpacity={0.84}
-                    >
-                        {avatarUri && !avatarLoadFailed ? (
-                            <Image
-                                source={{ uri: avatarUri }}
-                                style={[
-                                    styles.profileImage,
-                                    { borderRadius: profileBadgeSize / 2 },
-                                ]}
-                                resizeMode="cover"
-                                onError={() => setAvatarLoadFailed(true)}
-                            />
-                        ) : (
-                            <Text style={[styles.profileInitial, { fontSize: profileInitialFont }]}>
-                                {fallbackInitial}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
+                    <View style={styles.headerActions}>
+                        <TouchableOpacity
+                            style={styles.notificationButton}
+                            onPress={onOpenNotifications}
+                            activeOpacity={0.84}
+                        >
+                            <Icon name="notifications-outline" size={20} color={colors.textPrimary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.profileBadge,
+                                {
+                                    width: profileBadgeSize,
+                                    height: profileBadgeSize,
+                                    borderRadius: profileBadgeSize / 2,
+                                },
+                            ]}
+                            onPress={() => navigation.navigate('Profile')}
+                            activeOpacity={0.84}
+                        >
+                            {avatarUri && !avatarLoadFailed ? (
+                                <Image
+                                    source={{ uri: avatarUri }}
+                                    style={[
+                                        styles.profileImage,
+                                        { borderRadius: profileBadgeSize / 2 },
+                                    ]}
+                                    resizeMode="cover"
+                                    onError={() => setAvatarLoadFailed(true)}
+                                />
+                            ) : (
+                                <Text style={[styles.profileInitial, { fontSize: profileInitialFont }]}>
+                                    {fallbackInitial}
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <ScrollView
@@ -959,6 +974,21 @@ const createStyles = (colors: any) =>
         greetingContainer: {
             flex: 1,
             marginRight: spacing.md,
+        },
+        headerActions: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+        },
+        notificationButton: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: colors.surfaceCard,
+            borderWidth: 1,
+            borderColor: colors.border,
         },
         greeting: {
             color: colors.textPrimary,

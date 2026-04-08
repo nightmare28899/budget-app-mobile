@@ -12,6 +12,7 @@ import { MainDrawerParamList } from './types';
 import { MainTabNavigator } from './MainTabNavigator';
 import { ExpensesScreen } from '../screens/expenses/ExpensesScreen';
 import { IncomesScreen } from '../screens/incomes/IncomesScreen';
+import { NotificationsScreen } from '../screens/notifications/NotificationsScreen';
 import { PlannerScreen } from '../screens/planner/PlannerScreen';
 import { CategoryBudgetsScreen } from '../screens/categoryBudgets/CategoryBudgetsScreen';
 import { SubscriptionsScreen } from '../screens/subscriptions/SubscriptionsScreen';
@@ -99,6 +100,8 @@ export function MainDrawerNavigator() {
                     const iconName =
                         route.name === 'Tabs'
                             ? 'home-outline'
+                            : route.name === 'Notifications'
+                                ? 'notifications-outline'
                             : route.name === 'Planner'
                                 ? 'calendar-outline'
                             : route.name === 'CategoryBudgets'
@@ -130,6 +133,11 @@ export function MainDrawerNavigator() {
                         navigation.closeDrawer();
                     },
                 })}
+            />
+            <Drawer.Screen
+                name="Notifications"
+                component={NotificationsScreen}
+                options={{ drawerLabel: t('notifications.title') }}
             />
             <Drawer.Screen
                 name="Planner"

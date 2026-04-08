@@ -74,6 +74,16 @@ export function openNotificationDestination(
         return true;
     }
 
+    if (
+        readString(data.targetScreen) === 'Notifications'
+        || readString(data.type) === 'financial_insight'
+    ) {
+        rootNavigationRef.navigate('Main', {
+            screen: 'Notifications',
+        });
+        return true;
+    }
+
     rootNavigationRef.navigate('Main', {
         screen: 'Tabs',
         params: {
