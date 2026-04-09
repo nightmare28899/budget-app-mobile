@@ -246,9 +246,9 @@ const en = {
   'onboarding.currencyTitle': 'Choose your main currency',
   'onboarding.currencyDescription':
     'Use your preferred currency as the default for new expenses, subscriptions, and budget setup.',
-  'onboarding.budgetTitle': 'Set your budget',
+  'onboarding.budgetTitle': 'Set your spending plan',
   'onboarding.budgetDescription':
-    'Define the amount and period you want BudgetApp to measure against.',
+    'Define how much you want to allow yourself to spend in that period. Income is added separately as real money received.',
   'onboarding.setupHelper':
     'You can update this later from Settings, but saving it now makes your first dashboard more useful.',
   'onboarding.validationBudgetAmount': 'Enter a valid budget amount.',
@@ -303,14 +303,14 @@ const en = {
   'dashboard.cashflowTitle': 'Cashflow',
   'dashboard.savingsRate': 'Savings rate: {percent}%',
   'dashboard.cashflowEmptyHint':
-    'Add at least one income so the app can calculate net cashflow, compare it against expenses, and estimate what you could move to savings safely.',
+    'Add at least one real income, like salary or a paycheck, so the app can calculate net cashflow, compare it against expenses, and estimate what you could move to savings safely.',
   'dashboard.incomeLabel': 'Income',
   'dashboard.expensesLabel': 'Expenses',
   'dashboard.netLabel': 'Net',
   'dashboard.actionsTitle': 'Recommended next steps',
   'dashboard.actionAddIncomeTitle': 'Add your first income',
   'dashboard.actionAddIncomeDescription':
-    'The app uses income minus expenses and planned bills to estimate what you can move or save without adding pressure to the month.',
+    'Add real money received, like salary or a paycheck. Your spending plan is the limit you want to follow; income is what actually came in.',
   'dashboard.actionAddIncomeCta': 'Add income',
   'dashboard.actionCategoryBudgetsTitle': 'Review category limits',
   'dashboard.actionCategoryBudgetsOverDescription':
@@ -349,7 +349,7 @@ const en = {
   'notifications.suggestionEmpty': 'No extra suggestions right now.',
   'notifications.incomeTitle': 'Add income to unlock real cashflow',
   'notifications.incomeDescription':
-    'Without income, the app can only show spending. Adding salary, transfers, or side income unlocks net cashflow and safer savings suggestions.',
+    'Without income, the app can only show spending. Add real money received, like salary, transfers, or side income, to unlock net cashflow and safer savings suggestions.',
   'notifications.addIncomeCta': 'Add income',
   'notifications.categoryOverBudgetTitle': 'Category limits are already over',
   'notifications.categoryOverBudgetDescription':
@@ -542,9 +542,9 @@ const en = {
   'income.addTitle': 'Add income',
   'income.editTitle': 'Edit income',
   'income.subtitle':
-    'Track money coming in so the app can explain your real balance.',
+    'Track money that already came in, like salary, a paycheck, transfers, or side income.',
   'income.amountPlaceholder': '0.00',
-  'income.amountPreview': 'Incoming amount: {amount}',
+  'income.amountPreview': 'Money received: {amount}',
   'income.currency': 'Currency',
   'income.source': 'Source',
   'income.sourcePlaceholder': 'Salary, freelance, bonus...',
@@ -1004,7 +1004,7 @@ const en = {
   'settings.budgetAmount': 'Spending Limit',
   'settings.budgetPeriod': 'Spending Period',
   'settings.budgetHelp':
-    'Keep this as the spending cap you want to follow for the selected period. Income is tracked separately in Cashflow.',
+    'Keep this as the spending cap you want to follow for the selected period. It is not your income. Real income is tracked separately in Cashflow.',
   'settings.selectBudgetPeriod':
     'Choose how your spending limit should be calculated.',
   'settings.periodStart': 'Period start',
@@ -1096,9 +1096,9 @@ const en = {
   'settings.themeLivePreviewButton': 'Open theme selector',
   'plan.title': 'Plan & access',
   'plan.subtitle':
-    'Adjust your spending plan here, then review access, backup state, and the Premium tools available on this account.',
+    'Adjust the spending cap you want to follow here. Real income is added separately in Cashflow, then review access, backup state, and the Premium tools available on this account.',
   'plan.spendingHint':
-    'Category budgets follow the same currency and spending window you define here.',
+    'This plan marks how much you want to allow yourself to spend. It does not represent money already received.',
   'plan.heroPremiumDescription':
     'This account has Premium active, including saved credit cards and installment plans.',
   'plan.heroFreeDescription':
@@ -1357,9 +1357,9 @@ const es: Record<TranslationKeyInternal, string> = {
   'onboarding.currencyTitle': 'Elige tu moneda principal',
   'onboarding.currencyDescription':
     'Usa tu moneda preferida como valor predeterminado para nuevos gastos, suscripciones y presupuesto.',
-  'onboarding.budgetTitle': 'Configura tu presupuesto',
+  'onboarding.budgetTitle': 'Configura tu plan de gasto',
   'onboarding.budgetDescription':
-    'Define el monto y el período contra el que BudgetApp va a medir tus gastos.',
+    'Define cuánto te quieres permitir gastar en ese período. Tus ingresos, como sueldo o quincena, se registran aparte.',
   'onboarding.setupHelper':
     'Puedes cambiar esto después en Ajustes, pero guardarlo ahora hace más útil tu primer panel.',
   'onboarding.validationBudgetAmount':
@@ -1416,14 +1416,14 @@ const es: Record<TranslationKeyInternal, string> = {
   'dashboard.cashflowTitle': 'Flujo de efectivo',
   'dashboard.savingsRate': 'Tasa de ahorro: {percent}%',
   'dashboard.cashflowEmptyHint':
-    'Agrega al menos un ingreso para que la app calcule tu flujo neto, lo compare contra tus gastos y estime cuánto podrías mover a ahorro con seguridad.',
+    'Agrega al menos un ingreso real, como tu sueldo o quincena, para que la app calcule tu flujo neto, lo compare contra tus gastos y estime cuánto podrías mover a ahorro con seguridad.',
   'dashboard.incomeLabel': 'Ingresos',
   'dashboard.expensesLabel': 'Gastos',
   'dashboard.netLabel': 'Neto',
   'dashboard.actionsTitle': 'Siguientes pasos recomendados',
   'dashboard.actionAddIncomeTitle': 'Agrega tu primer ingreso',
   'dashboard.actionAddIncomeDescription':
-    'La app usa ingresos menos gastos y pagos planeados para estimar cuánto puedes mover o ahorrar sin meter presión al mes.',
+    'Registra dinero que realmente te entró, como sueldo o quincena. Tu plan de gasto es el tope que quieres seguir; el ingreso es lo que sí recibiste.',
   'dashboard.actionAddIncomeCta': 'Agregar ingreso',
   'dashboard.actionCategoryBudgetsTitle': 'Revisa tus límites por categoría',
   'dashboard.actionCategoryBudgetsOverDescription':
@@ -1462,7 +1462,7 @@ const es: Record<TranslationKeyInternal, string> = {
   'notifications.suggestionEmpty': 'No hay sugerencias extra por ahora.',
   'notifications.incomeTitle': 'Agrega ingresos para desbloquear tu flujo real',
   'notifications.incomeDescription':
-    'Sin ingresos, la app solo puede mostrar gasto. Al agregar sueldo, transferencias o ingresos extra se desbloquea el flujo neto y las sugerencias de ahorro más seguras.',
+    'Sin ingresos, la app solo puede mostrar gasto. Agrega dinero que realmente te entró, como sueldo, quincena, transferencias o ingresos extra, para desbloquear el flujo neto y sugerencias de ahorro más seguras.',
   'notifications.addIncomeCta': 'Agregar ingreso',
   'notifications.categoryOverBudgetTitle': 'Ya rebasaste límites por categoría',
   'notifications.categoryOverBudgetDescription':
@@ -1659,9 +1659,9 @@ const es: Record<TranslationKeyInternal, string> = {
   'income.addTitle': 'Agregar ingreso',
   'income.editTitle': 'Editar ingreso',
   'income.subtitle':
-    'Registra el dinero que entra para entender mejor tu balance real.',
+    'Registra dinero que realmente te entró, como sueldo, quincena, transferencias o ingresos extra.',
   'income.amountPlaceholder': '0.00',
-  'income.amountPreview': 'Monto recibido: {amount}',
+  'income.amountPreview': 'Dinero recibido: {amount}',
   'income.currency': 'Moneda',
   'income.source': 'Origen',
   'income.sourcePlaceholder': 'Sueldo, freelance, bono...',
@@ -2133,7 +2133,7 @@ const es: Record<TranslationKeyInternal, string> = {
   'settings.budgetAmount': 'Límite de gasto',
   'settings.budgetPeriod': 'Período de gasto',
   'settings.budgetHelp':
-    'Déjalo como el tope de gasto que quieres seguir en ese período. Los ingresos ahora se registran aparte en Flujo de efectivo.',
+    'Déjalo como el tope de gasto que quieres seguir en ese período. No es tu ingreso. El dinero real que te entra se registra aparte en Flujo de efectivo.',
   'settings.selectBudgetPeriod': 'Elige cómo se calculará tu límite de gasto.',
   'settings.periodStart': 'Inicio del período',
   'settings.periodEnd': 'Fin del período',
@@ -2225,9 +2225,9 @@ const es: Record<TranslationKeyInternal, string> = {
   'settings.themeLivePreviewButton': 'Abrir selector de tema',
   'plan.title': 'Plan y acceso',
   'plan.subtitle':
-    'Ajusta aquí tu plan de gasto y luego revisa tu acceso, respaldo y las herramientas Premium disponibles en esta cuenta.',
+    'Ajusta aquí el tope de gasto que quieres seguir. Tus ingresos reales se agregan aparte en Flujo de efectivo; luego revisa tu acceso, respaldo y las herramientas Premium disponibles en esta cuenta.',
   'plan.spendingHint':
-    'Los presupuestos por categoría siguen la misma moneda y ventana de gasto que definas aquí.',
+    'Este plan marca cuánto te quieres permitir gastar. No representa dinero que ya te entró.',
   'plan.heroPremiumDescription':
     'Esta cuenta tiene Premium activo, incluyendo tarjetas guardadas y planes de mensualidades.',
   'plan.heroFreeDescription':
