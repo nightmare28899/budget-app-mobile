@@ -200,7 +200,7 @@ export function AddSubscriptionScreen({
                     ]}
                 >
                     <View style={styles.headerRow}>
-                        {isEditMode && (
+                        {!isEmbedded && (
                             <ScreenBackButton
                                 onPress={() => navigation.goBack()}
                                 containerStyle={styles.backButton}
@@ -209,7 +209,7 @@ export function AddSubscriptionScreen({
                         <View
                             style={[
                                 styles.headerTextWrap,
-                                isEditMode ? styles.headerTextWrapWithBack : null,
+                                !isEmbedded ? styles.headerTextWrapWithBack : null,
                             ]}
                         >
                             <Text

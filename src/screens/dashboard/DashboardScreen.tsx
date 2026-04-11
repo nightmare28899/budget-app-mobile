@@ -552,7 +552,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                     borderRadius: profileBadgeSize / 2,
                                 },
                             ]}
-                            onPress={() => navigation.navigate('Profile')}
+                            onPress={() => navigation.navigate('Settings')}
                             activeOpacity={0.84}
                         >
                             {avatarUri && !avatarLoadFailed ? (

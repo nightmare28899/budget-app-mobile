@@ -34,6 +34,7 @@ import {
 } from '../../theme';
 import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { HomeBackground } from '../../components/ui/HomeBackground';
+import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
 import { useI18n } from '../../hooks/useI18n';
 import { sanitizeMoneyInput } from '../../utils/moneyInput';
 import { getCurrencyLocale, getCurrencySymbol } from '../../utils/currency';
@@ -260,12 +261,22 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                         },
                     ]}
                 >
-                    <Text style={[styles.headerTitle, { fontSize: scaleFont(typography.fontSize['2xl']) }]}>
-                        {t('addExpense.title')}
-                    </Text>
-                    <Text style={[styles.headerSubtitle, { fontSize: scaleFont(typography.fontSize.md) }]}>
-                        {t('addExpense.subtitle')}
-                    </Text>
+                    <View style={styles.headerRow}>
+                        {!isEmbedded ? (
+                            <ScreenBackButton
+                                onPress={() => navigation.goBack()}
+                                containerStyle={styles.backButton}
+                            />
+                        ) : null}
+                        <View style={styles.headerCopy}>
+                            <Text style={[styles.headerTitle, { fontSize: scaleFont(typography.fontSize['2xl']) }]}>
+                                {t('addExpense.title')}
+                            </Text>
+                            <Text style={[styles.headerSubtitle, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                {t('addExpense.subtitle')}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
 
                 <ScrollView
@@ -686,6 +697,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     header: {
         paddingBottom: spacing.base,
         backgroundColor: colors.background,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    backButton: {
+        marginRight: spacing.sm,
+        marginTop: 2,
+    },
+    headerCopy: {
+        flex: 1,
     },
     headerTitle: {
         fontSize: typography.fontSize['2xl'],

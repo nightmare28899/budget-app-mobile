@@ -219,9 +219,9 @@ export function PlanOverviewScreen({ navigation }: RootScreenProps<'PlanOverview
                         ) : null}
 
                         <Text style={styles.budgetHint}>
-                            {t('settings.currentBudget', {
-                                value: formatCurrency(
-                                    user?.budgetAmount ?? user?.dailyBudget ?? 0,
+                                {t('settings.currentBudget', {
+                                    value: formatCurrency(
+                                    user?.budgetAmount ?? 0,
                                     currency,
                                     locale,
                                 ),

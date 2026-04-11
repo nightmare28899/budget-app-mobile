@@ -12,7 +12,7 @@ import { AddExpenseScreen } from '../screens/addExpense/AddExpenseScreen';
 import { AddIncomeScreen } from '../screens/addExpense/AddIncomeScreen';
 import { AddSubscriptionScreen } from '../screens/addExpense/AddSubscriptionScreen';
 import { PlanOverviewScreen } from '../screens/profile/PlanOverviewScreen';
-import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { SavingsGoalDetailScreen } from '../screens/savings/SavingsGoalDetailScreen';
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { CreditCardFormScreen } from '../screens/creditCards/CreditCardFormScreen';
@@ -146,8 +146,8 @@ export function RootNavigator() {
                     <>
                         <Stack.Screen name="Main" component={MainDrawerNavigator} />
                         <Stack.Screen
-                            name="Profile"
-                            component={ProfileScreen}
+                            name="Settings"
+                            component={SettingsScreen}
                             options={{
                                 headerShown: false,
                                 animation: 'slide_from_right',

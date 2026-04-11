@@ -5,10 +5,8 @@ import {
     StyleSheet,
     ScrollView,
     RefreshControl,
-    TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -27,6 +25,7 @@ import {
 import { useI18n } from '../../hooks/useI18n';
 import { useSubscriptionsScreen } from '../../hooks/useSubscriptionsScreen';
 import { HomeBackground } from '../../components/ui/HomeBackground';
+import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
 
 function formatDateGroupLabel(value: string, locale: 'en-US' | 'es-MX'): string {
     const parsed = new Date(`${value}T12:00:00`);
@@ -141,19 +140,10 @@ export function SubscriptionsScreen({
                 >
                     <View style={styles.headerBlock}>
                         <View style={styles.headerRow}>
-                            {isUpcomingOnly ? (
-                                <TouchableOpacity
-                                    onPress={goHomeOnBack}
-                                    activeOpacity={0.78}
-                                    style={styles.backButton}
-                                >
-                                    <Icon
-                                        name="arrow-back-outline"
-                                        size={22}
-                                        color={colors.textPrimary}
-                                    />
-                                </TouchableOpacity>
-                            ) : null}
+                            <ScreenBackButton
+                                onPress={goHomeOnBack}
+                                containerStyle={styles.backButton}
+                            />
                             <View style={styles.headerCopy}>
                                 <Text style={[styles.headerTitle, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>
                                     {isUpcomingOnly

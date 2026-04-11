@@ -262,7 +262,7 @@ const en = {
     'We could not save your setup right now. Please try again.',
 
   'tab.home': 'Home',
-  'tab.activity': 'Activity',
+  'tab.activity': 'Records',
   'tab.history': 'History',
   'tab.analytics': 'Analytics',
   'tab.settings': 'Settings',
@@ -1374,7 +1374,7 @@ const es: Record<TranslationKeyInternal, string> = {
     'No pudimos guardar tu configuración ahora mismo. Inténtalo de nuevo.',
 
   'tab.home': 'Inicio',
-  'tab.activity': 'Actividad',
+  'tab.activity': 'Registros',
   'tab.history': 'Historial',
   'tab.analytics': 'Analíticas',
   'tab.settings': 'Ajustes',

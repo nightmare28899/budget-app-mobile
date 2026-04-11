@@ -5,7 +5,6 @@ export interface User {
   role?: string;
   isPremium?: boolean | null;
   avatarUrl?: string | null;
-  dailyBudget?: number;
   budgetAmount?: number;
   budgetPeriod?: BudgetPeriod;
   budgetPeriodStart?: string | null;

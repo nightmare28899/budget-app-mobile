@@ -1,10 +1,8 @@
 import apiClient from './client';
 import { BudgetPeriod, User } from '../types';
-import { normalizeBudgetPeriod } from '../utils/budget';
-import { normalizeCurrency } from '../utils/currency';
-import { toNum } from '../utils/number';
 import { isLocalMode } from '../modules/access/localMode';
 import { useAuthStore } from '../store/authStore';
+import { normalizeUserRecord } from '../utils/user';
 
 export interface UpdateCurrentUserPayload {
   name?: string;
@@ -18,24 +16,7 @@ export interface UpdateCurrentUserPayload {
 }
 
 function normalizeUser(data: any): User {
-  const budgetAmount = toNum(data?.budgetAmount ?? data?.dailyBudget);
-  const budgetPeriod = normalizeBudgetPeriod(data?.budgetPeriod, 'daily');
-
-  return {
-    ...data,
-    currency: normalizeCurrency(data?.currency),
-    weeklyReportEnabled: data?.weeklyReportEnabled === true,
-    monthlyReportEnabled: data?.monthlyReportEnabled === true,
-    dailyBudget: toNum(data?.dailyBudget ?? budgetAmount),
-    budgetAmount,
-    budgetPeriod,
-    budgetPeriodStart:
-      typeof data?.budgetPeriodStart === 'string'
-        ? data.budgetPeriodStart
-        : null,
-    budgetPeriodEnd:
-      typeof data?.budgetPeriodEnd === 'string' ? data.budgetPeriodEnd : null,
-  } as User;
+  return normalizeUserRecord(data);
 }
 
 export const usersApi = {

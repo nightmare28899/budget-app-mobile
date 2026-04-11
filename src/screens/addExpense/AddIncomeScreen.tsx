@@ -22,6 +22,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { HomeBackground } from '../../components/ui/HomeBackground';
+import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
 import {
     borderRadius,
     spacing,
@@ -161,12 +162,22 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
                         },
                     ]}
                 >
-                    <Text style={[styles.headerTitle, { fontSize: scaleFont(typography.fontSize['2xl']) }]}>
-                        {isEditMode ? t('income.editTitle') : t('income.addTitle')}
-                    </Text>
-                    <Text style={[styles.headerSubtitle, { fontSize: scaleFont(typography.fontSize.md) }]}>
-                        {t('income.subtitle')}
-                    </Text>
+                    <View style={styles.headerRow}>
+                        {!isEmbedded ? (
+                            <ScreenBackButton
+                                onPress={() => navigation.goBack()}
+                                containerStyle={styles.backButton}
+                            />
+                        ) : null}
+                        <View style={styles.headerCopy}>
+                            <Text style={[styles.headerTitle, { fontSize: scaleFont(typography.fontSize['2xl']) }]}>
+                                {isEditMode ? t('income.editTitle') : t('income.addTitle')}
+                            </Text>
+                            <Text style={[styles.headerSubtitle, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                {t('income.subtitle')}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
 
                 <ScrollView
@@ -300,6 +311,17 @@ const createStyles = (colors: any) => StyleSheet.create({
     header: {
         gap: spacing.xs,
         marginBottom: spacing.base,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    backButton: {
+        marginRight: spacing.sm,
+        marginTop: 2,
+    },
+    headerCopy: {
+        flex: 1,
     },
     headerTitle: {
         color: colors.textPrimary,

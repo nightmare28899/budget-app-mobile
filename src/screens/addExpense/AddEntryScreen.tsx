@@ -6,6 +6,7 @@ import { RootScreenProps } from '../../navigation/types';
 import { AddExpenseScreen } from './AddExpenseScreen';
 import { AddIncomeScreen } from './AddIncomeScreen';
 import { AddSubscriptionScreen } from './AddSubscriptionScreen';
+import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
 import {
     typography,
     spacing,
@@ -51,77 +52,83 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                     },
                 ]}
             >
-                <View style={styles.segmentedControl}>
-                    <TouchableOpacity
-                        activeOpacity={0.85}
-                        style={[
-                            styles.segmentButton,
-                            activeTab === 'expense' ? styles.segmentButtonActive : null,
-                        ]}
-                        onPress={() => setActiveTab('expense')}
-                    >
-                        <Icon
-                            name="wallet-outline"
-                            size={16}
-                            color={activeTab === 'expense' ? colors.textPrimary : colors.textMuted}
-                        />
-                        <Text
+                <View style={styles.headerRow}>
+                    <ScreenBackButton
+                        onPress={() => navigation.goBack()}
+                        containerStyle={styles.backButton}
+                    />
+                    <View style={styles.segmentedControl}>
+                        <TouchableOpacity
+                            activeOpacity={0.85}
                             style={[
-                                styles.segmentLabel,
-                                activeTab === 'expense' ? styles.segmentLabelActive : null,
+                                styles.segmentButton,
+                                activeTab === 'expense' ? styles.segmentButtonActive : null,
                             ]}
+                            onPress={() => setActiveTab('expense')}
                         >
-                            {t('addEntry.expenseTab')}
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        activeOpacity={0.85}
-                        style={[
-                            styles.segmentButton,
-                            activeTab === 'income' ? styles.segmentButtonActive : null,
-                        ]}
-                        onPress={() => setActiveTab('income')}
-                    >
-                        <Icon
-                            name="trending-up-outline"
-                            size={16}
-                            color={activeTab === 'income' ? colors.textPrimary : colors.textMuted}
-                        />
-                        <Text
+                            <Icon
+                                name="wallet-outline"
+                                size={16}
+                                color={activeTab === 'expense' ? colors.textPrimary : colors.textMuted}
+                            />
+                            <Text
+                                style={[
+                                    styles.segmentLabel,
+                                    activeTab === 'expense' ? styles.segmentLabelActive : null,
+                                ]}
+                            >
+                                {t('addEntry.expenseTab')}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            activeOpacity={0.85}
                             style={[
-                                styles.segmentLabel,
-                                activeTab === 'income' ? styles.segmentLabelActive : null,
+                                styles.segmentButton,
+                                activeTab === 'income' ? styles.segmentButtonActive : null,
                             ]}
+                            onPress={() => setActiveTab('income')}
                         >
-                            {t('addEntry.incomeTab')}
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        activeOpacity={0.85}
-                        style={[
-                            styles.segmentButton,
-                            activeTab === 'subscription' ? styles.segmentButtonActive : null,
-                        ]}
-                        onPress={() => setActiveTab('subscription')}
-                    >
-                        <Icon
-                            name="card-outline"
-                            size={16}
-                            color={
-                                activeTab === 'subscription'
-                                    ? colors.textPrimary
-                                    : colors.textMuted
-                            }
-                        />
-                        <Text
+                            <Icon
+                                name="trending-up-outline"
+                                size={16}
+                                color={activeTab === 'income' ? colors.textPrimary : colors.textMuted}
+                            />
+                            <Text
+                                style={[
+                                    styles.segmentLabel,
+                                    activeTab === 'income' ? styles.segmentLabelActive : null,
+                                ]}
+                            >
+                                {t('addEntry.incomeTab')}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            activeOpacity={0.85}
                             style={[
-                                styles.segmentLabel,
-                                activeTab === 'subscription' ? styles.segmentLabelActive : null,
+                                styles.segmentButton,
+                                activeTab === 'subscription' ? styles.segmentButtonActive : null,
                             ]}
+                            onPress={() => setActiveTab('subscription')}
                         >
-                            {t('addEntry.subscriptionTab')}
-                        </Text>
-                    </TouchableOpacity>
+                            <Icon
+                                name="card-outline"
+                                size={16}
+                                color={
+                                    activeTab === 'subscription'
+                                        ? colors.textPrimary
+                                        : colors.textMuted
+                                }
+                            />
+                            <Text
+                                style={[
+                                    styles.segmentLabel,
+                                    activeTab === 'subscription' ? styles.segmentLabelActive : null,
+                                ]}
+                            >
+                                {t('addEntry.subscriptionTab')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
 
@@ -167,7 +174,15 @@ const createStyles = (colors: any) => StyleSheet.create({
     tabHeader: {
         paddingBottom: spacing.xs,
     },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    backButton: {
+        marginRight: spacing.sm,
+    },
     segmentedControl: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         borderRadius: borderRadius.full,

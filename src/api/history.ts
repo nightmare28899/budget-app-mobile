@@ -19,17 +19,14 @@ import { ensureGuestDataHydrated } from '../store/guestDataStore';
 import { useAuthStore } from '../store/authStore';
 import { dateOnly } from '../utils/filters';
 import { todayISO } from '../utils/format';
+import { normalizeUserRecord } from '../utils/user';
 
 function normalizeUser(raw: any): User | null {
     if (!raw || typeof raw !== 'object') {
         return null;
     }
 
-    return {
-        ...raw,
-        dailyBudget: toNum(raw?.dailyBudget),
-        budgetAmount: toNum(raw?.budgetAmount ?? raw?.dailyBudget),
-    } as User;
+    return normalizeUserRecord(raw);
 }
 
 function normalizeSummary(

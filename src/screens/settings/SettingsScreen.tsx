@@ -40,7 +40,7 @@ import { useAppAccess } from '../../hooks/useAppAccess';
 
 type ProfileSectionTab = 'profile' | 'settings' | 'plan';
 
-export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
+export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
   const { colors: themeColors } = useTheme();
   const styles = useThemedStyles(createStyles);
   const colors = themeColors;
@@ -542,7 +542,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Profile'>) {
         <Text style={styles.budgetHint}>
           {t('settings.currentBudget', {
             value: formatCurrency(
-              user?.budgetAmount ?? user?.dailyBudget ?? 0,
+              user?.budgetAmount ?? 0,
               user?.currency,
               locale,
             ),

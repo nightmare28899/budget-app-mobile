@@ -1,7 +1,6 @@
 import apiClient from './client';
 import { AuthResponse, RegisterResponse } from '../types';
-import { normalizeBudgetPeriod } from '../utils/budget';
-import { toNum } from '../utils/number';
+import { normalizeUserRecord } from '../utils/user';
 
 export interface RegisterAvatarPayload {
     uri: string;
@@ -34,25 +33,9 @@ async function parseResponsePayload(response: Response) {
 }
 
 function normalizeAuthResponse<T extends AuthResponse | RegisterResponse>(data: T): T {
-    const budgetAmount = toNum(data?.user?.budgetAmount ?? data?.user?.dailyBudget);
-    const budgetPeriod = normalizeBudgetPeriod(data?.user?.budgetPeriod, 'daily');
-
     return {
         ...data,
-        user: {
-            ...data.user,
-            dailyBudget: toNum(data?.user?.dailyBudget ?? budgetAmount),
-            budgetAmount,
-            budgetPeriod,
-            budgetPeriodStart:
-                typeof data?.user?.budgetPeriodStart === 'string'
-                    ? data.user.budgetPeriodStart
-                    : null,
-            budgetPeriodEnd:
-                typeof data?.user?.budgetPeriodEnd === 'string'
-                    ? data.user.budgetPeriodEnd
-                    : null,
-        },
+        user: normalizeUserRecord(data?.user),
     };
 }
 

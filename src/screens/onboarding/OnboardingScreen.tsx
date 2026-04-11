@@ -68,7 +68,7 @@ export function OnboardingScreen({}: RootScreenProps<'Onboarding'>) {
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedFeatureId, setSelectedFeatureId] = useState('expenses');
     const [budgetAmount, setBudgetAmount] = useState(
-        String(toNum(user?.budgetAmount ?? user?.dailyBudget ?? 0)),
+        String(toNum(user?.budgetAmount ?? 0)),
     );
     const [preferredCurrency, setPreferredCurrency] = useState(
         normalizeCurrency(user?.currency, DEFAULT_CURRENCY),

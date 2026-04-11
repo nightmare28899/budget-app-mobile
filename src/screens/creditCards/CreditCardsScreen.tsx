@@ -14,6 +14,7 @@ import { useCreditCardsOverview } from '../../hooks/useCreditCardsOverview';
 import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
 import { HomeBackground } from '../../components/ui/HomeBackground';
 import { Button } from '../../components/ui/Button';
+import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
 import { PremiumFeatureGate } from '../../components/premium/PremiumFeatureGate';
 import { useI18n } from '../../hooks/useI18n';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
@@ -199,6 +200,15 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
         navigation.navigate('CreditCardForm');
     };
 
+    const handleBackPress = () => {
+        if (navigation.canGoBack()) {
+            navigation.goBack();
+            return;
+        }
+
+        navigation.navigate('Tabs', { screen: 'Dashboard' });
+    };
+
     const handleEditCard = (card: typeof cards[number]) => {
         navigation.navigate('CreditCardForm', { card });
     };
@@ -220,6 +230,10 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                     ]}
                 >
                     <View style={styles.headerRow}>
+                        <ScreenBackButton
+                            onPress={handleBackPress}
+                            containerStyle={styles.backButton}
+                        />
                         <View style={styles.headerTextWrap}>
                             <Text
                                 style={[
@@ -745,9 +759,12 @@ const createStyles = (colors: any) => StyleSheet.create({
     },
     headerRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'space-between',
         gap: spacing.base,
+    },
+    backButton: {
+        marginTop: 2,
     },
     headerTextWrap: {
         flex: 1,

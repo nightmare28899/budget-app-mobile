@@ -149,7 +149,7 @@ function getBudgetPeriod(user: User | null) {
 }
 
 function getBudgetAmount(user: User | null) {
-  return toNum(user?.budgetAmount ?? user?.dailyBudget);
+  return toNum(user?.budgetAmount);
 }
 
 function getCurrentPeriod(input: LocalFinanceInput) {

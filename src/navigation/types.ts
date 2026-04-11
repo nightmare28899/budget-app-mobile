@@ -14,7 +14,6 @@ export type AuthStackParamList = {
 };
 
 export type ActivityStackParamList = {
-  Expenses: { successMessage?: string } | undefined;
   HistoryHome: { successMessage?: string } | undefined;
 };
 
@@ -48,7 +47,7 @@ export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Onboarding: undefined;
   Main: NavigatorScreenParams<MainDrawerParamList>;
-  Profile: undefined;
+  Settings: undefined;
   TermsAndConditions: undefined;
   PlanOverview: undefined;
   AddEntry:

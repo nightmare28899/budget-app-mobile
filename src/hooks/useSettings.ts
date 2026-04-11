@@ -32,6 +32,7 @@ import {
   normalizeBudgetPeriod,
 } from '../utils/budget';
 import { toNum } from '../utils/number';
+import { normalizeUserRecord, resolveBudgetAmount } from '../utils/user';
 import { useI18n } from './useI18n';
 import { useTheme } from '../theme';
 import { ThemeMode } from '../theme/themes';
@@ -72,7 +73,7 @@ export function useSettings() {
 
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const [budgetAmount, setBudgetAmount] = useState(
-    String(toNum(user?.budgetAmount ?? user?.dailyBudget)),
+    String(toNum(user?.budgetAmount)),
   );
   const [currency, setCurrency] = useState(
     normalizeCurrency(user?.currency, DEFAULT_CURRENCY),
@@ -98,7 +99,7 @@ export function useSettings() {
   >(null);
 
   useEffect(() => {
-    setBudgetAmount(String(toNum(user?.budgetAmount ?? user?.dailyBudget)));
+    setBudgetAmount(String(toNum(user?.budgetAmount)));
     setCurrency(normalizeCurrency(user?.currency, DEFAULT_CURRENCY));
     setBudgetPeriod(normalizeBudgetPeriod(user?.budgetPeriod, 'daily'));
     setBudgetPeriodStart(
@@ -112,7 +113,6 @@ export function useSettings() {
     setName(user?.name ?? '');
   }, [
     user?.budgetAmount,
-    user?.dailyBudget,
     user?.currency,
     user?.budgetPeriod,
     user?.budgetPeriodStart,
@@ -193,32 +193,7 @@ export function useSettings() {
   };
 
   const normalizeUpdatedUser = (data: any): User => {
-    const budgetAmountValue = toNum(
-      data?.budgetAmount ??
-        data?.dailyBudget ??
-        user?.budgetAmount ??
-        user?.dailyBudget,
-    );
-    const nextBudgetPeriod = normalizeBudgetPeriod(
-      data?.budgetPeriod ?? user?.budgetPeriod,
-      'daily',
-    );
-    const nextBudgetPeriodStart =
-      data?.budgetPeriodStart !== undefined
-        ? typeof data?.budgetPeriodStart === 'string'
-          ? data.budgetPeriodStart
-          : null
-        : typeof user?.budgetPeriodStart === 'string'
-        ? user.budgetPeriodStart
-        : null;
-    const nextBudgetPeriodEnd =
-      data?.budgetPeriodEnd !== undefined
-        ? typeof data?.budgetPeriodEnd === 'string'
-          ? data.budgetPeriodEnd
-          : null
-        : typeof user?.budgetPeriodEnd === 'string'
-        ? user.budgetPeriodEnd
-        : null;
+    const nextUser = normalizeUserRecord(data, user);
     const avatarFromApi = extractAvatarUri(data);
     const currentLocalAvatarUri = normalizeImageUri(user?.avatarUri ?? null);
     const keepLocalAvatarPreview =
@@ -240,26 +215,7 @@ export function useSettings() {
         );
 
     return {
-      id: data?.id ?? user?.id ?? '',
-      email: data?.email ?? user?.email ?? '',
-      name: data?.name ?? user?.name ?? '',
-      currency: normalizeCurrency(
-        data?.currency ?? user?.currency,
-        DEFAULT_CURRENCY,
-      ),
-      weeklyReportEnabled:
-        data?.weeklyReportEnabled !== undefined
-          ? data.weeklyReportEnabled === true
-          : user?.weeklyReportEnabled === true,
-      monthlyReportEnabled:
-        data?.monthlyReportEnabled !== undefined
-          ? data.monthlyReportEnabled === true
-          : user?.monthlyReportEnabled === true,
-      dailyBudget: budgetAmountValue,
-      budgetAmount: budgetAmountValue,
-      budgetPeriod: nextBudgetPeriod,
-      budgetPeriodStart: nextBudgetPeriodStart,
-      budgetPeriodEnd: nextBudgetPeriodEnd,
+      ...nextUser,
       avatarUrl: resolvedAvatarUrl,
       avatarUri: resolvedAvatarUri,
       createdAt: data?.createdAt ?? user?.createdAt,
@@ -543,10 +499,7 @@ export function useSettings() {
         return normalizeUpdatedUser({
           ...user,
           name: data.name ?? user.name,
-          budgetAmount:
-            data.budgetAmount ?? user.budgetAmount ?? user.dailyBudget,
-          dailyBudget:
-            data.budgetAmount ?? user.dailyBudget ?? user.budgetAmount,
+          budgetAmount: data.budgetAmount ?? user.budgetAmount,
           budgetPeriod: nextPeriod,
           budgetPeriodStart:
             nextPeriod === 'period'
@@ -606,7 +559,7 @@ export function useSettings() {
       queryClient.invalidateQueries({ queryKey: ['analytics'] });
       queryClient.invalidateQueries({ queryKey: ['income-summary'] });
       alert(t('common.success'), t('settings.updated'));
-      const nextBudgetAmount = toNum(data?.budgetAmount ?? data?.dailyBudget);
+      const nextBudgetAmount = resolveBudgetAmount(data);
       setBudgetAmount(
         data?.budgetAmount !== undefined || data?.dailyBudget !== undefined
           ? String(nextBudgetAmount)

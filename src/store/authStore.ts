@@ -5,6 +5,7 @@ import { resetToMainDashboard } from '../navigation/navigationBridge';
 import { normalizeImageUri } from '../utils/media';
 import { isLikelyInternalRemoteUri, isRemoteHttpUri } from '../utils/media';
 import { DEFAULT_CURRENCY } from '../utils/currency';
+import { normalizeUserRecord } from '../utils/user';
 
 const STORAGE_ID = 'auth-storage';
 const storage = createSecureStorage(STORAGE_ID);
@@ -24,7 +25,6 @@ function buildDefaultGuestUser(): User {
     role: 'guest',
     currency: DEFAULT_CURRENCY,
     budgetAmount: 0,
-    dailyBudget: 0,
     budgetPeriod: 'monthly',
     budgetPeriodStart: null,
     budgetPeriodEnd: null,
@@ -184,7 +184,7 @@ function readStoredUser(key: string): User | null {
   }
 
   try {
-    return applyStoredAvatar(JSON.parse(raw) as User);
+    return applyStoredAvatar(normalizeUserRecord(JSON.parse(raw)));
   } catch {
     return null;
   }
@@ -201,7 +201,7 @@ export const useAuthStore = create<AuthState>(set => ({
   isLoading: true,
 
   setAuth: (user, accessToken, refreshToken) => {
-    const userWithAvatar = applyStoredAvatar(user);
+    const userWithAvatar = applyStoredAvatar(normalizeUserRecord(user));
     persistAvatar(userWithAvatar);
 
     persistActiveUser('authenticated', userWithAvatar);
@@ -227,7 +227,9 @@ export const useAuthStore = create<AuthState>(set => ({
 
   setUser: user =>
     set(state => {
-      const userWithAvatar = applyStoredAvatar(user);
+      const userWithAvatar = applyStoredAvatar(
+        normalizeUserRecord(user, state.user),
+      );
       persistAvatar(userWithAvatar);
       persistActiveUser(state.sessionMode, userWithAvatar);
 
