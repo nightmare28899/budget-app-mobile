@@ -17,14 +17,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootScreenProps } from '../../navigation/types';
 import { useExpenseForm } from '../../hooks/useExpenseForm';
-import { CategorySelector } from '../../components/ui/CategorySelector';
-import { CurrencySelector } from '../../components/ui/CurrencySelector';
-import { CreditCardSelector } from '../../components/ui/CreditCardSelector';
-import { PaymentMethodSelector } from '../../components/ui/PaymentMethodSelector';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Skeleton } from '../../components/ui/Skeleton';
+import { CategorySelector } from '../../components/ui/domain/CategorySelector';
+import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
+import { CreditCardSelector } from '../../components/ui/domain/CreditCardSelector';
+import { PaymentMethodSelector } from '../../components/ui/domain/PaymentMethodSelector';
+import { Input } from '../../components/ui/primitives/Input';
+import { Button } from '../../components/ui/primitives/Button';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Skeleton } from '../../components/ui/primitives/Skeleton';
 import {
     borderRadius,
     spacing,
@@ -32,13 +32,14 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import { useI18n } from '../../hooks/useI18n';
-import { getCurrencyLocale, getCurrencySymbol } from '../../utils/currency';
-import { sanitizeMoneyInput } from '../../utils/moneyInput';
+import { getCurrencyLocale, getCurrencySymbol } from '../../utils/domain/currency';
+import { sanitizeMoneyInput } from '../../utils/platform/moneyInput';
 import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
-import { isCreditCardPaymentMethod } from '../../utils/paymentMethod';
-import { formatCurrency, formatDate } from '../../utils/format';
+import { isCreditCardPaymentMethod } from '../../utils/domain/paymentMethod';
+import { formatCurrency, formatDate } from '../../utils/core/format';
 import { useAppAccess } from '../../hooks/useAppAccess';
 import { usePremiumAccess } from '../../hooks/usePremiumAccess';
 
@@ -544,7 +545,7 @@ export function EditExpenseScreen({
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

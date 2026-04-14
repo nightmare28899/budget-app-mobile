@@ -1,16 +1,20 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { subscriptionsApi } from '../../api/subscriptions';
+import { subscriptionsApi } from '../../api/resources/subscriptions';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { useI18n } from '../../hooks/useI18n';
-import { toNum } from '../../utils/number';
-import { CreateSubscriptionPayload, UpdateSubscriptionPayload } from '../../types';
+import { toNum } from '../../utils/core/number';
+import { CreateSubscriptionPayload, UpdateSubscriptionPayload } from '../../types/index';
 import {
     listUpcomingSubscriptions,
     toSubscriptionManagerItems,
 } from './subscriptionManager';
-import { aggregateCurrencyTotals } from '../../utils/currency';
-import { extractApiMessage, extractPremiumRequiredError } from '../../utils/api';
+import { aggregateCurrencyTotals } from '../../utils/domain/currency';
+import {
+    extractApiMessage,
+    extractPremiumRequiredError,
+    getApiErrorData,
+} from '../../utils/platform/api';
 
 export function useSubscriptionManager() {
     const queryClient = useQueryClient();
@@ -57,8 +61,8 @@ export function useSubscriptionManager() {
             queryClient.invalidateQueries({ queryKey: ['history'] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
         },
-        onError: (error: any) => {
-            handleMutationError(error?.response?.data, t('subscriptions.failedCreate'));
+        onError: (error: unknown) => {
+            handleMutationError(getApiErrorData(error), t('subscriptions.failedCreate'));
         },
     });
 
@@ -69,8 +73,8 @@ export function useSubscriptionManager() {
             queryClient.invalidateQueries({ queryKey: ['history'] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
         },
-        onError: (error: any) => {
-            handleMutationError(error?.response?.data, t('subscriptions.failedRemove'));
+        onError: (error: unknown) => {
+            handleMutationError(getApiErrorData(error), t('subscriptions.failedRemove'));
         },
     });
 
@@ -82,8 +86,8 @@ export function useSubscriptionManager() {
             queryClient.invalidateQueries({ queryKey: ['history'] });
             queryClient.invalidateQueries({ queryKey: ['analytics'] });
         },
-        onError: (error: any) => {
-            handleMutationError(error?.response?.data, t('subscriptions.failedUpdate'));
+        onError: (error: unknown) => {
+            handleMutationError(getApiErrorData(error), t('subscriptions.failedUpdate'));
         },
     });
 

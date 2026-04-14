@@ -13,13 +13,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { PlanAccessSection } from '../../components/profile/PlanAccessSection';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Button } from '../../components/ui/Button';
-import { HeroHeader } from '../../components/ui/HeroHeader';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { Input } from '../../components/ui/Input';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
-import { ThemeLivePreviewCard } from '../../components/ui/ThemeLivePreviewCard';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Button } from '../../components/ui/primitives/Button';
+import { HeroHeader } from '../../components/ui/layout/HeroHeader';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { Input } from '../../components/ui/primitives/Input';
+import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
+import { ThemeLivePreviewCard } from '../../components/ui/domain/ThemeLivePreviewCard';
 import { useSettings } from '../../hooks/useSettings';
 import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
 import { RootScreenProps } from '../../navigation/types';
@@ -31,11 +31,12 @@ import {
   useResponsive,
   useTheme,
   useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import { ThemeMode } from '../../theme/themes';
-import { getCurrencyLocale } from '../../utils/currency';
-import { formatCurrency } from '../../utils/format';
-import { budgetLabel } from '../../utils/budget';
+import { getCurrencyLocale } from '../../utils/domain/currency';
+import { formatCurrency } from '../../utils/core/format';
+import { budgetLabel } from '../../utils/domain/budget';
 import { useAppAccess } from '../../hooks/useAppAccess';
 
 type ProfileSectionTab = 'profile' | 'settings' | 'plan';
@@ -973,7 +974,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
   );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
   StyleSheet.create({
     backButton: {
       position: 'absolute',

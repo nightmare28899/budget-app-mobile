@@ -12,11 +12,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
 import { showGlobalAlert } from '../../components/alerts/alertBridge';
 import { SavingsGoalFormModal } from '../../components/savings/SavingsGoalFormModal';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Button } from '../../components/ui/Button';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { Skeleton } from '../../components/ui/Skeleton';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Button } from '../../components/ui/primitives/Button';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { Skeleton } from '../../components/ui/primitives/Skeleton';
 import { SavingsFundsModal } from '../../components/savings/SavingsFundsModal';
 import { SavingsProgressRing } from '../../components/savings/SavingsProgressRing';
 import { SavingsTransactionItem } from '../../components/savings/SavingsTransactionItem';
@@ -30,11 +30,12 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { CreateSavingsGoalPayload } from '../../types';
-import { formatCurrency } from '../../utils/format';
-import { resolveSavingsGoalIconName } from '../../utils/icons';
-import { API_BASE_URL } from '../../utils/constants';
+    SemanticColors,
+} from '../../theme/index';
+import { CreateSavingsGoalPayload } from '../../types/index';
+import { formatCurrency } from '../../utils/core/format';
+import { resolveSavingsGoalIconName } from '../../utils/platform/icons';
+import { API_BASE_URL } from '../../utils/core/constants';
 import {
     formatSavingsDate,
     formatSavingsDateTime,
@@ -42,7 +43,7 @@ import {
     getSavingsProgress,
     resolveSavingsGoalColor,
     withSavingsAlpha,
-} from '../../utils/savings';
+} from '../../utils/domain/savings';
 
 function resolveActionErrorMessage(
     message: string | null | undefined,
@@ -814,7 +815,7 @@ export function SavingsGoalDetailScreen({
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         container: {
             flex: 1,

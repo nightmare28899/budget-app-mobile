@@ -8,9 +8,9 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AnimatedScreen } from '../ui/AnimatedScreen';
-import { Button } from '../ui/Button';
-import { HomeBackground } from '../ui/HomeBackground';
+import { AnimatedScreen } from '../ui/primitives/AnimatedScreen';
+import { Button } from '../ui/primitives/Button';
+import { HomeBackground } from '../ui/layout/HomeBackground';
 import { usePremiumAccess } from '../../hooks/usePremiumAccess';
 import { useI18n } from '../../hooks/useI18n';
 import { PremiumFeature } from '../../types/premium';
@@ -21,8 +21,9 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { withAlpha } from '../../utils/subscriptions';
+    SemanticColors,
+} from '../../theme/index';
+import { withAlpha } from '../../utils/domain/subscriptions';
 
 type PremiumFeatureGateProps = {
     feature: PremiumFeature;
@@ -343,7 +344,7 @@ export function PremiumFeatureGate({
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

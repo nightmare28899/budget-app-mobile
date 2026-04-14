@@ -8,7 +8,7 @@ import { AlertProvider } from './components/alerts/AlertProvider';
 import { OfflineRegistrationSync } from './components/OfflineRegistrationSync';
 import { usePreferencesStore } from './store/preferencesStore';
 import { useGuestDataStore } from './store/guestDataStore';
-import { ThemeProvider, useTheme } from './theme';
+import { ThemeProvider, useTheme } from './theme/index';
 import { usePushNotifications } from './hooks/usePushNotifications';
 
 const queryClient = new QueryClient({

@@ -12,15 +12,15 @@ import { DrawerActions } from '@react-navigation/native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { analyticsApi } from '../../api/analytics';
-import { categoriesApi } from '../../api/categories';
+import { analyticsApi } from '../../api/resources/analytics';
+import { categoriesApi } from '../../api/resources/categories';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { CategoryIcon } from '../../components/CategoryIcon';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Button } from '../../components/ui/Button';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { Input } from '../../components/ui/Input';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Button } from '../../components/ui/primitives/Button';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { Input } from '../../components/ui/primitives/Input';
 import { useI18n } from '../../hooks/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
@@ -31,12 +31,13 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import type { CategoryBudgetStatus } from '../../types';
-import { budgetLabel } from '../../utils/budget';
-import { formatCurrency, formatDate } from '../../utils/format';
-import { getCurrencyLocale } from '../../utils/currency';
-import { withAlpha } from '../../utils/subscriptions';
+    SemanticColors,
+} from '../../theme/index';
+import type { CategoryBudgetStatus } from '../../types/index';
+import { budgetLabel } from '../../utils/domain/budget';
+import { formatCurrency, formatDate } from '../../utils/core/format';
+import { getCurrencyLocale } from '../../utils/domain/currency';
+import { withAlpha } from '../../utils/domain/subscriptions';
 
 function buildRangeLabel(start?: string | null, end?: string | null) {
     if (!start || !end) {
@@ -491,7 +492,7 @@ export function CategoryBudgetsScreen({
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.surface,

@@ -13,8 +13,8 @@ import { DrawerActions } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
-import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/currency';
-import { withAlpha } from '../../utils/subscriptions';
+import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/domain/currency';
+import { withAlpha } from '../../utils/domain/subscriptions';
 import {
     spacing,
     typography,
@@ -22,15 +22,16 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { Expense } from '../../types';
-import { ExpenseItem } from '../../components/ui/ExpenseItem';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { HistorySkeleton } from '../../components/ui/Skeleton';
-import { Button } from '../../components/ui/Button';
+    SemanticColors,
+} from '../../theme/index';
+import { Expense } from '../../types/index';
+import { ExpenseItem } from '../../components/ui/domain/ExpenseItem';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { HistorySkeleton } from '../../components/ui/primitives/Skeleton';
+import { Button } from '../../components/ui/primitives/Button';
 import { useI18n } from '../../hooks/useI18n';
-import { HomeBackground } from '../../components/ui/HomeBackground';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { useExpensesScreen } from '../../hooks/useExpensesScreen';
 
 export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Expenses'>) {
@@ -312,7 +313,7 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

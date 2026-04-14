@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { expensesApi } from '../api/expenses';
+import { expensesApi } from '../api/resources/expenses';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useI18n } from './useI18n';
 

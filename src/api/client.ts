@@ -1,10 +1,10 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { API_BASE_URL } from '../utils/constants';
+import { API_BASE_URL } from '../utils/core/constants';
 import { useAuthStore } from '../store/authStore';
-import { translate, TranslationKey } from '../i18n';
+import { translate, TranslationKey } from '../i18n/index';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { showGlobalAlert } from '../components/alerts/alertBridge';
-import { extractPremiumRequiredError } from '../utils/api';
+import { extractPremiumRequiredError } from '../utils/platform/api';
 import { openPremiumPaywall } from '../navigation/navigationBridge';
 
 const apiClient = axios.create({

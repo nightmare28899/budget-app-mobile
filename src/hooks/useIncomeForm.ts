@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppAlert } from '../components/alerts/AlertProvider';
-import { incomesApi } from '../api/incomes';
-import { CreateIncomePayload, Income, UpdateIncomePayload } from '../types';
-import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/currency';
+import { incomesApi } from '../api/resources/incomes';
+import { CreateIncomePayload, Income, UpdateIncomePayload } from '../types/index';
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/domain/currency';
 import { useAuthStore } from '../store/authStore';
-import { extractApiMessage } from '../utils/api';
-import { MAX_COST_LABEL, MAX_COST_VALUE } from '../utils/moneyInput';
-import { todayISO } from '../utils/format';
+import { extractApiMessage, getApiErrorData } from '../utils/platform/api';
+import { MAX_COST_LABEL, MAX_COST_VALUE } from '../utils/platform/moneyInput';
+import { todayISO } from '../utils/core/format';
 import { useI18n } from './useI18n';
 
 export function useIncomeForm(editingIncome?: Income | null) {
@@ -57,10 +57,10 @@ export function useIncomeForm(editingIncome?: Income | null) {
         onSuccess: async () => {
             await invalidateIncomeQueries();
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
             alert(
                 t('common.error'),
-                extractApiMessage(err?.response?.data) || t('income.failedCreate'),
+                extractApiMessage(getApiErrorData(err)) || t('income.failedCreate'),
             );
         },
     });
@@ -71,10 +71,10 @@ export function useIncomeForm(editingIncome?: Income | null) {
         onSuccess: async () => {
             await invalidateIncomeQueries(editingIncome?.id);
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
             alert(
                 t('common.error'),
-                extractApiMessage(err?.response?.data) || t('income.failedUpdate'),
+                extractApiMessage(getApiErrorData(err)) || t('income.failedUpdate'),
             );
         },
     });

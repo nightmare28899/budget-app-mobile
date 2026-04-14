@@ -7,8 +7,8 @@ import {
     SavingsGoal,
     SavingsTransaction,
     Subscription,
-} from '../types';
-import { CATEGORY_DEFAULTS } from '../utils/constants';
+} from '../types/index';
+import { CATEGORY_DEFAULTS } from '../utils/core/constants';
 import { createSecureStorage, migrateLegacyStringStore } from './secureStorage';
 
 const STORAGE_ID = 'guest-data-storage';

@@ -11,14 +11,14 @@ import { DrawerActions } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Button } from '../../components/ui/Button';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { creditCardsApi } from '../../api/creditCards';
-import { expensesApi } from '../../api/expenses';
-import { incomesApi } from '../../api/incomes';
-import { subscriptionsApi } from '../../api/subscriptions';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Button } from '../../components/ui/primitives/Button';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { creditCardsApi } from '../../api/resources/creditCards';
+import { expensesApi } from '../../api/resources/expenses';
+import { incomesApi } from '../../api/resources/incomes';
+import { subscriptionsApi } from '../../api/resources/subscriptions';
 import { useI18n } from '../../hooks/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
@@ -29,7 +29,7 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+} from '../../theme/index';
 import {
     buildPlannerMonthData,
     getPlannerMonthRange,
@@ -37,12 +37,12 @@ import {
     PlannerEvent,
     shiftPlannerMonth,
 } from '../../modules/planner/monthPlanner';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency } from '../../utils/core/format';
 import {
     formatCurrencyBreakdown,
     getCurrencyLocale,
-} from '../../utils/currency';
-import { withAlpha } from '../../utils/subscriptions';
+} from '../../utils/domain/currency';
+import { withAlpha } from '../../utils/domain/subscriptions';
 
 function formatMonthLabel(value: Date, locale: 'es-MX' | 'en-US') {
     const raw = value.toLocaleDateString(locale, {

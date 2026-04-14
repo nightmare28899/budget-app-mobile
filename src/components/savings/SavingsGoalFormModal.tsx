@@ -15,17 +15,17 @@ import DateTimePicker, {
     DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { CreateSavingsGoalPayload, SavingsGoal } from '../../types';
+import { CreateSavingsGoalPayload, SavingsGoal } from '../../types/index';
 import { useI18n } from '../../hooks/useI18n';
-import { formatCurrency } from '../../utils/format';
-import { formatDateISO } from '../../utils/subscriptions';
+import { formatCurrency } from '../../utils/core/format';
+import { formatDateISO } from '../../utils/domain/subscriptions';
 import {
     SAVINGS_GOAL_COLOR_OPTIONS,
     SAVINGS_GOAL_ICON_OPTIONS,
     formatSavingsDate,
     resolveSavingsGoalColor,
     withSavingsAlpha,
-} from '../../utils/savings';
+} from '../../utils/domain/savings';
 import {
     borderRadius,
     spacing,
@@ -33,14 +33,15 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+    SemanticColors,
+} from '../../theme/index';
+import { Button } from '../ui/primitives/Button';
+import { Input } from '../ui/primitives/Input';
 import {
     MAX_COST_LABEL,
     MAX_COST_VALUE,
     sanitizeMoneyInput,
-} from '../../utils/moneyInput';
+} from '../../utils/platform/moneyInput';
 import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
 
 type SavingsGoalFormMode = 'create' | 'edit';
@@ -670,7 +671,7 @@ export function SavingsGoalFormModal({
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         overlay: {
             flex: 1,

@@ -4,32 +4,28 @@ import {
     Text,
     StyleSheet,
     ScrollView,
-    KeyboardAvoidingView,
     Platform,
     TouchableOpacity,
     TextInput,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RootScreenProps } from '../../navigation/types';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
-import { CurrencySelector } from '../../components/ui/CurrencySelector';
-import { CreditCardSelector } from '../../components/ui/CreditCardSelector';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { PaymentMethodSelector } from '../../components/ui/PaymentMethodSelector';
+import { EntryScreenScaffold } from '../../components/ui/layout/EntryScreenScaffold';
+import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
+import { CreditCardSelector } from '../../components/ui/domain/CreditCardSelector';
+import { Input } from '../../components/ui/primitives/Input';
+import { Button } from '../../components/ui/primitives/Button';
+import { PaymentMethodSelector } from '../../components/ui/domain/PaymentMethodSelector';
 import {
     type QuickSubscriptionPresetGroup,
     withAlpha,
-} from '../../utils/subscriptions';
+} from '../../utils/domain/subscriptions';
 import {
     getPaymentMethodOption,
     isCreditCardPaymentMethod,
     PAYMENT_METHOD_FALLBACK_ICON,
-} from '../../utils/paymentMethod';
+} from '../../utils/domain/paymentMethod';
 import {
     spacing,
     typography,
@@ -37,7 +33,8 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import { useI18n } from '../../hooks/useI18n';
 import {
     useSubscriptionForm,
@@ -45,9 +42,10 @@ import {
     QUICK_SUBSCRIPTION_PRESET_GROUPS,
     BILLING_CYCLE_OPTIONS,
 } from '../../hooks/useSubscriptionForm';
-import { getCurrencyLocale, getCurrencySymbol } from '../../utils/currency';
+import { getCurrencyLocale, getCurrencySymbol } from '../../utils/domain/currency';
+import { parseDateOrToday } from '../../utils/core/format';
 import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
-import { formatCreditCardLabel } from '../../utils/creditCards';
+import { formatCreditCardLabel } from '../../utils/domain/creditCards';
 import { useAppAccess } from '../../hooks/useAppAccess';
 import { usePremiumAccess } from '../../hooks/usePremiumAccess';
 
@@ -74,15 +72,12 @@ export function AddSubscriptionScreen({
 }: RootScreenProps<'AddSubscription'>) {
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
-    const insets = useSafeAreaInsets();
     const isEmbedded = route.params?.embedded === true;
     const { t, language } = useI18n();
     const { hasPremium } = useAppAccess();
     const { requirePremiumAccess } = usePremiumAccess();
     const locale = getCurrencyLocale(language);
     const {
-        horizontalPadding,
-        contentMaxWidth,
         isSmallPhone,
         scaleFont,
     } = useResponsive();
@@ -117,7 +112,6 @@ export function AddSubscriptionScreen({
         onPickPreset,
         onSave,
         onDelete,
-        parseDateOrToday,
         chargeDate,
     } = useSubscriptionForm({
         navigation,
@@ -182,78 +176,49 @@ export function AddSubscriptionScreen({
         navigation.navigate('CreditCardForm');
     };
 
-    return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? (isEmbedded ? 0 : insets.top) : 0}
-        >
-            <HomeBackground />
-            <AnimatedScreen style={styles.flex1} delay={10} duration={240} travelY={8}>
-                <View
-                    style={[
-                        styles.header,
-                        {
-                            paddingTop: isEmbedded ? spacing.base : insets.top + spacing.base,
-                            paddingHorizontal: horizontalPadding,
-                        },
-                    ]}
-                >
-                    <View style={styles.headerRow}>
-                        {!isEmbedded && (
-                            <ScreenBackButton
-                                onPress={() => navigation.goBack()}
-                                containerStyle={styles.backButton}
-                            />
-                        )}
-                        <View
-                            style={[
-                                styles.headerTextWrap,
-                                !isEmbedded ? styles.headerTextWrapWithBack : null,
-                            ]}
-                        >
-                            <Text
-                                style={[
-                                    styles.headerTitle,
-                                    { fontSize: scaleFont(typography.fontSize['2xl']) },
-                                ]}
-                            >
-                                {t(isEditMode ? 'addSubscription.editTitle' : 'addSubscription.title')}
-                            </Text>
-                            <Text
-                                style={[
-                                    styles.headerSubtitle,
-                                    { fontSize: scaleFont(typography.fontSize.md) },
-                                ]}
-                            >
-                                {t(
-                                    isEditMode
-                                        ? 'addSubscription.editSubtitle'
-                                        : 'addSubscription.subtitle',
-                                )}
-                            </Text>
-                        </View>
-                    </View>
-                </View>
+    const footer = (
+        <>
+            {isEditMode ? (
+                <Button
+                    title={t('common.delete')}
+                    variant="danger"
+                    onPress={onDelete}
+                    loading={isRemoving}
+                    disabled={isCreating || isUpdating}
+                    containerStyle={styles.deleteButton}
+                />
+            ) : null}
+            <Button
+                title={t(isEditMode ? 'addSubscription.update' : 'addSubscription.save')}
+                onPress={onSave}
+                loading={isCreating || isUpdating}
+                disabled={isRemoving}
+                containerStyle={styles.saveButton}
+            />
+        </>
+    );
 
-                <ScrollView
-                    ref={scrollRef}
-                    contentContainerStyle={[
-                        styles.content,
-                        {
-                            paddingHorizontal: horizontalPadding,
-                            paddingBottom: insets.bottom + spacing.xl,
-                        },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
-                    ]}
-                    keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="on-drag"
-                    showsVerticalScrollIndicator={false}
-                    automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
-                >
-                    <View style={styles.amountBlock}>
+    return (
+        <EntryScreenScaffold
+            title={t(isEditMode ? 'addSubscription.editTitle' : 'addSubscription.title')}
+            subtitle={t(
+                isEditMode
+                    ? 'addSubscription.editSubtitle'
+                    : 'addSubscription.subtitle',
+            )}
+            embedded={isEmbedded}
+            onBack={() => navigation.goBack()}
+            scrollRef={scrollRef}
+            scrollContentContainerStyle={styles.content}
+            scrollBottomSpacing={spacing.xl}
+            showsVerticalScrollIndicator={false}
+            footer={footer}
+            footerContainerStyle={styles.stickyFooter}
+            animationDelay={10}
+            animationDuration={240}
+            animationTravelY={8}
+        >
+            <View style={styles.amountBlock}>
                         <View style={styles.amountContainer}>
                             <Text
                                 style={[
@@ -675,33 +640,12 @@ export function AddSubscriptionScreen({
                                 </Text>
                             </View>
                         ) : null}
-                    </View>
-                </ScrollView>
-                <View style={[styles.stickyFooter, { paddingHorizontal: horizontalPadding, paddingBottom: isEmbedded ? spacing.lg : insets.bottom || spacing.lg }]}>
-                    {isEditMode ? (
-                        <Button
-                            title={t('common.delete')}
-                            variant="danger"
-                            onPress={onDelete}
-                            loading={isRemoving}
-                            disabled={isCreating || isUpdating}
-                            containerStyle={styles.deleteButton}
-                        />
-                    ) : null}
-                    <Button
-                        title={t(isEditMode ? 'addSubscription.update' : 'addSubscription.save')}
-                        onPress={onSave}
-                        loading={isCreating || isUpdating}
-                        disabled={isRemoving}
-                        containerStyle={styles.saveButton}
-                    />
-                </View>
-            </AnimatedScreen>
-        </KeyboardAvoidingView>
+            </View>
+        </EntryScreenScaffold>
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { creditCardsApi } from '../api/creditCards';
+import { creditCardsApi } from '../api/resources/creditCards';
 
 type UseCreditCardsOverviewOptions = {
     includeInactive?: boolean;

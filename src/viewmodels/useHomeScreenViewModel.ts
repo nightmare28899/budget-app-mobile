@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { analyticsApi } from '../api/analytics';
-import { historyApi } from '../api/history';
-import { subscriptionsApi } from '../api/subscriptions';
+import { analyticsApi } from '../api/resources/analytics';
+import { historyApi } from '../api/resources/history';
+import { subscriptionsApi } from '../api/resources/subscriptions';
 import { useDashboard } from '../hooks/useDashboard';
 import { useI18n } from '../hooks/useI18n';
 import { getRecentUnifiedHistory } from '../modules/history/unifiedHistory';
@@ -11,10 +11,10 @@ import {
     resolvePeriodRange,
     toSubscriptionManagerItems,
 } from '../modules/subscriptions/subscriptionManager';
-import { BudgetPeriod } from '../types';
-import { getCurrencyLocale } from '../utils/currency';
-import { formatCurrency } from '../utils/format';
-import { toNum } from '../utils/number';
+import { BudgetPeriod } from '../types/index';
+import { getCurrencyLocale } from '../utils/domain/currency';
+import { formatCurrency } from '../utils/core/format';
+import { toNum } from '../utils/core/number';
 
 type UseHomeScreenViewModelParams = {
     upcomingDays?: number;

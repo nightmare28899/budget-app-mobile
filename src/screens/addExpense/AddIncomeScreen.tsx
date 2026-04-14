@@ -1,8 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-    KeyboardAvoidingView,
     Platform,
-    ScrollView,
     StyleSheet,
     Text,
     TextInput,
@@ -13,16 +11,13 @@ import DateTimePicker, {
     DateTimePickerAndroid,
     DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RootScreenProps } from '../../navigation/types';
 import { useIncomeForm } from '../../hooks/useIncomeForm';
-import { CurrencySelector } from '../../components/ui/CurrencySelector';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
+import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
+import { Button } from '../../components/ui/primitives/Button';
+import { Input } from '../../components/ui/primitives/Input';
+import { EntryScreenScaffold } from '../../components/ui/layout/EntryScreenScaffold';
 import {
     borderRadius,
     spacing,
@@ -30,31 +25,20 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import { useI18n } from '../../hooks/useI18n';
-import { sanitizeMoneyInput } from '../../utils/moneyInput';
-import { getCurrencyLocale, getCurrencySymbol } from '../../utils/currency';
-import { formatCurrency, formatDate } from '../../utils/format';
-import { withAlpha } from '../../utils/subscriptions';
-
-function parseDateOrToday(value: string): Date {
-    const parsed = new Date(`${value}T12:00:00`);
-    if (Number.isNaN(parsed.getTime())) {
-        return new Date();
-    }
-
-    return parsed;
-}
+import { sanitizeMoneyInput } from '../../utils/platform/moneyInput';
+import { getCurrencyLocale, getCurrencySymbol } from '../../utils/domain/currency';
+import { formatCurrency, formatDate, parseDateOrToday } from '../../utils/core/format';
+import { withAlpha } from '../../utils/domain/subscriptions';
 
 export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncome'>) {
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
-    const insets = useSafeAreaInsets();
     const isEmbedded = route.params?.embedded === true;
     const editingIncome = route.params?.income ?? null;
     const {
-        horizontalPadding,
-        contentMaxWidth,
         isSmallPhone,
         scaleFont,
     } = useResponsive();
@@ -87,14 +71,6 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
                 day: 'numeric',
             }),
         [date, locale],
-    );
-    const constrainedContentStyle = useMemo(
-        () => (
-            contentMaxWidth
-                ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
-                : null
-        ),
-        [contentMaxWidth],
     );
     const amountInputSizeStyle = useMemo(
         () => ({ minWidth: isSmallPhone ? 100 : 120 }),
@@ -135,7 +111,7 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
             }
 
             navigation.navigate('Main', {
-                screen: 'Income',
+                screen: 'Incomes',
                 params: {
                     successMessage: isEditMode
                         ? t('income.updatedSuccess')
@@ -146,161 +122,120 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
     };
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? (isEmbedded ? 0 : insets.top) : 0}
+        <EntryScreenScaffold
+            title={isEditMode ? t('income.editTitle') : t('income.addTitle')}
+            subtitle={t('income.subtitle')}
+            embedded={isEmbedded}
+            onBack={() => navigation.goBack()}
+            scrollContentContainerStyle={styles.scrollContent}
+            scrollBottomSpacing={spacing['4xl']}
         >
-            <HomeBackground />
-            <AnimatedScreen style={styles.flex1} delay={8} duration={200} travelY={6}>
-                <View
-                    style={[
-                        styles.header,
-                        {
-                            paddingTop: isEmbedded ? spacing.base : insets.top + spacing.base,
-                            paddingHorizontal: horizontalPadding,
-                        },
-                    ]}
-                >
-                    <View style={styles.headerRow}>
-                        {!isEmbedded ? (
-                            <ScreenBackButton
-                                onPress={() => navigation.goBack()}
-                                containerStyle={styles.backButton}
-                            />
-                        ) : null}
-                        <View style={styles.headerCopy}>
-                            <Text style={[styles.headerTitle, { fontSize: scaleFont(typography.fontSize['2xl']) }]}>
-                                {isEditMode ? t('income.editTitle') : t('income.addTitle')}
-                            </Text>
-                            <Text style={[styles.headerSubtitle, { fontSize: scaleFont(typography.fontSize.md) }]}>
-                                {t('income.subtitle')}
-                            </Text>
-                        </View>
+            <View style={styles.amountBlock}>
+                <View style={styles.amountContainer}>
+                    <Text style={[styles.currencySign, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>
+                        {currencySymbol}
+                    </Text>
+                    <TextInput
+                        style={[
+                            styles.amountInput,
+                            {
+                                fontSize: scaleFont(typography.fontSize['5xl']),
+                                lineHeight: scaleFont(typography.fontSize['5xl']),
+                            },
+                            amountInputSizeStyle,
+                        ]}
+                        placeholder={t('income.amountPlaceholder')}
+                        placeholderTextColor={colors.textMuted}
+                        keyboardType="decimal-pad"
+                        value={amount}
+                        onChangeText={(value) => setAmount(sanitizeMoneyInput(value))}
+                    />
+                    <View style={styles.amountCurrencyBadge}>
+                        <Text
+                            style={[
+                                styles.amountCurrencyText,
+                                { fontSize: scaleFont(typography.fontSize.sm) },
+                            ]}
+                        >
+                            {currency}
+                        </Text>
                     </View>
                 </View>
+                <Text style={[styles.amountPreview, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                    {t('income.amountPreview', { amount: amountPreview })}
+                </Text>
+            </View>
 
-                <ScrollView
-                    contentContainerStyle={[
-                        styles.scrollContent,
-                        {
-                            paddingBottom: insets.bottom + spacing['4xl'],
-                            paddingHorizontal: horizontalPadding,
-                        },
-                        constrainedContentStyle,
-                    ]}
-                    keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="on-drag"
-                    automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+            <CurrencySelector
+                label={t('income.currency')}
+                value={currency}
+                onChange={setCurrency}
+            />
+
+            <View style={styles.formCard}>
+                <Input
+                    label={t('income.source')}
+                    placeholder={t('income.sourcePlaceholder')}
+                    value={title}
+                    onChangeText={setTitle}
+                />
+
+                <TouchableOpacity
+                    activeOpacity={0.84}
+                    style={styles.dateButton}
+                    onPress={openDatePicker}
                 >
-                    <View style={styles.amountBlock}>
-                        <View style={styles.amountContainer}>
-                            <Text style={[styles.currencySign, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>
-                                {currencySymbol}
-                            </Text>
-                            <TextInput
-                                style={[
-                                    styles.amountInput,
-                                    {
-                                        fontSize: scaleFont(typography.fontSize['5xl']),
-                                        lineHeight: scaleFont(typography.fontSize['5xl']),
-                                    },
-                                    amountInputSizeStyle,
-                                ]}
-                                placeholder={t('income.amountPlaceholder')}
-                                placeholderTextColor={colors.textMuted}
-                                keyboardType="decimal-pad"
-                                value={amount}
-                                onChangeText={(value) => setAmount(sanitizeMoneyInput(value))}
-                            />
-                            <View style={styles.amountCurrencyBadge}>
-                                <Text
-                                    style={[
-                                        styles.amountCurrencyText,
-                                        { fontSize: scaleFont(typography.fontSize.sm) },
-                                    ]}
-                                >
-                                    {currency}
-                                </Text>
-                            </View>
-                        </View>
-                        <Text style={[styles.amountPreview, { fontSize: scaleFont(typography.fontSize.sm) }]}>
-                            {t('income.amountPreview', { amount: amountPreview })}
+                    <View style={styles.dateCopy}>
+                        <Text style={[styles.dateLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                            {t('income.receivedOn')}
+                        </Text>
+                        <Text style={[styles.dateValue, { fontSize: scaleFont(typography.fontSize.base) }]}>
+                            {dateLabel}
                         </Text>
                     </View>
+                    <Icon name="calendar-outline" size={18} color={colors.textSecondary} />
+                </TouchableOpacity>
 
-                    <CurrencySelector
-                        label={t('income.currency')}
-                        value={currency}
-                        onChange={setCurrency}
+                {Platform.OS === 'ios' && showIosPicker ? (
+                    <DateTimePicker
+                        mode="date"
+                        display="inline"
+                        value={parseDateOrToday(date)}
+                        maximumDate={new Date()}
+                        onChange={onChangeDate}
                     />
+                ) : null}
 
-                    <View style={styles.formCard}>
-                        <Input
-                            label={t('income.source')}
-                            placeholder={t('income.sourcePlaceholder')}
-                            value={title}
-                            onChangeText={setTitle}
-                        />
+                <Input
+                    label={t('income.note')}
+                    placeholder={t('income.notePlaceholder')}
+                    value={note}
+                    onChangeText={setNote}
+                    multiline
+                    numberOfLines={4}
+                />
+            </View>
 
-                        <TouchableOpacity
-                            activeOpacity={0.84}
-                            style={styles.dateButton}
-                            onPress={openDatePicker}
-                        >
-                            <View style={styles.dateCopy}>
-                                <Text style={[styles.dateLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
-                                    {t('income.receivedOn')}
-                                </Text>
-                                <Text style={[styles.dateValue, { fontSize: scaleFont(typography.fontSize.base) }]}>
-                                    {dateLabel}
-                                </Text>
-                            </View>
-                            <Icon name="calendar-outline" size={18} color={colors.textSecondary} />
-                        </TouchableOpacity>
+            <View style={styles.tipCard}>
+                <View style={styles.tipIconWrap}>
+                    <Icon name="sparkles-outline" size={18} color={colors.success} />
+                </View>
+                <Text style={[styles.tipText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                    {t('income.tip')}
+                </Text>
+            </View>
 
-                        {Platform.OS === 'ios' && showIosPicker ? (
-                            <DateTimePicker
-                                mode="date"
-                                display="inline"
-                                value={parseDateOrToday(date)}
-                                maximumDate={new Date()}
-                                onChange={onChangeDate}
-                            />
-                        ) : null}
-
-                        <Input
-                            label={t('income.note')}
-                            placeholder={t('income.notePlaceholder')}
-                            value={note}
-                            onChangeText={setNote}
-                            multiline
-                            numberOfLines={4}
-                        />
-                    </View>
-
-                    <View style={styles.tipCard}>
-                        <View style={styles.tipIconWrap}>
-                            <Icon name="sparkles-outline" size={18} color={colors.success} />
-                        </View>
-                        <Text style={[styles.tipText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
-                            {t('income.tip')}
-                        </Text>
-                    </View>
-
-                    <Button
-                        title={isEditMode ? t('income.saveChanges') : t('income.save')}
-                        onPress={onSave}
-                        loading={isPending}
-                        containerStyle={styles.saveButton}
-                    />
-                </ScrollView>
-            </AnimatedScreen>
-        </KeyboardAvoidingView>
+            <Button
+                title={isEditMode ? t('income.saveChanges') : t('income.save')}
+                onPress={onSave}
+                loading={isPending}
+                containerStyle={styles.saveButton}
+            />
+        </EntryScreenScaffold>
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

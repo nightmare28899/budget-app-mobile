@@ -8,12 +8,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainDrawerScreenProps } from '../../navigation/types';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { Button } from '../../components/ui/Button';
-import { SubscriptionItem } from '../../components/ui/SubscriptionItem';
-import { formatCurrencyBreakdown } from '../../utils/currency';
-import { withAlpha } from '../../utils/subscriptions';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { Button } from '../../components/ui/primitives/Button';
+import { SubscriptionItem } from '../../components/ui/domain/SubscriptionItem';
+import { formatCurrencyBreakdown } from '../../utils/domain/currency';
+import { withAlpha } from '../../utils/domain/subscriptions';
 import {
     borderRadius,
     spacing,
@@ -21,11 +21,12 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import { useI18n } from '../../hooks/useI18n';
 import { useSubscriptionsScreen } from '../../hooks/useSubscriptionsScreen';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 
 function formatDateGroupLabel(value: string, locale: 'en-US' | 'es-MX'): string {
     const parsed = new Date(`${value}T12:00:00`);
@@ -291,7 +292,7 @@ export function SubscriptionsScreen({
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

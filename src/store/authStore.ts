@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { User } from '../types';
+import { User } from '../types/index';
 import { createSecureStorage, migrateLegacyStringStore } from './secureStorage';
 import { resetToMainDashboard } from '../navigation/navigationBridge';
-import { normalizeImageUri } from '../utils/media';
-import { isLikelyInternalRemoteUri, isRemoteHttpUri } from '../utils/media';
-import { DEFAULT_CURRENCY } from '../utils/currency';
-import { normalizeUserRecord } from '../utils/user';
+import { normalizeImageUri } from '../utils/platform/media';
+import { isLikelyInternalRemoteUri, isRemoteHttpUri } from '../utils/platform/media';
+import { DEFAULT_CURRENCY } from '../utils/domain/currency';
+import { normalizeUserRecord } from '../utils/domain/user';
 
 const STORAGE_ID = 'auth-storage';
 const storage = createSecureStorage(STORAGE_ID);

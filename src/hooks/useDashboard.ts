@@ -1,17 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { expensesApi } from '../api/expenses';
-import { analyticsApi } from '../api/analytics';
-import { incomesApi } from '../api/incomes';
+import { expensesApi } from '../api/resources/expenses';
+import { analyticsApi } from '../api/resources/analytics';
+import { incomesApi } from '../api/resources/incomes';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useI18n } from './useI18n';
+import { SwipeableRef } from '../types/swipeable';
 
 export function useDashboard() {
     const queryClient = useQueryClient();
     const { alert } = useAppAlert();
     const { t } = useI18n();
-    const activeSwipeableRef = useRef<any>(null);
+    const activeSwipeableRef = useRef<SwipeableRef | null>(null);
     const activeSwipeableIdRef = useRef<string | null>(null);
 
     const {

@@ -13,28 +13,28 @@ import { useAuthStore } from '../store/authStore';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import apiClient from '../api/client';
 import { authApi } from '../api/auth';
-import { reportsApi } from '../api/reports';
-import { usersApi } from '../api/users';
-import { extractApiMessage } from '../utils/api';
-import { API_BASE_URL } from '../utils/constants';
-import { BudgetPeriod, User } from '../types';
-import { notificationsApi } from '../api/notifications';
-import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/currency';
+import { reportsApi } from '../api/resources/reports';
+import { usersApi } from '../api/resources/users';
+import { extractApiMessage } from '../utils/platform/api';
+import { API_BASE_URL } from '../utils/core/constants';
+import { BudgetPeriod, User } from '../types/index';
+import { notificationsApi } from '../api/resources/notifications';
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/domain/currency';
 import {
   extractAvatarUri,
   isLikelyInternalRemoteUri,
   isRemoteHttpUri,
   normalizeImageUri,
-} from '../utils/media';
+} from '../utils/platform/media';
 import {
   BUDGET_PERIODS,
   budgetLabel,
   normalizeBudgetPeriod,
-} from '../utils/budget';
-import { toNum } from '../utils/number';
-import { normalizeUserRecord, resolveBudgetAmount } from '../utils/user';
+} from '../utils/domain/budget';
+import { toNum } from '../utils/core/number';
+import { normalizeUserRecord, resolveBudgetAmount } from '../utils/domain/user';
 import { useI18n } from './useI18n';
-import { useTheme } from '../theme';
+import { useTheme } from '../theme/index';
 import { ThemeMode } from '../theme/themes';
 
 function inferImageMimeType(filename?: string): string {

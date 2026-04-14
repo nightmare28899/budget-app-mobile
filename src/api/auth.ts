@@ -1,6 +1,7 @@
 import apiClient from './client';
-import { AuthResponse, RegisterResponse } from '../types';
-import { normalizeUserRecord } from '../utils/user';
+import { AuthResponse, RegisterResponse } from '../types/index';
+import { normalizeUserRecord } from '../utils/domain/user';
+import { createApiError, toMultipartFileValue } from '../utils/platform/api';
 
 export interface RegisterAvatarPayload {
     uri: string;
@@ -40,6 +41,7 @@ function normalizeAuthResponse<T extends AuthResponse | RegisterResponse>(data: 
 }
 
 export const authApi = {
+
     register: async (
         email: string,
         name: string,
@@ -72,11 +74,14 @@ export const authApi = {
 
         if (avatar?.uri) {
             const filename = avatar.name || avatar.uri.split('/').pop() || 'avatar.jpg';
-            formData.append('avatar', {
-                uri: avatar.uri,
-                name: filename,
-                type: avatar.type || inferMimeType(filename),
-            } as any);
+            formData.append(
+                'avatar',
+                toMultipartFileValue({
+                    uri: avatar.uri,
+                    name: filename,
+                    type: avatar.type || inferMimeType(filename),
+                }),
+            );
         }
 
         const response = await fetch(`${apiClient.defaults.baseURL}/auth/register`, {
@@ -89,12 +94,11 @@ export const authApi = {
 
         const payload = await parseResponsePayload(response);
         if (!response.ok) {
-            const error: any = new Error(`Request failed with status ${response.status}`);
-            error.response = {
-                status: response.status,
-                data: payload,
-            };
-            throw error;
+            throw createApiError(
+                response.status,
+                payload,
+                `Request failed with status ${response.status}`,
+            );
         }
 
         return normalizeAuthResponse(payload as RegisterResponse);

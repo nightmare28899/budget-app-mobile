@@ -23,20 +23,20 @@ import {
   Subscription,
   User,
   WeeklySummary,
-} from '../../types';
-import { normalizeBudgetPeriod } from '../../utils/budget';
+} from '../../types/index';
+import { normalizeBudgetPeriod } from '../../utils/domain/budget';
 import {
   aggregateCurrencyTotals,
   normalizeCurrency,
-} from '../../utils/currency';
-import { dateOnly } from '../../utils/filters';
+} from '../../utils/domain/currency';
+import { dateOnly } from '../../utils/core/filters';
 import {
   calculateReservedFundsForPeriod,
   listUpcomingSubscriptions,
   resolvePeriodRange,
   toSubscriptionManagerItems,
 } from '../subscriptions/subscriptionManager';
-import { toNum } from '../../utils/number';
+import { toNum } from '../../utils/core/number';
 
 type LocalFinanceInput = {
   user: User | null;

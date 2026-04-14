@@ -1,6 +1,6 @@
 import React from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { resolveCategoryIconName } from '../utils/icons';
+import { resolveCategoryIconName } from '../utils/platform/icons';
 
 interface CategoryIconProps {
     icon?: string | null;

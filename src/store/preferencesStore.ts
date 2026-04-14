@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { AppLanguage, detectDeviceLanguage, isAppLanguage } from '../i18n';
+import { AppLanguage, detectDeviceLanguage, isAppLanguage } from '../i18n/index';
 import { createSecureStorage, migrateLegacyStringStore } from './secureStorage';
 import { ThemeMode } from '../theme/themes';
 

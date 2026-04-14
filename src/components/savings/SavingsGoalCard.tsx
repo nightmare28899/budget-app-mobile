@@ -6,7 +6,7 @@ import {
     View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { SavingsGoal } from '../../types';
+import { SavingsGoal } from '../../types/index';
 import { useI18n } from '../../hooks/useI18n';
 import {
     borderRadius,
@@ -15,16 +15,17 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { formatCurrency } from '../../utils/format';
-import { resolveSavingsGoalIconName } from '../../utils/icons';
+    SemanticColors,
+} from '../../theme/index';
+import { formatCurrency } from '../../utils/core/format';
+import { resolveSavingsGoalIconName } from '../../utils/platform/icons';
 import {
     formatSavingsDate,
     getRemainingSavings,
     getSavingsProgress,
     resolveSavingsGoalColor,
     withSavingsAlpha,
-} from '../../utils/savings';
+} from '../../utils/domain/savings';
 
 interface SavingsGoalCardProps {
     goal: SavingsGoal;
@@ -220,7 +221,7 @@ export function SavingsGoalCard({
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         card: {
             backgroundColor: colors.surfaceCard,

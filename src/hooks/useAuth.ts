@@ -11,20 +11,26 @@ import { useAuthStore } from '../store/authStore';
 import { useOfflineRegistrationStore } from '../store/offlineRegistrationStore';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { authApi } from '../api/auth';
-import { usersApi } from '../api/users';
-import { expensesApi } from '../api/expenses';
-import { analyticsApi } from '../api/analytics';
-import { incomesApi } from '../api/incomes';
-import { historyApi } from '../api/history';
-import { subscriptionsApi } from '../api/subscriptions';
-import { extractApiMessage, isLikelyJsonParseError } from '../utils/api';
-import { API_BASE_URL } from '../utils/constants';
+import { usersApi } from '../api/resources/users';
+import { expensesApi } from '../api/resources/expenses';
+import { analyticsApi } from '../api/resources/analytics';
+import { incomesApi } from '../api/resources/incomes';
+import { historyApi } from '../api/resources/history';
+import { subscriptionsApi } from '../api/resources/subscriptions';
+import {
+    extractApiMessage,
+    getApiErrorData,
+    getErrorMessage,
+    isApiRecord,
+    isLikelyJsonParseError,
+} from '../utils/platform/api';
+import { API_BASE_URL } from '../utils/core/constants';
 import { Asset } from 'react-native-image-picker';
-import { extractAvatarUri } from '../utils/media';
-import { getInternetAccessState } from '../utils/network';
+import { extractAvatarUri } from '../utils/platform/media';
+import { getInternetAccessState } from '../utils/platform/network';
 import { useI18n } from './useI18n';
 import { resetToMainDashboard } from '../navigation/navigationBridge';
-import { configureGoogleSignIn } from '../utils/googleAuth';
+import { configureGoogleSignIn } from '../utils/platform/googleAuth';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -142,9 +148,10 @@ export function useAuth() {
             const res = await authApi.login(normalizedEmail, password);
             completeAuthenticatedSession(res.user, res.accessToken, res.refreshToken);
             return true;
-        } catch (err: any) {
-            const apiMessage = extractApiMessage(err?.response?.data);
-            const message = err?.response
+        } catch (err: unknown) {
+            const apiMessage = extractApiMessage(getApiErrorData(err));
+            const hasResponse = isApiRecord(err) && isApiRecord(err.response);
+            const message = hasResponse
                 ? apiMessage || t('auth.invalidCredentials')
                 : getUnreachableApiMessage(t);
 
@@ -213,7 +220,7 @@ export function useAuth() {
             completeAuthenticatedSession(res.user, res.accessToken, res.refreshToken);
             logGoogleAuth('session-complete');
             return true;
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (isErrorWithCode(err)) {
                 logGoogleAuth('google-sdk-error', {
                     code: err.code,
@@ -240,16 +247,19 @@ export function useAuth() {
                 return false;
             }
 
-            const apiMessage = extractApiMessage(err?.response?.data);
-            const message = err?.response
+            const apiMessage = extractApiMessage(getApiErrorData(err));
+            const response = isApiRecord(err) && isApiRecord(err.response)
+                ? err.response
+                : null;
+            const message = response
                 ? apiMessage || t('auth.googleSignInGeneric')
                 : getUnreachableApiMessage(t);
             logGoogleAuth('failure', {
-                hasResponse: Boolean(err?.response),
-                status: err?.response?.status,
+                hasResponse: Boolean(response),
+                status: response?.status,
                 apiMessage,
                 message,
-                error: err?.message,
+                error: getErrorMessage(err),
             });
 
             alert(t('auth.googleSignInFailed'), message);
@@ -323,14 +333,17 @@ export function useAuth() {
                 { text: t('common.continue') },
             ]);
             return true;
-        } catch (err: any) {
+        } catch (err: unknown) {
             const parseFailure = isLikelyJsonParseError(err);
+            const response = isApiRecord(err) && isApiRecord(err.response)
+                ? err.response
+                : null;
             const internetAccessState =
-                !err?.response && !parseFailure
+                !response && !parseFailure
                     ? await getInternetAccessState()
                     : 'unknown';
 
-            if (!err?.response && !parseFailure && internetAccessState === 'offline') {
+            if (!response && !parseFailure && internetAccessState === 'offline') {
                 alert(
                     t('auth.registrationFailed'),
                     getUnreachableApiMessage(t),
@@ -338,9 +351,9 @@ export function useAuth() {
                 return false;
             }
 
-            const errorMessage = extractApiMessage(err?.response?.data);
+            const errorMessage = extractApiMessage(getApiErrorData(err));
             const fallbackMessage =
-                err?.response || internetAccessState === 'online'
+                response || internetAccessState === 'online'
                     ? registrationFallbackMessage
                     : getUnreachableApiMessage(t);
 

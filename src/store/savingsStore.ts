@@ -7,7 +7,7 @@ import {
     getSavingsTransactions,
     updateSavingsGoal as updateSavingsGoalRequest,
     withdrawSavingsFunds,
-} from '../api/savings';
+} from '../api/resources/savings';
 import {
     AddSavingsFundsPayload,
     CreateSavingsGoalPayload,
@@ -17,13 +17,17 @@ import {
     SavingsTransaction,
     UpdateSavingsGoalPayload,
     WithdrawSavingsFundsPayload,
-} from '../types';
-import { extractApiMessage } from '../utils/api';
+} from '../types/index';
+import {
+    extractApiMessage,
+    getApiErrorData,
+    getErrorMessage,
+} from '../utils/platform/api';
 import {
     mergeSavingsTransactions,
     sortSavingsGoals,
     sortSavingsTransactions,
-} from '../utils/savings';
+} from '../utils/domain/savings';
 
 type SavingsErrorAction =
     | 'loadGoals'
@@ -80,17 +84,14 @@ interface SavingsState {
 }
 
 function getRequestErrorMessage(error: unknown): string | null {
-    const payload = (error as any)?.response?.data;
+    const payload = getApiErrorData(error);
     const apiMessage = extractApiMessage(payload);
 
     if (apiMessage) {
         return apiMessage;
     }
 
-    const message =
-        typeof (error as any)?.message === 'string'
-            ? (error as any).message.trim()
-            : '';
+    const message = getErrorMessage(error) ?? '';
 
     if (!message) {
         return null;

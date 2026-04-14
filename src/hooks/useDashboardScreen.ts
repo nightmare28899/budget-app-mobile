@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { normalizeImageUri } from '../utils/media';
-import { budgetLabel } from '../utils/budget';
-import { useTheme } from '../theme';
+import { normalizeImageUri } from '../utils/platform/media';
+import { budgetLabel } from '../utils/domain/budget';
+import { useTheme } from '../theme/index';
 import { useI18n } from './useI18n';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useHomeScreenViewModel } from '../viewmodels/useHomeScreenViewModel';
 
 type NavigationLike = {
-    setParams: (params: any) => void;
+    setParams: (params: { successMessage?: string | undefined }) => void;
 };
 
 type UseDashboardScreenParams = {

@@ -1,5 +1,9 @@
 import { useCallback, useRef } from 'react';
-import { ScrollView } from 'react-native';
+import {
+    NativeSyntheticEvent,
+    ScrollView,
+    TextInputFocusEventData,
+} from 'react-native';
 
 type ScrollViewWithKeyboardHelper = ScrollView & {
     scrollResponderScrollNativeHandleToKeyboard?: (
@@ -35,7 +39,7 @@ export function useScrollToFocusedInput(defaultExtraOffset: number = 96) {
 
     const createScrollOnFocusHandler = useCallback(
         (extraOffset: number = defaultExtraOffset) =>
-            (event: any) => {
+            (event: NativeSyntheticEvent<TextInputFocusEventData>) => {
                 scrollToFocusedInput(
                     typeof event?.target === 'number' ? event.target : null,
                     extraOffset,

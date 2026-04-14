@@ -16,14 +16,14 @@ import DateTimePicker, {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { AnalyticsSkeleton } from '../../components/ui/Skeleton';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Button } from '../../components/ui/Button';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
+import { AnalyticsSkeleton } from '../../components/ui/primitives/Skeleton';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Button } from '../../components/ui/primitives/Button';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
-import { reportsApi } from '../../api/reports';
+import { reportsApi } from '../../api/resources/reports';
 import { useAppAccess } from '../../hooks/useAppAccess';
 import { useI18n } from '../../hooks/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
@@ -34,15 +34,16 @@ import {
   useResponsive,
   useTheme,
   useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import {
   ReportHistoryItem,
   ReportPeriodType,
   ReportSnapshot,
-} from '../../types';
-import { getCurrencyLocale } from '../../utils/currency';
-import { formatCurrency, formatDate, todayISO } from '../../utils/format';
-import { withAlpha } from '../../utils/subscriptions';
+} from '../../types/index';
+import { getCurrencyLocale } from '../../utils/domain/currency';
+import { formatCurrency, formatDate, todayISO } from '../../utils/core/format';
+import { withAlpha } from '../../utils/domain/subscriptions';
 import { useAuthStore } from '../../store/authStore';
 
 function parsePickerDate(value?: string) {
@@ -1191,7 +1192,7 @@ export function ReportsScreen({
   );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
   StyleSheet.create({
     container: {
       flex: 1,

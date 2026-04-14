@@ -1,4 +1,4 @@
-import { AppLanguage } from '../i18n';
+import { AppLanguage } from '../i18n/index';
 
 export const TERMS_VERSION = '2026-04-06';
 

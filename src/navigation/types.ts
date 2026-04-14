@@ -5,7 +5,7 @@ import {
   CompositeScreenProps,
   NavigatorScreenParams,
 } from '@react-navigation/native';
-import type { CreditCard, Income, Subscription } from '../types';
+import type { CreditCard, Income, Subscription } from '../types/index';
 import type { PremiumFeature } from '../types/premium';
 
 export type AuthStackParamList = {
@@ -13,15 +13,15 @@ export type AuthStackParamList = {
   Register: undefined;
 };
 
-export type ActivityStackParamList = {
+export type HistoryStackParamList = {
   HistoryHome: { successMessage?: string } | undefined;
 };
 
 export type MainTabParamList = {
   Dashboard: { successMessage?: string } | undefined;
-  History: NavigatorScreenParams<ActivityStackParamList> | undefined;
+  History: NavigatorScreenParams<HistoryStackParamList> | undefined;
   Analytics: undefined;
-  SubscriptionsTab:
+  Activity:
     | {
         successMessage?: string;
         initialTab?: 'expenses' | 'subscriptions';
@@ -36,7 +36,7 @@ export type MainDrawerParamList = {
   Planner: undefined;
   CategoryBudgets: undefined;
   Expenses: { successMessage?: string } | undefined;
-  Income: { successMessage?: string } | undefined;
+  Incomes: { successMessage?: string } | undefined;
   Subscriptions: { successMessage?: string } | undefined;
   CreditCards: undefined;
   Savings: undefined;
@@ -83,9 +83,9 @@ export type MainTabScreenProps<T extends keyof MainTabParamList> =
     MainDrawerScreenProps<'Tabs'>
   >;
 
-export type ActivityScreenProps<T extends keyof ActivityStackParamList> =
+export type HistoryScreenProps<T extends keyof HistoryStackParamList> =
   CompositeScreenProps<
-    NativeStackScreenProps<ActivityStackParamList, T>,
+    NativeStackScreenProps<HistoryStackParamList, T>,
     MainTabScreenProps<'History'>
   >;
 

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { AppLanguage, TranslationKey, TranslationValues, translate } from '../i18n';
+import { AppLanguage, TranslationKey, TranslationValues, translate } from '../i18n/index';
 import { usePreferencesStore } from '../store/preferencesStore';
 
 function getPluralKey(baseKey: string, count: number): TranslationKey {

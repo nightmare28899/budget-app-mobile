@@ -9,9 +9,9 @@ import {
     View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { AddSavingsFundsPayload } from '../../types';
+import { AddSavingsFundsPayload } from '../../types/index';
 import { useI18n } from '../../hooks/useI18n';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency } from '../../utils/core/format';
 import {
     borderRadius,
     spacing,
@@ -19,15 +19,16 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import {
     MAX_COST_LABEL,
     MAX_COST_VALUE,
     sanitizeMoneyInput,
-} from '../../utils/moneyInput';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { resolveSavingsGoalColor, withSavingsAlpha } from '../../utils/savings';
+} from '../../utils/platform/moneyInput';
+import { Button } from '../ui/primitives/Button';
+import { Input } from '../ui/primitives/Input';
+import { resolveSavingsGoalColor, withSavingsAlpha } from '../../utils/domain/savings';
 
 interface SavingsFundsModalProps {
     visible: boolean;
@@ -276,7 +277,7 @@ export function SavingsFundsModal({
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         overlay: {
             flex: 1,

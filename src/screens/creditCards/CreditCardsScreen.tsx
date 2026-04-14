@@ -11,17 +11,17 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { useCreditCardsCatalog } from '../../hooks/useCreditCardsCatalog';
 import { useCreditCardsOverview } from '../../hooks/useCreditCardsOverview';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { Button } from '../../components/ui/Button';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { Button } from '../../components/ui/primitives/Button';
+import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { PremiumFeatureGate } from '../../components/premium/PremiumFeatureGate';
 import { useI18n } from '../../hooks/useI18n';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { useAuthStore } from '../../store/authStore';
-import { formatCurrency } from '../../utils/format';
-import { formatCreditCardLabel, formatCreditCardSummary } from '../../utils/creditCards';
-import { getCurrencyLocale } from '../../utils/currency';
+import { formatCurrency } from '../../utils/core/format';
+import { formatCreditCardLabel, formatCreditCardSummary } from '../../utils/domain/creditCards';
+import { getCurrencyLocale } from '../../utils/domain/currency';
 import {
     borderRadius,
     spacing,
@@ -29,10 +29,11 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { withAlpha } from '../../utils/subscriptions';
+    SemanticColors,
+} from '../../theme/index';
+import { withAlpha } from '../../utils/domain/subscriptions';
 import { usePremiumAccess } from '../../hooks/usePremiumAccess';
-import { CreditCardOverviewCard } from '../../types';
+import { CreditCardOverviewCard } from '../../types/index';
 
 type SignalTone = 'warning' | 'danger' | 'muted';
 
@@ -746,7 +747,7 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

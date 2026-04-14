@@ -8,11 +8,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useShallow } from 'zustand/react/shallow';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Button } from '../../components/ui/Button';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
-import { Skeleton } from '../../components/ui/Skeleton';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Button } from '../../components/ui/primitives/Button';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
+import { Skeleton } from '../../components/ui/primitives/Skeleton';
 import { SavingsFundsModal } from '../../components/savings/SavingsFundsModal';
 import { SavingsGoalCard } from '../../components/savings/SavingsGoalCard';
 import { SavingsGoalFormModal } from '../../components/savings/SavingsGoalFormModal';
@@ -25,13 +25,14 @@ import {
     typography,
     useResponsive,
     useThemedStyles,
-} from '../../theme';
-import { CreateSavingsGoalPayload, SavingsGoal } from '../../types';
-import { formatCurrency } from '../../utils/format';
-import { API_BASE_URL } from '../../utils/constants';
+    SemanticColors,
+} from '../../theme/index';
+import { CreateSavingsGoalPayload, SavingsGoal } from '../../types/index';
+import { formatCurrency } from '../../utils/core/format';
+import { API_BASE_URL } from '../../utils/core/constants';
 import {
     getRemainingSavings,
-} from '../../utils/savings';
+} from '../../utils/domain/savings';
 
 function resolveActionErrorMessage(
     message: string | null | undefined,
@@ -510,7 +511,7 @@ export function SavingsScreen({
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         container: {
             flex: 1,

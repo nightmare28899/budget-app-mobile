@@ -10,11 +10,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootScreenProps } from '../../navigation/types';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
-import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
+import { Button } from '../../components/ui/primitives/Button';
+import { Input } from '../../components/ui/primitives/Input';
 import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
 import { useCreditCardsCatalog } from '../../hooks/useCreditCardsCatalog';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
@@ -22,7 +22,7 @@ import { useI18n } from '../../hooks/useI18n';
 import {
     CREDIT_CARD_BRAND_OPTIONS,
     CREDIT_CARD_COLOR_OPTIONS,
-} from '../../utils/creditCards';
+} from '../../utils/domain/creditCards';
 import {
     borderRadius,
     spacing,
@@ -30,8 +30,9 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { sanitizeMoneyInput } from '../../utils/moneyInput';
+    SemanticColors,
+} from '../../theme/index';
+import { sanitizeMoneyInput } from '../../utils/platform/moneyInput';
 import { useAppAccess } from '../../hooks/useAppAccess';
 import { PremiumFeatureGate } from '../../components/premium/PremiumFeatureGate';
 
@@ -404,8 +405,16 @@ export function CreditCardFormScreen({
                         </Text>
                         <View style={styles.choiceRow}>
                             {[
-                                { key: 'active', value: true },
-                                { key: 'inactive', value: false },
+                                {
+                                    key: 'active',
+                                    value: true,
+                                    labelKey: 'creditCards.active' as const,
+                                },
+                                {
+                                    key: 'inactive',
+                                    value: false,
+                                    labelKey: 'creditCards.inactive' as const,
+                                },
                             ].map((option) => {
                                 const selected = isActive === option.value;
                                 return (
@@ -425,7 +434,7 @@ export function CreditCardFormScreen({
                                                 { fontSize: scaleFont(typography.fontSize.sm) },
                                             ]}
                                         >
-                                            {t(`creditCards.${option.key}` as any)}
+                                            {t(option.labelKey)}
                                         </Text>
                                     </TouchableOpacity>
                                 );
@@ -445,7 +454,7 @@ export function CreditCardFormScreen({
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

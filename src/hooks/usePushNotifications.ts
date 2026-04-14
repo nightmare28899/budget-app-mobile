@@ -3,15 +3,15 @@ import { PermissionsAndroid, Platform } from 'react-native';
 import messaging, {
     FirebaseMessagingTypes,
 } from '@react-native-firebase/messaging';
-import { notificationsApi } from '../api/notifications';
-import { extractApiMessage } from '../utils/api';
+import { notificationsApi } from '../api/resources/notifications';
+import { extractApiMessage } from '../utils/platform/api';
 import {
     flushPendingNotificationDestination,
     openNotificationDestination,
 } from '../navigation/navigationBridge';
 import { showGlobalAlert } from '../components/alerts/alertBridge';
 import { useAuthStore } from '../store/authStore';
-import { translate } from '../i18n';
+import { translate } from '../i18n/index';
 import { usePreferencesStore } from '../store/preferencesStore';
 
 const FALLBACK_NOTIFICATION_TITLE = 'New notification';

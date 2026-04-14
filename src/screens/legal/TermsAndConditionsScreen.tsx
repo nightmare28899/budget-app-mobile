@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { useI18n } from '../../hooks/useI18n';
 import { termsDocuments } from '../../legal/termsAndConditions';
 import {
@@ -12,7 +12,8 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 
 export function TermsAndConditionsScreen() {
     const styles = useThemedStyles(createStyles);
@@ -139,7 +140,7 @@ export function TermsAndConditionsScreen() {
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         container: {
             flex: 1,

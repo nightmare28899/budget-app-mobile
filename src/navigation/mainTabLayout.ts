@@ -1,4 +1,4 @@
-import { spacing } from '../theme';
+import { spacing } from '../theme/index';
 
 type MainTabLayoutParams = {
     insetsBottom?: number;

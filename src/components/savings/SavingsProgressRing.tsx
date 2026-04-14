@@ -1,6 +1,7 @@
 import React, { ReactNode, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useThemedStyles } from '../../theme';
+import { useThemedStyles, SemanticColors,
+} from '../../theme/index';
 
 interface SavingsProgressRingProps {
     progress: number;
@@ -82,7 +83,7 @@ export function SavingsProgressRing({
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         container: {
             alignItems: 'center',

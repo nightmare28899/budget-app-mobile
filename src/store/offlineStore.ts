@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CreateExpensePayload } from '../types';
+import { CreateExpensePayload } from '../types/index';
 import { createSecureStorage, migrateLegacyStringStore } from './secureStorage';
 
 const STORAGE_ID = 'offline-storage';

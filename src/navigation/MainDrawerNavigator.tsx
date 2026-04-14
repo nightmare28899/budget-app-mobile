@@ -19,10 +19,23 @@ import { CategoryBudgetsScreen } from '../screens/categoryBudgets/CategoryBudget
 import { SubscriptionsScreen } from '../screens/subscriptions/SubscriptionsScreen';
 import { SavingsScreen } from '../screens/savings/SavingsScreen';
 import { CreditCardsScreen } from '../screens/creditCards/CreditCardsScreen';
-import { spacing, typography, useTheme } from '../theme';
+import { spacing, typography, useTheme } from '../theme/index';
 import { useI18n } from '../hooks/useI18n';
 
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
+const DRAWER_ICONS: Record<keyof MainDrawerParamList, string> = {
+  Tabs: 'home-outline',
+  Notifications: 'notifications-outline',
+  Reports: 'document-text-outline',
+  Planner: 'calendar-outline',
+  CategoryBudgets: 'pie-chart-outline',
+  Expenses: 'wallet-outline',
+  Incomes: 'trending-up-outline',
+  Subscriptions: 'albums-outline',
+  CreditCards: 'card-outline',
+  Savings: 'cash-outline',
+  UpcomingSubscriptions: 'albums-outline',
+};
 
 type AppDrawerContentProps = DrawerContentComponentProps & {
   versionLabel: string;
@@ -98,30 +111,7 @@ export function MainDrawerNavigator() {
           fontWeight: typography.fontWeight.semibold,
         },
         drawerIcon: ({ color, size }) => {
-          const iconName =
-            route.name === 'Tabs'
-              ? 'home-outline'
-              : route.name === 'Notifications'
-              ? 'notifications-outline'
-              : route.name === 'Reports'
-              ? 'document-text-outline'
-              : route.name === 'Planner'
-              ? 'calendar-outline'
-              : route.name === 'CategoryBudgets'
-              ? 'pie-chart-outline'
-              : route.name === 'Expenses'
-              ? 'wallet-outline'
-              : route.name === 'Income'
-              ? 'trending-up-outline'
-              : route.name === 'Subscriptions'
-              ? 'albums-outline'
-              : route.name === 'CreditCards'
-              ? 'card-outline'
-              : route.name === 'Savings'
-              ? 'cash-outline'
-              : 'settings-outline';
-
-          return <Icon name={iconName} size={size} color={color} />;
+          return <Icon name={DRAWER_ICONS[route.name]} size={size} color={color} />;
         },
       })}
     >
@@ -168,7 +158,7 @@ export function MainDrawerNavigator() {
         options={{ drawerLabel: t('expenses.title') }}
       />
       <Drawer.Screen
-        name="Income"
+        name="Incomes"
         component={IncomesScreen}
         options={{ drawerLabel: t('income.title') }}
       />

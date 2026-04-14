@@ -1,6 +1,6 @@
-import { Expense, HistoryPayload, Subscription } from '../../types';
-import { dateOnly } from '../../utils/filters';
-import { toNum } from '../../utils/number';
+import { Expense, HistoryPayload, Subscription } from '../../types/index';
+import { dateOnly } from '../../utils/core/filters';
+import { toNum } from '../../utils/core/number';
 
 export type UnifiedHistoryType = 'expense' | 'subscription';
 
@@ -50,7 +50,7 @@ function dateFromSubscription(subscription: Subscription): string {
 }
 
 function subscriptionIdFromExpense(expense: Expense): string | null {
-    const raw = (expense as any)?.subscriptionId;
+    const raw = expense.subscriptionId;
     return typeof raw === 'string' && raw.trim().length ? raw : null;
 }
 

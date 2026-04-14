@@ -8,11 +8,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList, RootStackParamList } from './types';
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
 import { AnalyticsScreen } from '../screens/analytics/AnalyticsScreen';
-import { ActivityNavigator } from './ActivityNavigator';
-import { CardsScreen } from '../screens/cards/CardsScreen';
+import { HistoryNavigator } from './HistoryNavigator';
+import { ActivityScreen } from '../screens/activity/ActivityScreen';
 import { useI18n } from '../hooks/useI18n';
-import { spacing, typography, useResponsive, useTheme, useThemedStyles } from '../theme';
-import { withAlpha } from '../utils/subscriptions';
+import { spacing, typography, useResponsive, useTheme, useThemedStyles, SemanticColors,
+} from '../theme/index';
+import { withAlpha } from '../utils/domain/subscriptions';
 import {
     getMainTabBarHeight,
     getMainTabFabBottomOffset,
@@ -146,8 +147,8 @@ export function MainTabNavigator() {
                     }}
                 />
                 <Tab.Screen
-                    name="SubscriptionsTab"
-                    component={CardsScreen}
+                    name="Activity"
+                    component={ActivityScreen}
                     options={{
                         tabBarLabel: t('tab.activity'),
                         tabBarItemStyle: [styles.tabBarItem, { marginLeft: centerGap }],
@@ -162,7 +163,7 @@ export function MainTabNavigator() {
                 />
                 <Tab.Screen
                     name="History"
-                    component={ActivityNavigator}
+                    component={HistoryNavigator}
                     options={{
                         tabBarLabel: t('tab.history'),
                         tabBarIcon: ({ color, size, focused }) => (
@@ -180,7 +181,7 @@ export function MainTabNavigator() {
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         container: {
             flex: 1,

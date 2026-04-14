@@ -1,11 +1,11 @@
 import { useCallback, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { incomesApi } from '../api/incomes';
+import { incomesApi } from '../api/resources/incomes';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useI18n } from './useI18n';
 
 type NavigationLike = {
-    setParams: (params: any) => void;
+    setParams: (params: { successMessage?: string | undefined }) => void;
 };
 
 type UseIncomesScreenParams = {

@@ -4,8 +4,8 @@ import {
     CreditCardsOverviewResponse,
     Expense,
     Subscription,
-} from '../../types';
-import { toNum } from '../../utils/number';
+} from '../../types/index';
+import { toNum } from '../../utils/core/number';
 
 type BuildCreditCardsOverviewParams = {
     creditCards: CreditCard[];

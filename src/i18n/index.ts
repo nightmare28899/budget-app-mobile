@@ -2256,7 +2256,10 @@ export function detectDeviceLanguage(): AppLanguage {
   };
 
   if (Platform.OS === 'ios') {
-    const settings = (NativeModules.SettingsManager?.settings ?? {}) as any;
+    const settings = (NativeModules.SettingsManager?.settings ?? {}) as {
+      AppleLocale?: string;
+      AppleLanguages?: string[];
+    };
     const locale = settings.AppleLocale || settings.AppleLanguages?.[0];
     return normalize(locale);
   }

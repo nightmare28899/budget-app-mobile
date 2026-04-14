@@ -87,6 +87,7 @@ export interface Expense {
   title: string;
   cost: number;
   currency: string;
+  subscriptionId?: string | null;
   isInstallment?: boolean;
   installmentGroupId?: string | null;
   installmentCount?: number | null;

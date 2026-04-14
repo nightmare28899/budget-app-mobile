@@ -11,22 +11,23 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { usersApi } from '../../api/users';
-import { Button } from '../../components/ui/Button';
-import { CurrencySelector } from '../../components/ui/CurrencySelector';
-import { Input } from '../../components/ui/Input';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
+import { usersApi } from '../../api/resources/users';
+import { Button } from '../../components/ui/primitives/Button';
+import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
+import { Input } from '../../components/ui/primitives/Input';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { useI18n } from '../../hooks/useI18n';
-import { TranslationKey } from '../../i18n';
+import { TranslationKey } from '../../i18n/index';
 import { RootScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
-import { borderRadius, spacing, typography, useResponsive, useTheme, useThemedStyles } from '../../theme';
-import { BudgetPeriod } from '../../types';
-import { extractApiMessage } from '../../utils/api';
-import { BUDGET_PERIODS, budgetLabel, normalizeBudgetPeriod } from '../../utils/budget';
-import { DEFAULT_CURRENCY, normalizeCurrency } from '../../utils/currency';
-import { toNum } from '../../utils/number';
+import { borderRadius, spacing, typography, useResponsive, useTheme, useThemedStyles, SemanticColors,
+} from '../../theme/index';
+import { BudgetPeriod } from '../../types/index';
+import { extractApiMessage } from '../../utils/platform/api';
+import { BUDGET_PERIODS, budgetLabel, normalizeBudgetPeriod } from '../../utils/domain/budget';
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../../utils/domain/currency';
+import { toNum } from '../../utils/core/number';
 
 const TOTAL_STEPS = 4;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -834,7 +835,7 @@ export function OnboardingScreen({}: RootScreenProps<'Onboarding'>) {
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

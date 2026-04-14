@@ -9,12 +9,12 @@ import {
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Button } from '../../components/ui/Button';
-import { CurrencySelector } from '../../components/ui/CurrencySelector';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { Input } from '../../components/ui/Input';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Button } from '../../components/ui/primitives/Button';
+import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { Input } from '../../components/ui/primitives/Input';
+import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { PlanAccessSection } from '../../components/profile/PlanAccessSection';
 import { useI18n } from '../../hooks/useI18n';
 import { useSettings } from '../../hooks/useSettings';
@@ -26,10 +26,11 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { getCurrencyLocale, getCurrencySymbol } from '../../utils/currency';
-import { formatCurrency } from '../../utils/format';
-import { budgetLabel } from '../../utils/budget';
+    SemanticColors,
+} from '../../theme/index';
+import { getCurrencyLocale, getCurrencySymbol } from '../../utils/domain/currency';
+import { formatCurrency } from '../../utils/core/format';
+import { budgetLabel } from '../../utils/domain/budget';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 export function PlanOverviewScreen({ navigation }: RootScreenProps<'PlanOverview'>) {
@@ -251,7 +252,7 @@ export function PlanOverviewScreen({ navigation }: RootScreenProps<'PlanOverview
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

@@ -5,7 +5,7 @@ import {
     View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { Button } from '../ui/Button';
+import { Button } from '../ui/primitives/Button';
 import { useAppAccess } from '../../hooks/useAppAccess';
 import { useI18n } from '../../hooks/useI18n';
 import {
@@ -15,8 +15,9 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { withAlpha } from '../../utils/subscriptions';
+    SemanticColors,
+} from '../../theme/index';
+import { withAlpha } from '../../utils/domain/subscriptions';
 
 type PlanAccessSectionProps = {
     onOpenPremium: () => void;
@@ -312,7 +313,7 @@ export function PlanAccessSection({
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         gap: spacing.base,
     },

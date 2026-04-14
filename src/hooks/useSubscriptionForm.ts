@@ -5,34 +5,28 @@ import { useQuery } from '@tanstack/react-query';
 import { useSubscriptionManager } from '../modules/subscriptions/useSubscriptionManager';
 import { useAuthStore } from '../store/authStore';
 import { useAppAlert } from '../components/alerts/AlertProvider';
-import { creditCardsApi } from '../api/creditCards';
+import { creditCardsApi } from '../api/resources/creditCards';
 import {
     formatDateISO,
     getPresetByName,
     QUICK_SUBSCRIPTION_PRESETS,
-} from '../utils/subscriptions';
-import { softHaptic } from '../utils/haptics';
+} from '../utils/domain/subscriptions';
+import { softHaptic } from '../utils/platform/haptics';
 import {
     MAX_COST_LABEL,
     MAX_COST_VALUE,
     sanitizeMoneyInput,
-} from '../utils/moneyInput';
-import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/currency';
-import { useTheme } from '../theme';
+} from '../utils/platform/moneyInput';
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/domain/currency';
+import { parseDateOrToday } from '../utils/core/format';
+import { useTheme } from '../theme/index';
 import { useI18n } from './useI18n';
-import { SubscriptionBillingCycle, Subscription } from '../types';
-import { isCreditCardPaymentMethod, normalizePaymentMethod } from '../utils/paymentMethod';
-
-function parseDateOrToday(value: string): Date {
-    const date = new Date(`${value}T12:00:00`);
-    if (Number.isNaN(date.getTime())) {
-        return new Date();
-    }
-    return date;
-}
+import { SubscriptionBillingCycle, Subscription } from '../types/index';
+import { isCreditCardPaymentMethod, normalizePaymentMethod } from '../utils/domain/paymentMethod';
+import { RootScreenProps } from '../navigation/types';
 
 type NavigationLike = {
-    navigate: (...args: any[]) => void;
+    navigate: RootScreenProps<'AddSubscription'>['navigation']['navigate'];
     goBack: () => void;
 };
 
@@ -263,7 +257,7 @@ export function useSubscriptionForm({
                 navigation.navigate('Main', {
                     screen: 'Tabs',
                     params: {
-                        screen: 'SubscriptionsTab',
+                        screen: 'Activity',
                         params: {
                             initialTab: 'subscriptions',
                             successMessage: t(
@@ -364,14 +358,13 @@ export function useSubscriptionForm({
         onPickPreset,
         onSave,
         onDelete,
-        parseDateOrToday,
     };
 }
 
 export {
     QUICK_SUBSCRIPTION_PRESETS,
     QUICK_SUBSCRIPTION_PRESET_GROUPS,
-} from '../utils/subscriptions';
+} from '../utils/domain/subscriptions';
 
 export const BILLING_CYCLE_OPTIONS: Array<{
     value: SubscriptionBillingCycle;

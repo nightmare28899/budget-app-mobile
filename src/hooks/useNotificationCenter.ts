@@ -1,15 +1,15 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { analyticsApi } from '../api/analytics';
-import { savingsApi } from '../api/savings';
-import { subscriptionsApi } from '../api/subscriptions';
+import { analyticsApi } from '../api/resources/analytics';
+import { savingsApi } from '../api/resources/savings';
+import { subscriptionsApi } from '../api/resources/subscriptions';
 import { useDashboard } from './useDashboard';
 import { useCreditCardsOverview } from './useCreditCardsOverview';
 import { useI18n } from './useI18n';
 import { useAuthStore } from '../store/authStore';
-import { getCurrencyLocale } from '../utils/currency';
-import { formatCurrency } from '../utils/format';
-import { toNum } from '../utils/number';
+import { getCurrencyLocale } from '../utils/domain/currency';
+import { formatCurrency } from '../utils/core/format';
+import { toNum } from '../utils/core/number';
 import { usePremiumAccess } from './usePremiumAccess';
 
 export type NotificationCenterTone = 'danger' | 'warning' | 'info' | 'success';

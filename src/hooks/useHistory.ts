@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { historyApi } from '../api/history';
-import { dateOnly, isValidDateFilter } from '../utils/filters';
-import { Expense, Subscription } from '../types';
+import { historyApi } from '../api/resources/history';
+import { dateOnly, isValidDateFilter } from '../utils/core/filters';
+import { Expense, Subscription } from '../types/index';
 import {
     aggregateCurrencyTotals,
     formatCurrencyBreakdown,
     getCurrencyLocale,
-} from '../utils/currency';
+} from '../utils/domain/currency';
 import { useI18n } from './useI18n';
-import { toNum } from '../utils/number';
+import { toNum } from '../utils/core/number';
 
 type HistoryRecord =
     | {
@@ -63,7 +63,7 @@ function dateFromSubscription(subscription: Subscription): string {
 }
 
 function subscriptionIdFromExpense(expense: Expense): string | null {
-    const raw = (expense as any)?.subscriptionId;
+    const raw = expense.subscriptionId;
     return typeof raw === 'string' && raw.trim().length ? raw : null;
 }
 

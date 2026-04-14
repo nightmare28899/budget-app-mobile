@@ -12,15 +12,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { ActivityScreenProps } from '../../navigation/types';
+import { HistoryScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
-import { formatCurrency, formatTime } from '../../utils/format';
-import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/currency';
+import { formatCurrency, formatTime } from '../../utils/core/format';
+import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/domain/currency';
 import {
     getPaymentMethodOption,
     PAYMENT_METHOD_FALLBACK_ICON,
-} from '../../utils/paymentMethod';
-import { withAlpha } from '../../utils/subscriptions';
+} from '../../utils/domain/paymentMethod';
+import { withAlpha } from '../../utils/domain/subscriptions';
 import {
     spacing,
     typography,
@@ -28,16 +28,17 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import { CategoryIcon } from '../../components/CategoryIcon';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { formatCreditCardLabel } from '../../utils/creditCards';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { HistorySkeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { formatCreditCardLabel } from '../../utils/domain/creditCards';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { HistorySkeleton } from '../../components/ui/primitives/Skeleton';
 import { useI18n } from '../../hooks/useI18n';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { HistoryRecord, useHistory } from '../../hooks/useHistory';
-import { HomeBackground } from '../../components/ui/HomeBackground';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
 
 const HEX_COLOR_PATTERN = /^#(?:[0-9A-F]{3}){1,2}$/i;
@@ -54,7 +55,7 @@ function resolveAccentColor(value: string | null | undefined, fallback: string):
 export function HistoryScreen({
     route,
     navigation,
-}: ActivityScreenProps<'HistoryHome'>) {
+}: HistoryScreenProps<'HistoryHome'>) {
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
     const user = useAuthStore((s) => s.user);
@@ -566,7 +567,7 @@ export function HistoryScreen({
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

@@ -12,8 +12,9 @@ import {
     spacing,
     typography,
     useThemedStyles,
-} from '../../theme';
-import { translate } from '../../i18n';
+    SemanticColors,
+} from '../../theme/index';
+import { translate } from '../../i18n/index';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import {
     setGlobalAlert,
@@ -159,7 +160,7 @@ export function useAppAlert() {
     return { alert };
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     overlay: {
         flex: 1,
         justifyContent: 'center',

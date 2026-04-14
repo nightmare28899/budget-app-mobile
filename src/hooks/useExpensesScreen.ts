@@ -6,19 +6,20 @@ import {
     useQueryClient,
 } from '@tanstack/react-query';
 import { useFocusEffect } from '@react-navigation/native';
-import { expensesApi } from '../api/expenses';
+import { expensesApi } from '../api/resources/expenses';
 import {
     Expense,
     ExpensesFilters,
     ExpensesListResponse,
-} from '../types';
+} from '../types/index';
 import { useAppAlert } from '../components/alerts/AlertProvider';
-import { aggregateCurrencyTotals } from '../utils/currency';
+import { aggregateCurrencyTotals } from '../utils/domain/currency';
 import { useI18n } from './useI18n';
-import { todayISO } from '../utils/format';
+import { todayISO } from '../utils/core/format';
+import { SwipeableRef } from '../types/swipeable';
 
 type NavigationLike = {
-    setParams: (params: any) => void;
+    setParams: (params: { successMessage?: string | undefined }) => void;
 };
 
 type UseExpensesScreenParams = {
@@ -135,7 +136,7 @@ export function useExpensesScreen({
     const { t } = useI18n();
     const [limit] = useState(DEFAULT_LIMIT);
     const [filters, setFiltersState] = useState<ExpensesFilters>({});
-    const activeSwipeableRef = useRef<any>(null);
+    const activeSwipeableRef = useRef<SwipeableRef | null>(null);
     const activeSwipeableIdRef = useRef<string | null>(null);
 
     const normalizedFilters = useMemo(

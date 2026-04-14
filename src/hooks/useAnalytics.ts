@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { analyticsApi } from '../api/analytics';
-import { incomesApi } from '../api/incomes';
-import { formatDate } from '../utils/format';
-import { budgetLabel } from '../utils/budget';
+import { analyticsApi } from '../api/resources/analytics';
+import { incomesApi } from '../api/resources/incomes';
+import { formatDate } from '../utils/core/format';
+import { budgetLabel } from '../utils/domain/budget';
 import { useI18n } from './useI18n';
 
 export function useAnalytics(selectedDate?: string, horizonMonths = 6) {

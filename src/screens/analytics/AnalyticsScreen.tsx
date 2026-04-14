@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MainTabScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
-import { formatCurrency, formatDate, todayISO } from '../../utils/format';
+import { formatCurrency, formatDate, todayISO } from '../../utils/core/format';
 import {
     spacing,
     typography,
@@ -24,16 +24,17 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import { CategoryIcon } from '../../components/CategoryIcon';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { AnalyticsSkeleton } from '../../components/ui/Skeleton';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { AnalyticsSkeleton } from '../../components/ui/primitives/Skeleton';
 import { useI18n } from '../../hooks/useI18n';
 import { useAnalytics } from '../../hooks/useAnalytics';
-import { HomeBackground } from '../../components/ui/HomeBackground';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
-import { withAlpha } from '../../utils/subscriptions';
+import { withAlpha } from '../../utils/domain/subscriptions';
 
 function parsePickerDate(value?: string) {
     if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -794,7 +795,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

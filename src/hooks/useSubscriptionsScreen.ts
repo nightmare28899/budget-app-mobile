@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
+    EventArg,
+    NavigationAction,
     Easing as ReanimatedEasing,
     runOnJS,
     useAnimatedReaction,
@@ -8,22 +10,31 @@ import {
     withTiming,
 } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
-import { subscriptionsApi } from '../api/subscriptions';
+import { subscriptionsApi } from '../api/resources/subscriptions';
 import { useSubscriptionManager } from '../modules/subscriptions/useSubscriptionManager';
 import { useAuthStore } from '../store/authStore';
-import { Subscription } from '../types';
-import { softHaptic } from '../utils/haptics';
+import { Subscription } from '../types/index';
+import { softHaptic } from '../utils/platform/haptics';
 import {
     inferSubscriptionColor,
     inferSubscriptionIcon,
-} from '../utils/subscriptions';
+} from '../utils/domain/subscriptions';
 import { useI18n } from './useI18n';
 import { useAppAlert } from '../components/alerts/AlertProvider';
+import { SwipeableRef } from '../types/swipeable';
 
 type NavigationLike = {
-    navigate: (...args: any[]) => void;
-    addListener: (event: any, callback: (...args: any[]) => void) => () => void;
-    setParams: (params: any) => void;
+    navigate: (
+        screen: 'Tabs' | 'AddSubscription',
+        params?: { screen: 'Dashboard' } | { subscription: Subscription },
+    ) => void;
+    addListener: (
+        event: 'beforeRemove',
+        callback: (
+            event: EventArg<'beforeRemove', true, { action: NavigationAction }>,
+        ) => void,
+    ) => () => void;
+    setParams: (params: { successMessage?: string | undefined }) => void;
 };
 
 type UseSubscriptionsScreenParams = {
@@ -173,7 +184,7 @@ export function useSubscriptionsScreen({
     const [animatedTotal, setAnimatedTotal] = useState(totalToDisplay);
     const previousTotal = useRef(totalToDisplay);
     const handlingBackRef = useRef(false);
-    const activeSwipeableRef = useRef<any>(null);
+    const activeSwipeableRef = useRef<SwipeableRef | null>(null);
     const activeSwipeableIdRef = useRef<string | null>(null);
     const animatedTotalValue = useSharedValue(totalToDisplay);
     const locale: 'es-MX' | 'en-US' = language === 'es' ? 'es-MX' : 'en-US';
@@ -214,7 +225,7 @@ export function useSubscriptionsScreen({
     }, [navigation]);
 
     useEffect(() => {
-        const unsubscribe = navigation.addListener('beforeRemove', (event: any) => {
+        const unsubscribe = navigation.addListener('beforeRemove', (event) => {
             if (handlingBackRef.current) {
                 return;
             }

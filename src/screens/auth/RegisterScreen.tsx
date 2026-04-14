@@ -15,10 +15,10 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthScreenProps, RootStackParamList } from '../../navigation/types';
 import { useAuth } from '../../hooks/useAuth';
 import { useImagePicker } from '../../hooks/useImagePicker';
-import { HeroHeader } from '../../components/ui/HeroHeader';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
+import { HeroHeader } from '../../components/ui/layout/HeroHeader';
+import { Input } from '../../components/ui/primitives/Input';
+import { Button } from '../../components/ui/primitives/Button';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import {
     spacing,
     typography,
@@ -26,7 +26,8 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import { useI18n } from '../../hooks/useI18n';
 import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
 
@@ -287,7 +288,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

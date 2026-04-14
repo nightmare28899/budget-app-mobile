@@ -1,21 +1,25 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppAlert } from '../components/alerts/AlertProvider';
-import { ExpenseUploadImage, expensesApi } from '../api/expenses';
-import { categoriesApi } from '../api/categories';
-import { creditCardsApi } from '../api/creditCards';
+import { ExpenseUploadImage, expensesApi } from '../api/resources/expenses';
+import { categoriesApi } from '../api/resources/categories';
+import { creditCardsApi } from '../api/resources/creditCards';
 import { useAuthStore } from '../store/authStore';
-import { extractApiMessage, extractPremiumRequiredError } from '../utils/api';
-import { CreateExpensePayload, UpdateExpensePayload } from '../types';
-import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/currency';
+import {
+    extractApiMessage,
+    extractPremiumRequiredError,
+    getApiErrorData,
+} from '../utils/platform/api';
+import { CreateExpensePayload, UpdateExpensePayload } from '../types/index';
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../utils/domain/currency';
 import { useI18n } from './useI18n';
-import { MAX_COST_LABEL, MAX_COST_VALUE } from '../utils/moneyInput';
-import { todayISO } from '../utils/format';
-import { isCreditCardPaymentMethod, normalizePaymentMethod } from '../utils/paymentMethod';
+import { MAX_COST_LABEL, MAX_COST_VALUE } from '../utils/platform/moneyInput';
+import { todayISO } from '../utils/core/format';
+import { isCreditCardPaymentMethod, normalizePaymentMethod } from '../utils/domain/paymentMethod';
 import {
     DEFAULT_INSTALLMENT_FREQUENCY,
     getInstallmentBreakdown,
-} from '../utils/installments';
+} from '../utils/domain/installments';
 
 export function useExpenseForm(expenseId?: string) {
     const queryClient = useQueryClient();
@@ -158,8 +162,8 @@ export function useExpenseForm(expenseId?: string) {
             queryClient.invalidateQueries({ queryKey: ['history'] });
             queryClient.invalidateQueries({ queryKey: ['income-summary'] });
         },
-        onError: (err: any) => {
-            handleMutationError(err?.response?.data, t('expense.failedSave'));
+        onError: (err: unknown) => {
+            handleMutationError(getApiErrorData(err), t('expense.failedSave'));
         },
     });
 
@@ -172,8 +176,8 @@ export function useExpenseForm(expenseId?: string) {
             queryClient.invalidateQueries({ queryKey: ['history'] });
             queryClient.invalidateQueries({ queryKey: ['income-summary'] });
         },
-        onError: (err: any) => {
-            handleMutationError(err?.response?.data, t('expense.failedUpdate'));
+        onError: (err: unknown) => {
+            handleMutationError(getApiErrorData(err), t('expense.failedUpdate'));
         },
     });
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { SavingsTransaction } from '../../types';
+import { SavingsTransaction } from '../../types/index';
 import { useI18n } from '../../hooks/useI18n';
 import {
     borderRadius,
@@ -10,9 +10,10 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { formatCurrency } from '../../utils/format';
-import { formatSavingsDateTime, withSavingsAlpha } from '../../utils/savings';
+    SemanticColors,
+} from '../../theme/index';
+import { formatCurrency } from '../../utils/core/format';
+import { formatSavingsDateTime, withSavingsAlpha } from '../../utils/domain/savings';
 
 interface SavingsTransactionItemProps {
     transaction: SavingsTransaction;
@@ -81,7 +82,7 @@ export function SavingsTransactionItem({
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         row: {
             flexDirection: 'row',

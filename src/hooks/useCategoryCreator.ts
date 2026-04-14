@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { categoriesApi } from '../api/categories';
+import { categoriesApi } from '../api/resources/categories';
 import { useAppAlert } from '../components/alerts/AlertProvider';
-import { extractApiMessage } from '../utils/api';
+import {
+    extractApiMessage,
+    getApiErrorData,
+    isApiRecord,
+} from '../utils/platform/api';
 import { useI18n } from './useI18n';
-import { API_BASE_URL } from '../utils/constants';
+import { API_BASE_URL } from '../utils/core/constants';
 
 export const CATEGORY_ICON_OPTIONS = [
     'fast-food-outline',
@@ -87,15 +91,23 @@ export function useCategoryCreator(onSuccessCallback?: (id: string) => void) {
                 onSuccessCallback(created.id);
             }
         },
-        onError: async (err: any) => {
-            if (err?.response?.status === 409) {
+        onError: async (err: unknown) => {
+            const response = isApiRecord(err) && isApiRecord(err.response)
+                ? err.response
+                : null;
+
+            if (response?.status === 409) {
                 const matched = await resolveDuplicateCategory();
                 if (matched) {
                     return;
                 }
             }
 
-            if (!err?.response && (err?.code === 'ERR_NETWORK' || err?.message === 'Network Error')) {
+            if (
+                !response
+                && isApiRecord(err)
+                && (err.code === 'ERR_NETWORK' || err.message === 'Network Error')
+            ) {
                 alert(
                     t('common.error'),
                     t('network.cannotReachApi', { baseUrl: API_BASE_URL }),
@@ -105,7 +117,7 @@ export function useCategoryCreator(onSuccessCallback?: (id: string) => void) {
 
             alert(
                 t('common.error'),
-                extractApiMessage(err?.response?.data) || t('category.failedCreate'),
+                extractApiMessage(getApiErrorData(err)) || t('category.failedCreate'),
             );
         },
     });

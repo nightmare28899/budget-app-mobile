@@ -6,15 +6,15 @@ import { RootScreenProps } from '../../navigation/types';
 import { AddExpenseScreen } from './AddExpenseScreen';
 import { AddIncomeScreen } from './AddIncomeScreen';
 import { AddSubscriptionScreen } from './AddSubscriptionScreen';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
 import {
     typography,
     spacing,
     borderRadius,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { withAlpha } from '../../utils/subscriptions';
+    SemanticColors,
+} from '../../theme/index';
+import { withAlpha } from '../../utils/domain/subscriptions';
 import { useI18n } from '../../hooks/useI18n';
 
 type AddEntryTab = 'expense' | 'income' | 'subscription';
@@ -40,6 +40,21 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
         [route.params?.initialTab],
     );
     const [activeTab, setActiveTab] = useState<AddEntryTab>(initialTab);
+    const expenseRoute: RootScreenProps<'AddExpense'>['route'] = {
+        key: 'AddExpenseEmbedded',
+        name: 'AddExpense',
+        params: { embedded: true },
+    };
+    const incomeRoute: RootScreenProps<'AddIncome'>['route'] = {
+        key: 'AddIncomeEmbedded',
+        name: 'AddIncome',
+        params: { embedded: true },
+    };
+    const subscriptionRoute: RootScreenProps<'AddSubscription'>['route'] = {
+        key: 'AddSubscriptionEmbedded',
+        name: 'AddSubscription',
+        params: { embedded: true },
+    };
 
     return (
         <View style={styles.container}>
@@ -53,10 +68,6 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                 ]}
             >
                 <View style={styles.headerRow}>
-                    <ScreenBackButton
-                        onPress={() => navigation.goBack()}
-                        containerStyle={styles.backButton}
-                    />
                     <View style={styles.segmentedControl}>
                         <TouchableOpacity
                             activeOpacity={0.85}
@@ -135,30 +146,18 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
             <View style={styles.formContainer}>
                 {activeTab === 'expense' ? (
                     <AddExpenseScreen
-                        navigation={navigation as any}
-                        route={{
-                            key: 'AddExpense',
-                            name: 'AddExpense',
-                            params: { embedded: true },
-                        } as any}
+                        navigation={navigation as RootScreenProps<'AddExpense'>['navigation']}
+                        route={expenseRoute}
                     />
                 ) : activeTab === 'income' ? (
                     <AddIncomeScreen
-                        navigation={navigation as any}
-                        route={{
-                            key: 'AddIncome',
-                            name: 'AddIncome',
-                            params: { embedded: true },
-                        } as any}
+                        navigation={navigation as RootScreenProps<'AddIncome'>['navigation']}
+                        route={incomeRoute}
                     />
                 ) : (
                     <AddSubscriptionScreen
-                        navigation={navigation as any}
-                        route={{
-                            key: 'AddSubscription',
-                            name: 'AddSubscription',
-                            params: { embedded: true },
-                        } as any}
+                        navigation={navigation as RootScreenProps<'AddSubscription'>['navigation']}
+                        route={subscriptionRoute}
                     />
                 )}
             </View>
@@ -166,7 +165,7 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
@@ -177,9 +176,6 @@ const createStyles = (colors: any) => StyleSheet.create({
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    backButton: {
-        marginRight: spacing.sm,
     },
     segmentedControl: {
         flex: 1,

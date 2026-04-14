@@ -9,11 +9,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Button } from '../../components/ui/Button';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { HomeBackground } from '../../components/ui/HomeBackground';
-import { ScreenBackButton } from '../../components/ui/ScreenBackButton';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Button } from '../../components/ui/primitives/Button';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { useNotificationCenter } from '../../hooks/useNotificationCenter';
 import { useI18n } from '../../hooks/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
@@ -24,8 +24,9 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { withAlpha } from '../../utils/subscriptions';
+    SemanticColors,
+} from '../../theme/index';
+import { withAlpha } from '../../utils/domain/subscriptions';
 
 export function NotificationsScreen({
     navigation,
@@ -346,7 +347,7 @@ export function NotificationsScreen({
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

@@ -10,8 +10,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RootScreenProps } from '../../navigation/types';
-import { formatCurrency, formatDate, formatTime } from '../../utils/format';
-import { getCurrencyLocale } from '../../utils/currency';
+import { formatCurrency, formatDate, formatTime } from '../../utils/core/format';
+import { getCurrencyLocale } from '../../utils/domain/currency';
 import {
     spacing,
     typography,
@@ -19,18 +19,19 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
+    SemanticColors,
+} from '../../theme/index';
 import { CategoryIcon } from '../../components/CategoryIcon';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
-import { Skeleton } from '../../components/ui/Skeleton';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { Skeleton } from '../../components/ui/primitives/Skeleton';
 import { useI18n } from '../../hooks/useI18n';
 import { useExpenseDetail } from '../../hooks/useExpenseDetail';
-import { formatCreditCardLabel } from '../../utils/creditCards';
+import { formatCreditCardLabel } from '../../utils/domain/creditCards';
 import {
     getPaymentMethodOption,
     PAYMENT_METHOD_FALLBACK_ICON,
-} from '../../utils/paymentMethod';
-import { getInstallmentProgress, isInstallmentExpense } from '../../utils/installments';
+} from '../../utils/domain/paymentMethod';
+import { getInstallmentProgress, isInstallmentExpense } from '../../utils/domain/installments';
 
 export function ExpenseDetailScreen({
     route,
@@ -56,8 +57,8 @@ export function ExpenseDetailScreen({
     const { expense, isLoading, onDelete } = useExpenseDetail(id, onDeleted);
     const paymentMethodOption = getPaymentMethodOption(expense?.paymentMethod);
     const paymentMethodLabel = paymentMethodOption
-        ? (t(paymentMethodOption.labelKey as any) || paymentMethodOption.fallback)
-        : t('paymentMethod.none' as any);
+        ? (t(paymentMethodOption.labelKey) || paymentMethodOption.fallback)
+        : t('paymentMethod.none');
     const creditCardLabel = formatCreditCardLabel(expense?.creditCard);
     const paymentMethodIcon = paymentMethodOption?.icon ?? PAYMENT_METHOD_FALLBACK_ICON;
     const installmentProgress = getInstallmentProgress(expense);
@@ -196,7 +197,7 @@ export function ExpenseDetailScreen({
                         <View style={styles.metaRow}>
                             <Icon name={paymentMethodIcon} size={16} color={colors.textMuted} />
                             <Text style={[styles.metaText, { fontSize: scaleFont(typography.fontSize.md) }]}>
-                                {t('paymentMethod.label' as any)}: {paymentMethodLabel}
+                                {t('paymentMethod.label')}: {paymentMethodLabel}
                             </Text>
                         </View>
                         {creditCardLabel ? (
@@ -248,7 +249,7 @@ export function ExpenseDetailScreen({
     );
 }
 
-const createStyles = (colors: any) => StyleSheet.create({
+const createStyles = (colors: SemanticColors) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,

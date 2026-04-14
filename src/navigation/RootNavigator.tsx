@@ -19,17 +19,17 @@ import { CreditCardFormScreen } from '../screens/creditCards/CreditCardFormScree
 import { PremiumPaywallScreen } from '../screens/premium/PremiumPaywallScreen';
 import { TermsAndConditionsScreen } from '../screens/legal/TermsAndConditionsScreen';
 import { useAuthStore } from '../store/authStore';
-import { usersApi } from '../api/users';
-import { useTheme } from '../theme';
+import { usersApi } from '../api/resources/users';
+import { useTheme } from '../theme/index';
 import {
     extractAvatarUri,
     isLikelyInternalRemoteUri,
     isRemoteHttpUri,
     normalizeImageUri,
-} from '../utils/media';
+} from '../utils/platform/media';
 import { useI18n } from '../hooks/useI18n';
-import { AppSplashScreen } from '../components/ui/AppSplashScreen';
-import { ScreenBackButton } from '../components/ui/ScreenBackButton';
+import { AppSplashScreen } from '../components/ui/layout/AppSplashScreen';
+import { ScreenBackButton } from '../components/ui/primitives/ScreenBackButton';
 import {
     usePreferencesStore,
 } from '../store/preferencesStore';

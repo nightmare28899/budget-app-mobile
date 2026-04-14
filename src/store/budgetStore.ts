@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { TodaySummary } from '../types';
+import { TodaySummary } from '../types/index';
 
 interface BudgetState {
     todaySummary: TodaySummary | null;

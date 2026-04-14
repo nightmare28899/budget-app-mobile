@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { creditCardsApi } from '../api/creditCards';
+import { creditCardsApi } from '../api/resources/creditCards';
 import {
     CreateCreditCardPayload,
     UpdateCreditCardPayload,
-} from '../types';
+} from '../types/index';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useI18n } from './useI18n';
-import { extractApiMessage, extractPremiumRequiredError } from '../utils/api';
+import {
+    extractApiMessage,
+    extractPremiumRequiredError,
+    getApiErrorData,
+} from '../utils/platform/api';
 
 type UseCreditCardsCatalogOptions = {
     includeInactive?: boolean;
@@ -49,8 +53,8 @@ export function useCreditCardsCatalog(options?: UseCreditCardsCatalogOptions) {
     const createMutation = useMutation({
         mutationFn: (payload: CreateCreditCardPayload) => creditCardsApi.create(payload),
         onSuccess: invalidateCards,
-        onError: (error: any) => {
-            handleMutationError(error?.response?.data, t('creditCards.failedCreate'));
+        onError: (error: unknown) => {
+            handleMutationError(getApiErrorData(error), t('creditCards.failedCreate'));
         },
     });
 
@@ -58,16 +62,16 @@ export function useCreditCardsCatalog(options?: UseCreditCardsCatalogOptions) {
         mutationFn: ({ id, payload }: { id: string; payload: UpdateCreditCardPayload }) =>
             creditCardsApi.update(id, payload),
         onSuccess: invalidateCards,
-        onError: (error: any) => {
-            handleMutationError(error?.response?.data, t('creditCards.failedUpdate'));
+        onError: (error: unknown) => {
+            handleMutationError(getApiErrorData(error), t('creditCards.failedUpdate'));
         },
     });
 
     const deactivateMutation = useMutation({
         mutationFn: (id: string) => creditCardsApi.deactivate(id),
         onSuccess: invalidateCards,
-        onError: (error: any) => {
-            handleMutationError(error?.response?.data, t('creditCards.failedRemove'));
+        onError: (error: unknown) => {
+            handleMutationError(getApiErrorData(error), t('creditCards.failedRemove'));
         },
     });
 

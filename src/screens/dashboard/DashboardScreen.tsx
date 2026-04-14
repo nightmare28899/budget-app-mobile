@@ -11,14 +11,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MainTabScreenProps } from '../../navigation/types';
-import { EmptyState } from '../../components/ui/EmptyState';
-import { DashboardSkeleton } from '../../components/ui/Skeleton';
-import { formatCurrency, formatDate } from '../../utils/format';
-import { getCurrencyLocale } from '../../utils/currency';
+import { EmptyState } from '../../components/ui/primitives/EmptyState';
+import { DashboardSkeleton } from '../../components/ui/primitives/Skeleton';
+import { formatCurrency, formatDate } from '../../utils/core/format';
+import { getCurrencyLocale } from '../../utils/domain/currency';
 import {
     getPaymentMethodOption,
     PAYMENT_METHOD_FALLBACK_ICON,
-} from '../../utils/paymentMethod';
+} from '../../utils/domain/paymentMethod';
 import {
     borderRadius,
     spacing,
@@ -26,15 +26,16 @@ import {
     useResponsive,
     useTheme,
     useThemedStyles,
-} from '../../theme';
-import { AnimatedScreen } from '../../components/ui/AnimatedScreen';
+    SemanticColors,
+} from '../../theme/index';
+import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { useDashboardScreen } from '../../hooks/useDashboardScreen';
 import { useI18n } from '../../hooks/useI18n';
-import { HomeBackground } from '../../components/ui/HomeBackground';
+import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
-import { formatCreditCardLabel } from '../../utils/creditCards';
-import { getInstallmentProgress, isInstallmentExpense } from '../../utils/installments';
-import { withAlpha } from '../../utils/subscriptions';
+import { formatCreditCardLabel } from '../../utils/domain/creditCards';
+import { getInstallmentProgress, isInstallmentExpense } from '../../utils/domain/installments';
+import { withAlpha } from '../../utils/domain/subscriptions';
 
 export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashboard'>) {
     const insets = useSafeAreaInsets();
@@ -140,7 +141,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
             return;
         }
 
-        navigation.navigate('SubscriptionsTab', { initialTab: 'subscriptions' });
+        navigation.navigate('Activity', { initialTab: 'subscriptions' });
     };
     const onOpenSavings = () => {
         const drawerNavigation = navigation.getParent();
@@ -155,7 +156,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
             return;
         }
 
-        navigation.navigate('SubscriptionsTab', { initialTab: 'subscriptions' });
+        navigation.navigate('Activity', { initialTab: 'subscriptions' });
     };
     const onOpenCategoryBudgets = () => {
         const drawerNavigation = navigation.getParent();
@@ -956,7 +957,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
     );
 }
 
-const createStyles = (colors: any) =>
+const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         container: {
             flex: 1,
