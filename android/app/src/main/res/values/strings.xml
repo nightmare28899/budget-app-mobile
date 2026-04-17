@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">BudgetApp</string>
+    <string name="default_notification_channel_id">budgetapp_default_channel</string>
+    <string name="default_notification_channel_name">BudgetApp Notifications</string>
 </resources>
