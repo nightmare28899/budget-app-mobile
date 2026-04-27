@@ -73,6 +73,7 @@ export function EditExpenseScreen({
     const { hasPremium } = useAppAccess();
     const { requirePremiumAccess } = usePremiumAccess();
     const locale = getCurrencyLocale(language);
+    const keyboardDismissMode = Platform.OS === 'ios' ? 'interactive' : 'none';
     const [activeDateField, setActiveDateField] = useState<DateField>('purchase');
     const { scrollRef, createScrollOnFocusHandler } = useScrollToFocusedInput(120);
 
@@ -276,7 +277,7 @@ export function EditExpenseScreen({
                             : null,
                     ]}
                     keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="on-drag"
+                    keyboardDismissMode={keyboardDismissMode}
                     automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
                 >
                     {/* Amount Input */}
@@ -402,6 +403,8 @@ export function EditExpenseScreen({
                                     mode="date"
                                     display="spinner"
                                     value={parseDateOrToday(date)}
+                                    themeVariant="dark"
+                                    textColor={colors.textPrimary}
                                     onChange={createDateChangeHandler('purchase')}
                                 />
                             </View>
@@ -415,9 +418,10 @@ export function EditExpenseScreen({
                                 placeholder={t('expense.installmentCountPlaceholder')}
                                 value={installmentCount}
                                 onChangeText={(value) =>
-                                    setInstallmentCount(value.replace(/[^0-9]/g, ''))
+                                    setInstallmentCount(value.replace(/[^0-9]/g, '').slice(0, 3))
                                 }
                                 keyboardType="number-pad"
+                                maxLength={3}
                                 onFocus={createScrollOnFocusHandler(128)}
                                 containerStyle={styles.fieldContainer}
                             />
@@ -448,6 +452,8 @@ export function EditExpenseScreen({
                                             mode="date"
                                             display="spinner"
                                             value={parseDateOrToday(firstPaymentDate)}
+                                            themeVariant="dark"
+                                            textColor={colors.textPrimary}
                                             onChange={createDateChangeHandler('firstPayment')}
                                         />
                                     </View>

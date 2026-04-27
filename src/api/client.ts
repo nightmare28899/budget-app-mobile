@@ -163,9 +163,26 @@ apiClient.interceptors.response.use(
 
         const { isAuthenticated, refreshToken } = useAuthStore.getState();
         const requestUrl = String(originalRequest.url || '');
+        const isUnauthorized = error.response?.status === 401;
 
         if (
-            error.response?.status === 401 &&
+            isUnauthorized &&
+            originalRequest._retry &&
+            isAuthenticated &&
+            !isAuthRoute(requestUrl)
+        ) {
+            showGlobalAlert(
+                t('session.renewFailedTitle'),
+                t('session.renewFailedMessage'),
+                [{ text: t('common.ok') }],
+                { cancelable: false },
+            );
+            useAuthStore.getState().logout();
+            return Promise.reject(error);
+        }
+
+        if (
+            isUnauthorized &&
             !originalRequest._retry &&
             isAuthenticated &&
             !isAuthRoute(requestUrl)

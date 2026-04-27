@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+    Animated,
+    Dimensions,
+    Easing,
+    Pressable,
+    PanResponder,
     View,
     Text,
     StyleSheet,
@@ -34,6 +39,10 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
     const styles = useThemedStyles(createStyles);
     const { scaleFont } = useResponsive();
     const { t } = useI18n();
+    const windowHeight = Dimensions.get('window').height;
+    const sheetHeight = Math.min(420, Math.max(300, windowHeight * 0.52));
+    const translateY = useRef(new Animated.Value(sheetHeight)).current;
+    const backdropOpacity = useRef(new Animated.Value(0)).current;
 
     const selectedMethod = getPaymentMethodOption(value);
 
@@ -43,10 +52,84 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
     const displayIcon = selectedMethod ? selectedMethod.icon : 'wallet-outline';
     const displayColor = selectedMethod ? colors.primaryLight : colors.textSecondary;
 
+    const closeSheet = useCallback(() => {
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: sheetHeight,
+                duration: 220,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+            Animated.timing(backdropOpacity, {
+                toValue: 0,
+                duration: 180,
+                useNativeDriver: true,
+            }),
+        ]).start(({ finished }) => {
+            if (finished) {
+                setVisible(false);
+            }
+        });
+    }, [backdropOpacity, sheetHeight, translateY]);
+
+    const openSheet = useCallback(() => {
+        setVisible(true);
+        requestAnimationFrame(() => {
+            Animated.parallel([
+                Animated.timing(translateY, {
+                    toValue: 0,
+                    duration: 260,
+                    easing: Easing.out(Easing.cubic),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(backdropOpacity, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        });
+    }, [backdropOpacity, translateY]);
+
     const handleSelect = (id: string | undefined) => {
         onChange(id);
-        setVisible(false);
+        closeSheet();
     };
+
+    const panResponder = useMemo(
+        () =>
+            PanResponder.create({
+                onMoveShouldSetPanResponder: (_evt, gestureState) =>
+                    gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+                onPanResponderMove: (_evt, gestureState) => {
+                    if (gestureState.dy <= 0) return;
+                    const progress = Math.max(0, Math.min(1, gestureState.dy / sheetHeight));
+                    translateY.setValue(gestureState.dy);
+                    backdropOpacity.setValue(1 - progress);
+                },
+                onPanResponderRelease: (_evt, gestureState) => {
+                    const shouldClose = gestureState.dy > 100 || gestureState.vy > 1;
+                    if (shouldClose) {
+                        closeSheet();
+                        return;
+                    }
+                    Animated.parallel([
+                        Animated.spring(translateY, {
+                            toValue: 0,
+                            bounciness: 0,
+                            speed: 18,
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(backdropOpacity, {
+                            toValue: 1,
+                            duration: 160,
+                            useNativeDriver: true,
+                        }),
+                    ]).start();
+                },
+            }),
+        [backdropOpacity, closeSheet, sheetHeight, translateY],
+    );
 
     return (
         <View style={styles.container}>
@@ -57,7 +140,7 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
             <TouchableOpacity
                 style={styles.selectorButton}
                 activeOpacity={0.7}
-                onPress={() => setVisible(true)}
+                onPress={openSheet}
             >
                 <View style={styles.selectorContent}>
                     <Icon name={displayIcon} size={20} color={displayColor} />
@@ -77,13 +160,27 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
             <Modal
                 visible={visible}
                 transparent
-                animationType="fade"
-                onRequestClose={() => setVisible(false)}
+                animationType="none"
+                onRequestClose={closeSheet}
             >
-                <TouchableWithoutFeedback onPress={() => setVisible(false)}>
-                    <View style={styles.modalOverlay}>
+                <View style={styles.modalOverlay}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet}>
+                        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
+                    </Pressable>
+                    <Animated.View
+                        style={[
+                            styles.modalContent,
+                            {
+                                maxHeight: sheetHeight,
+                                transform: [{ translateY }],
+                            },
+                        ]}
+                    >
+                        <View style={styles.dragZone} {...panResponder.panHandlers}>
+                            <View style={styles.dragHandle} />
+                        </View>
                         <TouchableWithoutFeedback>
-                            <View style={styles.modalContent}>
+                            <View style={styles.modalBody}>
                                 <Text style={[styles.modalTitle, { fontSize: scaleFont(typography.fontSize.lg) }]}>
                                     {t('paymentMethod.label')}
                                 </Text>
@@ -157,8 +254,8 @@ export function PaymentMethodSelector({ value, onChange }: PaymentMethodSelector
                                 })}
                             </View>
                         </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
+                    </Animated.View>
+                </View>
             </Modal>
         </View>
     );
@@ -197,19 +294,35 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
+        justifyContent: 'flex-end',
+    },
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: spacing.xl,
     },
     modalContent: {
         width: '100%',
-        maxWidth: 400,
         backgroundColor: colors.surfaceCard,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
         borderWidth: 1,
         borderColor: colors.border,
+    },
+    modalBody: {
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.xl,
+        paddingTop: spacing.sm,
+    },
+    dragZone: {
+        alignItems: 'center',
+        paddingTop: spacing.sm,
+        paddingBottom: spacing.xs,
+    },
+    dragHandle: {
+        width: 44,
+        height: 5,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.border,
     },
     modalTitle: {
         fontSize: typography.fontSize.lg,

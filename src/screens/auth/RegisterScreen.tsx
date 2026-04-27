@@ -41,6 +41,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
 
     const {
         register,
+        loginWithGoogle,
         loading,
         pendingRegistrationsCount,
         isSyncingOfflineRegistrations,
@@ -68,6 +69,9 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         if (success) {
             navigation.getParent()?.goBack();
         }
+    };
+    const onGoogleRegister = async () => {
+        await loginWithGoogle();
     };
     const { t, tPlural } = useI18n();
 
@@ -221,6 +225,41 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                             containerStyle={styles.registerButton}
                         />
 
+                        <View style={styles.dividerRow}>
+                            <View style={styles.dividerLine} />
+                            <Text style={[styles.dividerText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                                {t('auth.orContinueWith')}
+                            </Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+
+                        <TouchableOpacity
+                            style={styles.googleButton}
+                            onPress={onGoogleRegister}
+                            activeOpacity={0.82}
+                            disabled={loading}
+                            testID="google-register-button"
+                            accessibilityRole="button"
+                            accessibilityLabel={t('auth.continueWithGoogle')}
+                        >
+                            <Icon name="logo-google" size={20} color="#DB4437" />
+                            <Text style={[styles.googleButtonText, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                {t('auth.continueWithGoogle')}
+                            </Text>
+                        </TouchableOpacity>
+
+                        <Text
+                            style={[
+                                styles.googleNoticeText,
+                                { fontSize: scaleFont(typography.fontSize.xs) },
+                            ]}
+                        >
+                            {t('legal.googleNotice')}{' '}
+                            <Text style={styles.googleNoticeLink} onPress={openTerms}>
+                                {t('legal.readTerms')}
+                            </Text>
+                        </Text>
+
                         <View style={styles.legalNotice}>
                             <Icon
                                 name="document-text-outline"
@@ -353,6 +392,51 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     registerButton: {
         marginTop: spacing.sm,
+    },
+    dividerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginTop: spacing.base,
+    },
+    dividerLine: {
+        flex: 1,
+        height: StyleSheet.hairlineWidth,
+        backgroundColor: colors.border,
+    },
+    dividerText: {
+        color: colors.textMuted,
+        fontSize: typography.fontSize.sm,
+        fontWeight: typography.fontWeight.medium,
+    },
+    googleButton: {
+        minHeight: 48,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+        backgroundColor: '#FFFFFF',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.sm,
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.sm,
+    },
+    googleButtonText: {
+        color: '#111827',
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    googleNoticeText: {
+        color: colors.textMuted,
+        textAlign: 'center',
+        lineHeight: 18,
+        marginTop: spacing.xs,
+        paddingHorizontal: spacing.xs,
+    },
+    googleNoticeLink: {
+        color: colors.primaryLight,
+        fontWeight: typography.fontWeight.semibold,
     },
     legalNotice: {
         flexDirection: 'row',

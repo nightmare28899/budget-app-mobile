@@ -31,5 +31,43 @@ target 'BudgetApp' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    swift_header_phase_name = '[RNFB] Export FirebaseAuth Swift Header'
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        build_config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+
+        ['OTHER_CFLAGS', 'OTHER_CPLUSPLUSFLAGS', 'WARNING_CFLAGS'].each do |flag_key|
+          current_flags = build_config.build_settings[flag_key]
+          next if current_flags.nil?
+
+          if current_flags.is_a?(Array)
+            build_config.build_settings[flag_key] = current_flags.reject { |flag| flag.to_s.start_with?('-Werror') }
+          elsif current_flags.is_a?(String)
+            build_config.build_settings[flag_key] =
+              current_flags
+                .split(' ')
+                .reject { |flag| flag.to_s.start_with?('-Werror') }
+                .join(' ')
+          end
+        end
+      end
+
+      next unless target.name == 'FirebaseAuth'
+
+      has_phase = target.shell_script_build_phases.any? { |phase| phase.name == swift_header_phase_name }
+      next if has_phase
+
+      phase = target.new_shell_script_build_phase(swift_header_phase_name)
+      phase.shell_script = <<~SCRIPT
+        SWIFT_HEADER="${DERIVED_SOURCES_DIR}/FirebaseAuth-Swift.h"
+        DEST_DIR="${PODS_ROOT}/Headers/Public/FirebaseAuth"
+        if [ -f "${SWIFT_HEADER}" ]; then
+          mkdir -p "${DEST_DIR}"
+          cp "${SWIFT_HEADER}" "${DEST_DIR}/FirebaseAuth-Swift.h"
+        fi
+      SCRIPT
+    end
   end
 end

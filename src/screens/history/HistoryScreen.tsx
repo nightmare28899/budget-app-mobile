@@ -39,7 +39,9 @@ import { useI18n } from '../../hooks/useI18n';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { HistoryRecord, useHistory } from '../../hooks/useHistory';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
+import { getInstallmentProgress, isInstallmentExpense } from '../../utils/domain/installments';
 
 const HEX_COLOR_PATTERN = /^#(?:[0-9A-F]{3}){1,2}$/i;
 
@@ -107,6 +109,10 @@ export function HistoryScreen({
     const constrainedContentStyle = contentMaxWidth
         ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
         : null;
+    const bottomDockScroll = useBottomDockScrollVisibility({
+        forceVisible: sections.length === 0,
+        resetKey: `${selectedCategoryId}:${sections.length}`,
+    });
     const selectedFilterOption = selectedCategoryId === 'all'
         ? null
         : categoryOptions.find((item) => item.id === selectedCategoryId) ?? null;
@@ -131,6 +137,8 @@ export function HistoryScreen({
             const typeLabel = isExpense
                 ? (record.expense.isSubscription
                     ? t('history.subscriptionBadge')
+                    : isInstallmentExpense(record.expense)
+                        ? t('history.installmentExpense')
                     : t('history.manualExpense'))
                 : t('history.autoSubscription');
             const typeIcon = isExpense
@@ -158,6 +166,18 @@ export function HistoryScreen({
             const creditCardLabel = formatCreditCardLabel(
                 isExpense ? record.expense.creditCard : record.subscription.creditCard,
             );
+            const installmentProgress = isExpense && isInstallmentExpense(record.expense)
+                ? getInstallmentProgress(record.expense)
+                : null;
+            const installmentLabel = isExpense
+                && isInstallmentExpense(record.expense)
+                && installmentProgress?.currentInstallment
+                && installmentProgress?.installmentCount
+                ? t('expense.installmentPositionLabel', {
+                    current: installmentProgress.currentInstallment,
+                    count: installmentProgress.installmentCount,
+                })
+                : null;
             const paymentMethodOption = getPaymentMethodOption(paymentMethod);
             const paymentMethodIcon = paymentMethodOption?.icon ?? PAYMENT_METHOD_FALLBACK_ICON;
 
@@ -221,7 +241,7 @@ export function HistoryScreen({
                                 ]}
                                 numberOfLines={1}
                             >
-                                {[formatTime(sourceDate), typeLabel, creditCardLabel]
+                                {[formatTime(sourceDate), typeLabel, installmentLabel, creditCardLabel]
                                     .filter(Boolean)
                                     .join(' • ')}
                             </Text>
@@ -432,6 +452,7 @@ export function HistoryScreen({
                     </View>
                 ) : (
                     <SectionList
+                        {...bottomDockScroll}
                         sections={sections}
                         keyExtractor={(item) => item.id}
                         stickySectionHeadersEnabled

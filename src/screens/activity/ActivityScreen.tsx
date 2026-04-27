@@ -2,19 +2,22 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     RefreshControl,
+    ScrollView,
     SectionList,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { MainTabScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { useSubscriptionsScreen } from '../../hooks/useSubscriptionsScreen';
 import { formatCurrency } from '../../utils/core/format';
 import { withAlpha } from '../../utils/domain/subscriptions';
-import { Expense } from '../../types/index';
+import { Expense, Income } from '../../types/index';
 import { ExpenseItem } from '../../components/ui/domain/ExpenseItem';
 import { SubscriptionItem } from '../../components/ui/domain/SubscriptionItem';
 import { EmptyState } from '../../components/ui/primitives/EmptyState';
@@ -32,10 +35,15 @@ import {
     useThemedStyles,
     SemanticColors,
 } from '../../theme/index';
+import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
 import { useExpensesScreen } from '../../hooks/useExpensesScreen';
+import { useIncomesScreen } from '../../hooks/useIncomesScreen';
+import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/domain/currency';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { categoriesApi } from '../../api/resources/categories';
 
-type CardsTab = 'expenses' | 'subscriptions';
+type CardsTab = 'expenses' | 'subscriptions' | 'incomes';
 type CardsSection<T> = {
     title: string;
     data: T[];
@@ -53,11 +61,16 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         scaleFont,
         scaleSize,
     } = useResponsive();
-    const { t, tPlural } = useI18n();
+    const { t, tPlural, language } = useI18n();
     const user = useAuthStore((s) => s.user);
     const initialTab = route.params?.initialTab;
     const successMessage = route.params?.successMessage;
     const [activeTab, setActiveTab] = useState<CardsTab>(initialTab ?? 'expenses');
+    const [expenseSearchQuery, setExpenseSearchQuery] = useState('');
+    const [subscriptionSearchQuery, setSubscriptionSearchQuery] = useState('');
+    const [incomeSearchQuery, setIncomeSearchQuery] = useState('');
+    const [selectedExpenseCategoryId, setSelectedExpenseCategoryId] = useState('all');
+    const [debouncedExpenseSearchQuery, setDebouncedExpenseSearchQuery] = useState('');
 
     useEffect(() => {
         if (!initialTab) {
@@ -86,11 +99,18 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         loadMore: loadMoreExpenses,
         retry: retryExpenses,
         onDeleteExpense,
+        updateFilters: updateExpenseFilters,
         activeSwipeableRef: expenseSwipeableRef,
         activeSwipeableIdRef: expenseSwipeableIdRef,
     } = useExpensesScreen({
         navigation,
         successMessage: initialTab === 'expenses' ? successMessage : undefined,
+    });
+
+    const { data: categories = [] } = useQuery({
+        queryKey: ['categories', 'activity-filters'],
+        queryFn: categoriesApi.getAll,
+        staleTime: 5 * 60_000,
     });
 
     const parentNavigation = navigation.getParent();
@@ -114,9 +134,7 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         isRefreshing: subscriptionsRefreshing,
         subscriptions,
         refetch: refetchSubscriptions,
-        animatedTotal,
         locale,
-        activeCountLabel,
         activeSwipeableRef,
         activeSwipeableIdRef,
         onEditSubscription,
@@ -127,6 +145,35 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         upcomingOnly: false,
         upcomingDays: 3,
     });
+    const {
+        incomes,
+        isLoading: incomesLoading,
+        isRefreshing: incomesRefreshing,
+        error: incomesError,
+        refetch: refetchIncomes,
+        onDeleteIncome,
+    } = useIncomesScreen({
+        navigation,
+        successMessage: initialTab === 'incomes' ? successMessage : undefined,
+    });
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedExpenseSearchQuery(expenseSearchQuery.trim());
+        }, 260);
+
+        return () => clearTimeout(timer);
+    }, [expenseSearchQuery]);
+
+    useEffect(() => {
+        updateExpenseFilters({
+            q: debouncedExpenseSearchQuery || undefined,
+            categoryId:
+                selectedExpenseCategoryId !== 'all'
+                    ? selectedExpenseCategoryId
+                    : undefined,
+        });
+    }, [debouncedExpenseSearchQuery, selectedExpenseCategoryId, updateExpenseFilters]);
 
     const constrainedContentStyle = contentMaxWidth
         ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
@@ -148,6 +195,118 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
     }, []);
 
     const isExpensesTab = activeTab === 'expenses';
+    const isIncomesTab = activeTab === 'incomes';
+
+    const filteredSubscriptions = useMemo(() => {
+        const query = subscriptionSearchQuery.trim().toLowerCase();
+        if (!query) {
+            return subscriptions;
+        }
+
+        return subscriptions.filter((item) => {
+            const haystack = [
+                item.name,
+                item.currency,
+                item.billingCycle,
+                item.paymentMethod,
+            ]
+                .map((value) => String(value ?? '').toLowerCase())
+                .join(' ');
+
+            return haystack.includes(query);
+        });
+    }, [subscriptionSearchQuery, subscriptions]);
+
+    const filteredIncomes = useMemo(() => {
+        const query = incomeSearchQuery.trim().toLowerCase();
+        if (!query) {
+            return incomes;
+        }
+
+        return incomes.filter((income) => {
+            const haystack = [income.title, income.note, income.currency]
+                .map((value) => String(value ?? '').toLowerCase())
+                .join(' ');
+
+            return haystack.includes(query);
+        });
+    }, [incomeSearchQuery, incomes]);
+
+    const incomeBreakdownFiltered = useMemo(
+        () =>
+            formatCurrencyBreakdown(
+                filteredIncomes.reduce<Array<{ currency: string; total: number }>>((acc, income) => {
+                    const currencyKey = String(income.currency ?? user?.currency ?? 'MXN');
+                    const existing = acc.find((item) => item.currency === currencyKey);
+
+                    if (existing) {
+                        existing.total += Number(income.amount) || 0;
+                        return acc;
+                    }
+
+                    return [...acc, { currency: currencyKey, total: Number(income.amount) || 0 }];
+                }, []),
+                {
+                    locale: getCurrencyLocale(language),
+                    emptyCurrency: user?.currency,
+                },
+            ),
+        [filteredIncomes, language, user?.currency],
+    );
+
+    const filteredSubscriptionsTotal = useMemo(
+        () => filteredSubscriptions.reduce((sum, item) => sum + (Number(item.cost) || 0), 0),
+        [filteredSubscriptions],
+    );
+
+    const expenseCategoryOptions = useMemo(() => {
+        const map = new Map<string, string>();
+
+        for (const category of categories) {
+            map.set(category.id, category.name);
+        }
+
+        for (const expense of expenses) {
+            const id = expense.categoryId ?? expense.category?.id;
+            if (!id) {
+                continue;
+            }
+
+            map.set(id, expense.category?.name ?? map.get(id) ?? t('expenseDetail.uncategorized'));
+        }
+
+        const options = Array.from(map.entries())
+            .map(([id, name]) => ({ id, name }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        return options;
+    }, [categories, expenses, t]);
+
+    const activeSearchQuery = isExpensesTab
+        ? expenseSearchQuery
+        : isIncomesTab
+            ? incomeSearchQuery
+            : subscriptionSearchQuery;
+
+    const searchPlaceholder = isExpensesTab
+        ? t('history.searchPlaceholder')
+        : isIncomesTab
+            ? t('income.sourcePlaceholder')
+            : t('subscriptions.searchPlaceholder');
+
+    const setActiveSearchQuery = useCallback((value: string) => {
+        if (activeTab === 'expenses') {
+            setExpenseSearchQuery(value);
+            return;
+        }
+
+        if (activeTab === 'incomes') {
+            setIncomeSearchQuery(value);
+            return;
+        }
+
+        setSubscriptionSearchQuery(value);
+    }, [activeTab]);
     const summaryText = t('expenses.overviewSubtitle', {
         count: totalCount,
         total: formatCurrency(total, user?.currency),
@@ -234,9 +393,9 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
     ]);
 
     const subscriptionSections = useMemo(() => {
-        if (!subscriptions.length) return [];
+        if (!filteredSubscriptions.length) return [];
 
-        const grouped = subscriptions.reduce<Record<string, typeof subscriptions>>((acc, sub) => {
+        const grouped = filteredSubscriptions.reduce<Record<string, typeof filteredSubscriptions>>((acc, sub) => {
             const rawDate = sub.chargeDate || sub.nextPaymentDate;
             const dateStr = rawDate ? rawDate.slice(0, 10) : todayKey;
             if (!acc[dateStr]) acc[dateStr] = [];
@@ -250,7 +409,38 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                 title: formatSectionDateTitle(date),
                 data: items,
             }));
-    }, [subscriptions, todayKey, formatSectionDateTitle]);
+    }, [filteredSubscriptions, todayKey, formatSectionDateTitle]);
+    const incomeLocale = getCurrencyLocale(language);
+    const incomeSummaryText = t('income.overviewSubtitle', {
+        count: filteredIncomes.length,
+        total: incomeBreakdownFiltered,
+    });
+    const incomeCountLabel = tPlural('income.count', filteredIncomes.length);
+    const incomeSections = useMemo<CardsSection<Income>[]>(() => {
+        if (!filteredIncomes.length) return [];
+
+        const grouped = filteredIncomes.reduce<Record<string, Income[]>>((acc, income) => {
+            const dateStr = income.date ? income.date.slice(0, 10) : todayKey;
+            if (!acc[dateStr]) acc[dateStr] = [];
+            acc[dateStr].push(income);
+            return acc;
+        }, {});
+
+        return Object.entries(grouped)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .map(([date, items]) => ({
+                title: formatSectionDateTitle(date),
+                data: items,
+            }));
+    }, [filteredIncomes, formatSectionDateTitle, todayKey]);
+    const bottomDockScroll = useBottomDockScrollVisibility({
+        forceVisible: isExpensesTab
+            ? expenseSections.length === 0
+            : isIncomesTab
+                ? incomeSections.length === 0
+                : subscriptionSections.length === 0,
+        resetKey: `${activeTab}:${expenseSections.length}:${incomeSections.length}:${subscriptionSections.length}`,
+    });
 
     const renderModuleHeader = ({
         title,
@@ -353,8 +543,15 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         title: t('subscriptions.title'),
         subtitle: t('subscriptions.subtitle'),
         summaryLabel: t('subscriptions.totalMonthly'),
-        summaryValue: formatCurrency(animatedTotal, user?.currency),
-        summaryMeta: activeCountLabel,
+        summaryValue: formatCurrency(filteredSubscriptionsTotal, user?.currency),
+        summaryMeta: tPlural('subscriptions.activeCount', filteredSubscriptions.length),
+    });
+    const incomesHeader = renderModuleHeader({
+        title: t('income.title'),
+        subtitle: incomeSummaryText,
+        summaryLabel: t('income.totalIncome'),
+        summaryValue: incomeBreakdownFiltered,
+        summaryMeta: incomeCountLabel,
     });
 
     return (
@@ -402,7 +599,7 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                     <TouchableOpacity
                         style={[
                             styles.segmentButton,
-                            !isExpensesTab ? styles.segmentActive : null,
+                            activeTab === 'subscriptions' ? styles.segmentActive : null,
                         ]}
                         onPress={() => setActiveTab('subscriptions')}
                         activeOpacity={0.82}
@@ -410,13 +607,124 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                         <Text
                             style={[
                                 styles.segmentText,
-                                !isExpensesTab ? styles.segmentTextActive : null,
+                                activeTab === 'subscriptions' ? styles.segmentTextActive : null,
                                 { fontSize: scaleFont(typography.fontSize.sm) },
                             ]}
                         >
                             {t('addEntry.subscriptionTab')}
                         </Text>
                     </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[
+                            styles.segmentButton,
+                            isIncomesTab ? styles.segmentActive : null,
+                        ]}
+                        onPress={() => setActiveTab('incomes')}
+                        activeOpacity={0.82}
+                    >
+                        <Text
+                            style={[
+                                styles.segmentText,
+                                isIncomesTab ? styles.segmentTextActive : null,
+                                { fontSize: scaleFont(typography.fontSize.sm) },
+                            ]}
+                        >
+                            {t('addEntry.incomeTab')}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View
+                    style={[
+                        styles.filtersCard,
+                        { marginHorizontal: horizontalPadding },
+                        constrainedContentStyle,
+                    ]}
+                >
+                    <View style={styles.searchInputWrap}>
+                        <Icon name="search-outline" size={16} color={colors.textMuted} />
+                        <TextInput
+                            value={activeSearchQuery}
+                            onChangeText={setActiveSearchQuery}
+                            placeholder={searchPlaceholder}
+                            placeholderTextColor={colors.textMuted}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            returnKeyType="search"
+                            style={[
+                                styles.searchInput,
+                                { fontSize: scaleFont(typography.fontSize.sm) },
+                            ]}
+                        />
+                        {activeSearchQuery.trim() ? (
+                            <TouchableOpacity
+                                onPress={() => setActiveSearchQuery('')}
+                                activeOpacity={0.82}
+                                style={styles.clearSearchButton}
+                                accessibilityRole="button"
+                                accessibilityLabel={t('common.delete')}
+                            >
+                                <Icon name="close-circle" size={16} color={colors.textMuted} />
+                            </TouchableOpacity>
+                        ) : null}
+                    </View>
+
+                    {isExpensesTab ? (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.categoryChipRow}
+                        >
+                            <TouchableOpacity
+                                style={[
+                                    styles.categoryChip,
+                                    selectedExpenseCategoryId === 'all'
+                                        ? styles.categoryChipActive
+                                        : null,
+                                ]}
+                                onPress={() => setSelectedExpenseCategoryId('all')}
+                                activeOpacity={0.82}
+                            >
+                                <Text
+                                    style={[
+                                        styles.categoryChipText,
+                                        selectedExpenseCategoryId === 'all'
+                                            ? styles.categoryChipTextActive
+                                            : null,
+                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                    ]}
+                                >
+                                    {t('filters.allCategories')}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {expenseCategoryOptions.map((option) => {
+                                const isActive = selectedExpenseCategoryId === option.id;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={option.id}
+                                        style={[
+                                            styles.categoryChip,
+                                            isActive ? styles.categoryChipActive : null,
+                                        ]}
+                                        onPress={() => setSelectedExpenseCategoryId(option.id)}
+                                        activeOpacity={0.82}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.categoryChipText,
+                                                isActive ? styles.categoryChipTextActive : null,
+                                                { fontSize: scaleFont(typography.fontSize.xs) },
+                                            ]}
+                                        >
+                                            {option.name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    ) : null}
                 </View>
 
                 {isExpensesTab ? (
@@ -469,6 +777,7 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                         </View>
                     ) : (
                         <SectionList
+                            {...bottomDockScroll}
                             sections={expenseSections}
                             keyExtractor={(item) => item.id}
                             ListHeaderComponent={expensesHeader}
@@ -501,7 +810,9 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                                 <EmptyState
                                     icon="wallet-outline"
                                     title={t('expenses.emptyTitle')}
-                                    description={t('expenses.emptyDescription')}
+                                    description={expenseSearchQuery.trim()
+                                        ? t('history.noExpensesDescSearch')
+                                        : t('expenses.emptyDescription')}
                                 />
                             }
                             ListFooterComponent={expensesFooter}
@@ -517,8 +828,109 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                             ]}
                         />
                     )
+                ) : isIncomesTab ? (
+                    <SectionList
+                        {...bottomDockScroll}
+                        sections={incomeSections}
+                        keyExtractor={(item) => item.id}
+                        stickySectionHeadersEnabled={false}
+                        ListHeaderComponent={incomesHeader}
+                        refreshControl={
+                            <RefreshControl
+                                refreshing={incomesRefreshing || incomesLoading}
+                                onRefresh={refetchIncomes}
+                                tintColor={colors.primary}
+                            />
+                        }
+                        renderSectionHeader={({ section }) => renderDateSectionHeader(section.title)}
+                        renderItem={({ item }) => (
+                            <TouchableOpacity
+                                activeOpacity={0.86}
+                                style={[
+                                    styles.incomeCard,
+                                    { marginHorizontal: horizontalPadding },
+                                    constrainedContentStyle,
+                                ]}
+                                onPress={() => navigation.navigate('AddIncome', { income: item })}
+                            >
+                                <View style={styles.incomeLeading}>
+                                    <View style={styles.incomeIconWrap}>
+                                        <Icon name="trending-up-outline" size={17} color={colors.success} />
+                                    </View>
+                                    <View style={styles.incomeCopy}>
+                                        <Text
+                                            style={[
+                                                styles.incomeTitle,
+                                                { fontSize: scaleFont(typography.fontSize.base) },
+                                            ]}
+                                            numberOfLines={1}
+                                        >
+                                            {item.title}
+                                        </Text>
+                                        <Text
+                                            style={[
+                                                styles.incomeMeta,
+                                                { fontSize: scaleFont(typography.fontSize.sm) },
+                                            ]}
+                                            numberOfLines={2}
+                                        >
+                                            {item.note || t('income.receivedOn')}
+                                        </Text>
+                                    </View>
+                                </View>
+                                <View style={styles.incomeTrailing}>
+                                    <Text
+                                        style={[
+                                            styles.incomeAmount,
+                                            { fontSize: scaleFont(typography.fontSize.base) },
+                                        ]}
+                                    >
+                                        {formatCurrency(item.amount, item.currency, incomeLocale)}
+                                    </Text>
+                                    <TouchableOpacity
+                                        activeOpacity={0.82}
+                                        style={styles.incomeDelete}
+                                        onPress={() => onDeleteIncome(item.id, item.title)}
+                                    >
+                                        <Icon name="trash-outline" size={16} color={colors.error} />
+                                    </TouchableOpacity>
+                                </View>
+                            </TouchableOpacity>
+                        )}
+                        ListEmptyComponent={
+                            <View style={[styles.emptyBlock, { marginHorizontal: horizontalPadding }, constrainedContentStyle]}>
+                                <EmptyState
+                                    icon="trending-up-outline"
+                                    title={t('income.emptyTitle')}
+                                    description={incomesError
+                                        ? t('income.loadErrorDescription')
+                                        : incomeSearchQuery.trim()
+                                            ? t('history.noExpensesDescSearch')
+                                            : t('income.emptyDescription')}
+                                />
+                                {incomesError ? (
+                                    <Button
+                                        title={t('common.retry')}
+                                        onPress={() => {
+                                            refetchIncomes();
+                                        }}
+                                        containerStyle={styles.emptyButton}
+                                    />
+                                ) : null}
+                            </View>
+                        }
+                        contentContainerStyle={[
+                            styles.listContent,
+                            styles.noHorizontalPadding,
+                            {
+                                paddingTop: spacing.sm,
+                                paddingBottom: listBottomPadding,
+                            },
+                        ]}
+                    />
                 ) : (
                     <SectionList
+                        {...bottomDockScroll}
                         sections={subscriptionSections}
                         keyExtractor={(item) => item.id}
                         stickySectionHeadersEnabled={false}
@@ -557,7 +969,9 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                                 <EmptyState
                                     icon="card-outline"
                                     title={t('subscriptions.emptyTitle')}
-                                    description={t('subscriptions.emptyDescription')}
+                                    description={subscriptionSearchQuery.trim()
+                                        ? t('subscriptions.searchEmpty')
+                                        : t('subscriptions.emptyDescription')}
                                 />
                             </View>
                         }
@@ -601,6 +1015,62 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         borderColor: colors.border,
         padding: 3,
         marginTop: spacing.lg,
+    },
+    filtersCard: {
+        marginTop: spacing.sm,
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceCard,
+        padding: spacing.sm,
+        gap: spacing.sm,
+    },
+    searchInputWrap: {
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceElevated,
+        paddingHorizontal: spacing.sm,
+        minHeight: 40,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+    },
+    searchInput: {
+        flex: 1,
+        color: colors.textPrimary,
+        paddingVertical: spacing.xs,
+    },
+    clearSearchButton: {
+        width: 24,
+        height: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    categoryChipRow: {
+        gap: spacing.xs,
+        paddingRight: spacing.xs,
+    },
+    categoryChip: {
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surfaceElevated,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+    },
+    categoryChipActive: {
+        borderColor: withAlpha(colors.primary, 0.6),
+        backgroundColor: withAlpha(colors.primary, 0.2),
+    },
+    categoryChipText: {
+        color: colors.textSecondary,
+        fontWeight: typography.fontWeight.medium,
+    },
+    categoryChipTextActive: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
     },
     segmentButton: {
         flex: 1,
@@ -705,6 +1175,65 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     compactSubscriptionCard: {
         marginBottom: spacing.sm,
+    },
+    incomeCard: {
+        marginBottom: spacing.sm,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: withAlpha(colors.success, 0.28),
+        backgroundColor: withAlpha(colors.surfaceCard, 0.92),
+        paddingHorizontal: spacing.base,
+        paddingVertical: spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: spacing.base,
+    },
+    incomeLeading: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        gap: spacing.sm,
+    },
+    incomeIconWrap: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: withAlpha(colors.success, 0.14),
+        borderWidth: 1,
+        borderColor: withAlpha(colors.success, 0.3),
+    },
+    incomeCopy: {
+        flex: 1,
+        gap: 2,
+    },
+    incomeTitle: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    incomeMeta: {
+        color: colors.textMuted,
+    },
+    incomeTrailing: {
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        gap: spacing.xs,
+    },
+    incomeAmount: {
+        color: colors.success,
+        fontWeight: typography.fontWeight.bold,
+    },
+    incomeDelete: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: withAlpha(colors.error, 0.36),
+        backgroundColor: withAlpha(colors.error, 0.12),
     },
     inlineErrorCard: {
         marginBottom: spacing.lg,

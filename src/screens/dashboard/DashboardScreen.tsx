@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { DrawerActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MainTabScreenProps } from '../../navigation/types';
@@ -32,6 +33,7 @@ import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { useDashboardScreen } from '../../hooks/useDashboardScreen';
 import { useI18n } from '../../hooks/useI18n';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
 import { formatCreditCardLabel } from '../../utils/domain/creditCards';
 import { getInstallmentProgress, isInstallmentExpense } from '../../utils/domain/installments';
@@ -99,6 +101,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
     const shouldShowUpcomingSection =
         isUpcomingLoading || hasUpcomingError || upcomingSubscriptions.length > 0;
     const greetingName = user?.name?.trim()?.split(/\s+/)[0] || null;
+    const bottomDockScroll = useBottomDockScrollVisibility();
     const constrainedContentStyle = contentMaxWidth
         ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
         : null;
@@ -169,6 +172,9 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
         if (drawerNavigation) {
             (drawerNavigation.navigate as (...args: [string, object?]) => void)('Notifications');
         }
+    };
+    const onOpenMenu = () => {
+        navigation.dispatch(DrawerActions.openDrawer());
     };
     const onActionPress = (actionId: (typeof actionItems)[number]['id']) => {
         if (actionId === 'add-income') {
@@ -263,6 +269,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                             count: upcomingSubscriptions.length,
                         })}
                     </Text>
+
                     {upcomingSubscriptions.map((item, index) => {
                         const paymentMethodOption = getPaymentMethodOption(
                             item.paymentMethod,
@@ -387,11 +394,12 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                     const recordCurrency = item.type === 'expense'
                         ? item.expense?.currency
                         : item.subscription?.currency;
-                    const installmentProgress = item.type === 'expense'
+                    const isInstallmentRecord = item.type === 'expense'
+                        && isInstallmentExpense(item.expense);
+                    const installmentProgress = isInstallmentRecord
                         ? getInstallmentProgress(item.expense)
                         : null;
-                    const installmentLabel = item.type === 'expense'
-                        && isInstallmentExpense(item.expense)
+                    const installmentLabel = isInstallmentRecord
                         && installmentProgress?.currentInstallment
                         && installmentProgress?.installmentCount
                         ? t('expense.installmentPositionLabel', {
@@ -433,7 +441,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                     color={
                                         isSubscriptionRecord
                                             ? colors.primaryAction
-                                            : colors.success
+                                            : colors.error
                                     }
                                 />
                             </View>
@@ -459,7 +467,9 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                     {[
                                         isSubscriptionRecord
                                             ? t('history.subscriptionBadge')
-                                            : t('history.manualExpense'),
+                                            : isInstallmentRecord
+                                                ? t('history.installmentExpense')
+                                                : t('history.manualExpense'),
                                         installmentLabel,
                                         formatDate(item.date, 'MMM D, YYYY'),
                                         creditCardLabel,
@@ -521,6 +531,13 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                         constrainedContentStyle,
                     ]}
                 >
+                    <TouchableOpacity
+                        style={styles.menuButton}
+                        onPress={onOpenMenu}
+                        activeOpacity={0.84}
+                    >
+                        <Icon name="menu-outline" size={22} color={colors.textPrimary} />
+                    </TouchableOpacity>
                     <View style={styles.greetingContainer}>
                         <Text
                             style={[styles.greeting, { fontSize: scaleFont(typography.fontSize['2xl']) }]}
@@ -576,6 +593,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                 </View>
 
                 <ScrollView
+                    {...bottomDockScroll}
                     contentContainerStyle={[
                         styles.scrollContent,
                         { paddingBottom: scrollBottomPadding },
@@ -970,10 +988,11 @@ const createStyles = (colors: SemanticColors) =>
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            paddingBottom: spacing.base,
+            paddingBottom: spacing.lg,
         },
         greetingContainer: {
             flex: 1,
+            marginLeft: spacing.sm,
             marginRight: spacing.md,
         },
         headerActions: {
@@ -981,15 +1000,25 @@ const createStyles = (colors: SemanticColors) =>
             alignItems: 'center',
             gap: spacing.sm,
         },
-        notificationButton: {
-            width: 40,
-            height: 40,
-            borderRadius: 20,
+        menuButton: {
+            width: 44,
+            height: 44,
+            borderRadius: 22,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: colors.surfaceCard,
+            backgroundColor: withAlpha(colors.surfaceCard, 0.9),
             borderWidth: 1,
-            borderColor: colors.border,
+            borderColor: withAlpha(colors.border, 0.9),
+        },
+        notificationButton: {
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: withAlpha(colors.surfaceCard, 0.9),
+            borderWidth: 1,
+            borderColor: withAlpha(colors.border, 0.9),
         },
         greeting: {
             color: colors.textPrimary,
@@ -999,11 +1028,12 @@ const createStyles = (colors: SemanticColors) =>
         greetingSubtext: {
             color: colors.textMuted,
             marginTop: spacing.xs,
+            fontWeight: typography.fontWeight.medium,
         },
         profileBadge: {
-            backgroundColor: colors.surfaceCard,
+            backgroundColor: withAlpha(colors.surfaceCard, 0.9),
             borderWidth: 1,
-            borderColor: colors.border,
+            borderColor: withAlpha(colors.border, 0.9),
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
@@ -1023,12 +1053,17 @@ const createStyles = (colors: SemanticColors) =>
             width: '100%',
         },
         budgetCard: {
-            backgroundColor: colors.surfaceCard,
+            backgroundColor: withAlpha(colors.surfaceCard, 0.94),
             borderRadius: borderRadius.xl,
             marginBottom: spacing.lg,
             borderWidth: 1,
             borderColor: colors.border,
             overflow: 'hidden',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 8 },
+            shadowOpacity: 0.16,
+            shadowRadius: 14,
+            elevation: 4,
         },
         budgetGlow: {
             position: 'absolute',
@@ -1049,10 +1084,11 @@ const createStyles = (colors: SemanticColors) =>
         budgetAmount: {
             color: colors.textPrimary,
             fontWeight: typography.fontWeight.extrabold,
-            marginBottom: spacing.lg,
+            marginBottom: spacing.base,
+            letterSpacing: -0.6,
         },
         progressTrack: {
-            height: 12,
+            height: 14,
             borderRadius: borderRadius.full,
             backgroundColor: withAlpha(colors.primaryAction, 0.12),
             overflow: 'hidden',
@@ -1068,7 +1104,7 @@ const createStyles = (colors: SemanticColors) =>
         budgetFooter: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: colors.surfaceElevated,
+            backgroundColor: withAlpha(colors.surfaceElevated, 0.9),
             borderRadius: borderRadius.lg,
             borderWidth: 1,
             borderColor: colors.border,
@@ -1100,21 +1136,31 @@ const createStyles = (colors: SemanticColors) =>
         savingsShortcutCard: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: colors.surfaceElevated,
+            backgroundColor: withAlpha(colors.surfaceElevated, 0.92),
             borderRadius: borderRadius.xl,
             borderWidth: 1,
             borderColor: colors.border,
             paddingHorizontal: spacing.base,
             paddingVertical: spacing.base,
             marginBottom: spacing.base,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.14,
+            shadowRadius: 10,
+            elevation: 3,
         },
         cashflowCard: {
-            backgroundColor: colors.surfaceElevated,
+            backgroundColor: withAlpha(colors.surfaceElevated, 0.94),
             borderRadius: borderRadius.xl,
             borderWidth: 1,
             borderColor: colors.border,
             marginBottom: spacing.base,
-            gap: spacing.base,
+            gap: spacing.sm,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.14,
+            shadowRadius: 10,
+            elevation: 3,
         },
         cashflowHeader: {
             gap: 4,
@@ -1136,10 +1182,12 @@ const createStyles = (colors: SemanticColors) =>
             borderRadius: borderRadius.lg,
             borderWidth: 1,
             borderColor: colors.border,
-            backgroundColor: colors.surfaceCard,
+            backgroundColor: withAlpha(colors.surfaceCard, 0.95),
             paddingHorizontal: spacing.sm,
             paddingVertical: spacing.sm,
             gap: spacing.xs,
+            minHeight: 66,
+            justifyContent: 'center',
         },
         cashflowMetricLabel: {
             color: colors.textMuted,
@@ -1168,7 +1216,7 @@ const createStyles = (colors: SemanticColors) =>
             borderRadius: borderRadius.xl,
             borderWidth: 1,
             borderColor: colors.border,
-            backgroundColor: colors.surfaceElevated,
+            backgroundColor: withAlpha(colors.surfaceElevated, 0.93),
             paddingHorizontal: spacing.base,
             paddingVertical: spacing.base,
         },
@@ -1267,6 +1315,7 @@ const createStyles = (colors: SemanticColors) =>
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: spacing.base,
+            paddingHorizontal: spacing.xs,
         },
         sectionTitle: {
             fontWeight: typography.fontWeight.bold,
@@ -1275,6 +1324,7 @@ const createStyles = (colors: SemanticColors) =>
         seeAll: {
             color: colors.primaryAction,
             fontWeight: typography.fontWeight.semibold,
+            letterSpacing: 0.2,
         },
         upcomingSummary: {
             color: colors.textMuted,
@@ -1316,10 +1366,10 @@ const createStyles = (colors: SemanticColors) =>
         upcomingRow: {
             borderWidth: 1,
             borderColor: colors.border,
-            backgroundColor: colors.surfaceCard,
+            backgroundColor: withAlpha(colors.surfaceCard, 0.95),
             borderRadius: borderRadius.xl,
             paddingHorizontal: spacing.base,
-            paddingVertical: spacing.sm,
+            paddingVertical: spacing.base,
             marginBottom: spacing.sm,
             flexDirection: 'row',
             alignItems: 'center',
@@ -1347,10 +1397,10 @@ const createStyles = (colors: SemanticColors) =>
         recentRow: {
             borderWidth: 1,
             borderColor: colors.border,
-            backgroundColor: colors.surfaceCard,
+            backgroundColor: withAlpha(colors.surfaceCard, 0.96),
             borderRadius: borderRadius.xl,
             paddingHorizontal: spacing.base,
-            paddingVertical: spacing.sm,
+            paddingVertical: spacing.base,
             marginBottom: spacing.sm,
             flexDirection: 'row',
             alignItems: 'center',
@@ -1364,8 +1414,8 @@ const createStyles = (colors: SemanticColors) =>
             borderWidth: 1,
         },
         recentIconExpense: {
-            borderColor: withAlpha(colors.success, 0.32),
-            backgroundColor: withAlpha(colors.success, 0.12),
+            borderColor: withAlpha(colors.error, 0.32),
+            backgroundColor: withAlpha(colors.error, 0.12),
         },
         recentIconSubscription: {
             borderColor: withAlpha(colors.primaryAction, 0.32),
@@ -1384,8 +1434,9 @@ const createStyles = (colors: SemanticColors) =>
             color: colors.textMuted,
         },
         recentAmount: {
-            color: colors.success,
+            color: colors.error,
             fontWeight: typography.fontWeight.bold,
+            letterSpacing: 0.2,
         },
         recentTrailing: {
             flexDirection: 'row',

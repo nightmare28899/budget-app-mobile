@@ -154,19 +154,22 @@ export function ExpenseItem({
         : null;
     const creditCardLabel = formatCreditCardLabel(expense.creditCard);
     const paymentMethodIcon = paymentMethodOption?.icon ?? PAYMENT_METHOD_FALLBACK_ICON;
-    const installmentProgress = getInstallmentProgress(expense);
-    const installmentMeta = isInstallmentExpense(expense)
-        && installmentProgress.currentInstallment
-        && installmentProgress.installmentCount
-        ? t('expense.installmentPositionLabel', {
-            current: installmentProgress.currentInstallment,
-            count: installmentProgress.installmentCount,
-        })
+    const isInstallmentRecord = isInstallmentExpense(expense);
+    const installmentProgress = isInstallmentRecord
+        ? getInstallmentProgress(expense)
         : null;
+    const installmentMeta =
+        installmentProgress?.currentInstallment && installmentProgress.installmentCount
+            ? t('expense.installmentPositionLabel', {
+                current: installmentProgress.currentInstallment,
+                count: installmentProgress.installmentCount,
+            })
+            : null;
     const expenseMeta = [
         expense.category?.name ?? t('expenseDetail.uncategorized'),
-        formatTime(expense.date),
+        isInstallmentRecord ? t('history.installmentExpense') : null,
         installmentMeta,
+        formatTime(expense.date),
         paymentMethodLabel,
         creditCardLabel,
     ]

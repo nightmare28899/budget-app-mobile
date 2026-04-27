@@ -16,6 +16,7 @@ import { Button } from '../../components/ui/primitives/Button';
 import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
 import { Input } from '../../components/ui/primitives/Input';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
+import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { useI18n } from '../../hooks/useI18n';
 import { TranslationKey } from '../../i18n/index';
 import { RootScreenProps } from '../../navigation/types';
@@ -28,6 +29,11 @@ import { extractApiMessage } from '../../utils/platform/api';
 import { BUDGET_PERIODS, budgetLabel, normalizeBudgetPeriod } from '../../utils/domain/budget';
 import { DEFAULT_CURRENCY, normalizeCurrency } from '../../utils/domain/currency';
 import { toNum } from '../../utils/core/number';
+import {
+    MAX_COST_LABEL,
+    MAX_COST_VALUE,
+    sanitizeMoneyInput,
+} from '../../utils/platform/moneyInput';
 
 const TOTAL_STEPS = 4;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -49,11 +55,12 @@ function isValidIsoDate(value: string): boolean {
     return !Number.isNaN(parsed.getTime());
 }
 
-export function OnboardingScreen({}: RootScreenProps<'Onboarding'>) {
+export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) {
     const styles = useThemedStyles(createStyles);
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
     const queryClient = useQueryClient();
+    const { alert } = useAppAlert();
     const user = useAuthStore((s) => s.user);
     const setUser = useAuthStore((s) => s.setUser);
     const markOnboardingCompleted = usePreferencesStore((s) => s.markOnboardingCompleted);
@@ -135,7 +142,7 @@ export function OnboardingScreen({}: RootScreenProps<'Onboarding'>) {
 
     const finishOnboarding = async (skipSetup: boolean) => {
         if (!user) {
-            return;
+            return false;
         }
 
         setValidationMessage(null);
@@ -145,29 +152,35 @@ export function OnboardingScreen({}: RootScreenProps<'Onboarding'>) {
             const normalizedBudgetAmount = budgetAmount.trim().replace(/,/g, '.');
             if (!normalizedBudgetAmount) {
                 setValidationMessage(t('onboarding.validationBudgetAmount'));
-                return;
+                return false;
             }
 
             const parsedBudgetAmount = Number(normalizedBudgetAmount);
             if (!Number.isFinite(parsedBudgetAmount) || parsedBudgetAmount < 0) {
                 setValidationMessage(t('onboarding.validationBudgetAmount'));
-                return;
+                return false;
+            }
+            if (parsedBudgetAmount > MAX_COST_VALUE) {
+                setValidationMessage(
+                    t('common.maxAmountExceeded', { max: MAX_COST_LABEL }),
+                );
+                return false;
             }
 
             if (budgetPeriod === 'period') {
                 if (!budgetPeriodStart.trim() || !budgetPeriodEnd.trim()) {
                     setValidationMessage(t('onboarding.validationPeriodDatesRequired'));
-                    return;
+                    return false;
                 }
 
                 if (!isValidIsoDate(budgetPeriodStart) || !isValidIsoDate(budgetPeriodEnd)) {
                     setValidationMessage(t('onboarding.validationPeriodDateFormat'));
-                    return;
+                    return false;
                 }
 
                 if (new Date(budgetPeriodEnd) < new Date(budgetPeriodStart)) {
                     setValidationMessage(t('onboarding.validationPeriodEndBeforeStart'));
-                    return;
+                    return false;
                 }
             }
 
@@ -193,12 +206,59 @@ export function OnboardingScreen({}: RootScreenProps<'Onboarding'>) {
                     || t('onboarding.saveFailed'),
                 );
                 setIsSubmitting(false);
-                return;
+                return false;
             }
             setIsSubmitting(false);
         }
 
         markOnboardingCompleted();
+        return true;
+    };
+
+    const completeOnboardingAndRoute = async (
+        target: 'guest' | 'register' | 'login',
+    ) => {
+        const completed = await finishOnboarding(false);
+        if (!completed) {
+            return;
+        }
+
+        if (target === 'register') {
+            navigation.navigate('Auth', { screen: 'Register' });
+            return;
+        }
+
+        if (target === 'login') {
+            navigation.navigate('Auth', { screen: 'Login' });
+        }
+    };
+
+    const openAccessChoice = () => {
+        alert(
+            t('onboarding.accessChoiceTitle'),
+            t('onboarding.accessChoiceMessage'),
+            [
+                {
+                    text: t('onboarding.accessChoiceGuest'),
+                    style: 'cancel',
+                    onPress: () => {
+                        completeOnboardingAndRoute('guest').catch(() => {});
+                    },
+                },
+                {
+                    text: t('onboarding.accessChoiceRegister'),
+                    onPress: () => {
+                        completeOnboardingAndRoute('register').catch(() => {});
+                    },
+                },
+                {
+                    text: t('onboarding.accessChoiceLogin'),
+                    onPress: () => {
+                        completeOnboardingAndRoute('login').catch(() => {});
+                    },
+                },
+            ],
+        );
     };
 
     const handleContinue = async () => {
@@ -207,7 +267,7 @@ export function OnboardingScreen({}: RootScreenProps<'Onboarding'>) {
             return;
         }
 
-        await finishOnboarding(false);
+        openAccessChoice();
     };
 
     const stepTitle = [
@@ -671,7 +731,7 @@ export function OnboardingScreen({}: RootScreenProps<'Onboarding'>) {
                                     keyboardType="decimal-pad"
                                     value={budgetAmount}
                                     onChangeText={(value) => {
-                                        setBudgetAmount(value);
+                                        setBudgetAmount(sanitizeMoneyInput(value));
                                         setValidationMessage(null);
                                         setSaveError(null);
                                     }}

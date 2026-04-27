@@ -21,7 +21,6 @@ import {
     spacing,
     typography,
     useResponsive,
-    useTheme,
     useThemedStyles,
     SemanticColors,
 } from '../../theme/index';
@@ -32,7 +31,6 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
     const styles = useThemedStyles(createStyles);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { colors } = useTheme();
     const { login, loginWithGoogle, loading } = useAuth();
     const insets = useSafeAreaInsets();
     const { horizontalPadding, contentMaxWidth, scaleFont } = useResponsive();
@@ -49,9 +47,6 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
     };
 
     const onGoogleLogin = async () => {
-        if (__DEV__) {
-            console.log('[google-auth] button-pressed');
-        }
         await loginWithGoogle();
     };
 
@@ -125,8 +120,11 @@ export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
                             onPress={onGoogleLogin}
                             activeOpacity={0.82}
                             disabled={loading}
+                            testID="google-login-button"
+                            accessibilityRole="button"
+                            accessibilityLabel={t('auth.continueWithGoogle')}
                         >
-                            <Icon name="logo-google" size={20} color={colors.textPrimary} />
+                            <Icon name="logo-google" size={20} color="#DB4437" />
                             <Text style={[styles.googleButtonText, { fontSize: scaleFont(typography.fontSize.md) }]}>
                                 {t('auth.continueWithGoogle')}
                             </Text>
@@ -207,8 +205,8 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         minHeight: 48,
         borderRadius: 999,
         borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surfaceElevated,
+        borderColor: '#D1D5DB',
+        backgroundColor: '#FFFFFF',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -217,7 +215,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         paddingVertical: spacing.sm,
     },
     googleButtonText: {
-        color: colors.textPrimary,
+        color: '#111827',
         fontSize: typography.fontSize.md,
         fontWeight: typography.fontWeight.semibold,
     },

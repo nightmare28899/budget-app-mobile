@@ -13,7 +13,6 @@ export function getLocalModeContext() {
     };
 }
 
-// Prepared for future guest-to-account merge/sync flows.
 export function buildGuestMigrationPayload() {
     const { guestUser, guestData } = getLocalModeContext();
 

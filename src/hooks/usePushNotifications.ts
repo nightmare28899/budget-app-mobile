@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { PermissionsAndroid, Platform } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AppState, PermissionsAndroid, Platform } from 'react-native';
 import messaging, {
     FirebaseMessagingTypes,
 } from '@react-native-firebase/messaging';
@@ -11,13 +11,10 @@ import {
 } from '../navigation/navigationBridge';
 import { showGlobalAlert } from '../components/alerts/alertBridge';
 import { useAuthStore } from '../store/authStore';
-import { translate } from '../i18n/index';
+import { AppLanguage, translate } from '../i18n/index';
 import { usePreferencesStore } from '../store/preferencesStore';
 
-const FALLBACK_NOTIFICATION_TITLE = 'New notification';
-const FALLBACK_NOTIFICATION_BODY = 'Open BudgetApp to review the latest update.';
-
-function t(key: 'common.ok') {
+function t(key: 'common.ok' | 'push.defaultTitle' | 'push.defaultBody') {
     const language = usePreferencesStore.getState().language;
     return translate(language, key);
 }
@@ -48,7 +45,9 @@ async function requestNotificationPermission(): Promise<boolean> {
     return true;
 }
 
-async function syncCurrentDeviceToken(): Promise<string | null> {
+async function syncCurrentDeviceToken(
+    language: AppLanguage,
+): Promise<string | null> {
     const token = (await messaging().getToken()).trim();
     if (!token) {
         return null;
@@ -57,6 +56,7 @@ async function syncCurrentDeviceToken(): Promise<string | null> {
     await notificationsApi.registerDeviceToken({
         token,
         platform: getDevicePlatform(),
+        language,
     });
 
     return token;
@@ -66,14 +66,14 @@ function getNotificationTitle(
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
 ): string {
     const title = remoteMessage.notification?.title?.trim();
-    return title?.length ? title : FALLBACK_NOTIFICATION_TITLE;
+    return title?.length ? title : t('push.defaultTitle');
 }
 
 function getNotificationBody(
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
 ): string {
     const body = remoteMessage.notification?.body?.trim();
-    return body?.length ? body : FALLBACK_NOTIFICATION_BODY;
+    return body?.length ? body : t('push.defaultBody');
 }
 
 function handleOpenedNotification(
@@ -89,6 +89,8 @@ function handleOpenedNotification(
 export function usePushNotifications() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const isLoading = useAuthStore((state) => state.isLoading);
+    const language = usePreferencesStore((state) => state.language);
+    const syncInFlightRef = useRef(false);
 
     useEffect(() => {
         if (!isAuthenticated || isLoading) {
@@ -96,26 +98,60 @@ export function usePushNotifications() {
         }
 
         let isMounted = true;
+        let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+        let appState = AppState.currentState;
 
-        const bootstrap = async () => {
+        const clearRetryTimeout = () => {
+            if (!retryTimeout) {
+                return;
+            }
+            clearTimeout(retryTimeout);
+            retryTimeout = null;
+        };
+
+        const scheduleRetry = () => {
+            if (!isMounted || retryTimeout) {
+                return;
+            }
+
+            retryTimeout = setTimeout(() => {
+                retryTimeout = null;
+                void bootstrap('retry');
+            }, 30000);
+        };
+
+        const bootstrap = async (reason: 'initial' | 'retry' | 'foreground') => {
+            if (syncInFlightRef.current) {
+                return;
+            }
+
+            syncInFlightRef.current = true;
             try {
                 const granted = await requestNotificationPermission();
                 if (!granted || !isMounted) {
+                    clearRetryTimeout();
                     return;
                 }
 
-                await syncCurrentDeviceToken();
+                const token = await syncCurrentDeviceToken(language);
+                if (token) {
+                    console.info(`[push] token synced (${reason})`);
+                }
                 flushPendingNotificationDestination();
+                clearRetryTimeout();
             } catch (error) {
                 console.warn(
                     '[push] failed to initialize notifications',
                     extractApiMessage((error as { response?: { data?: unknown } })?.response?.data)
                     || (error instanceof Error ? error.message : String(error)),
                 );
+                scheduleRetry();
+            } finally {
+                syncInFlightRef.current = false;
             }
         };
 
-        void bootstrap();
+        void bootstrap('initial');
 
         const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
             showGlobalAlert(
@@ -146,17 +182,29 @@ export function usePushNotifications() {
                     await notificationsApi.registerDeviceToken({
                         token: normalized,
                         platform: getDevicePlatform(),
+                        language,
                     });
+                    console.info('[push] token refreshed and synced');
                 } catch (error) {
                     console.warn(
                         '[push] failed to refresh device token',
                         error instanceof Error ? error.message : String(error),
                     );
+                    scheduleRetry();
                 }
             },
         );
 
-        void messaging()
+        const appStateSubscription = AppState.addEventListener('change', (nextAppState) => {
+            const wasBackgrounded = appState === 'inactive' || appState === 'background';
+            appState = nextAppState;
+
+            if (wasBackgrounded && nextAppState === 'active') {
+                void bootstrap('foreground');
+            }
+        });
+
+        messaging()
             .getInitialNotification()
             .then(handleOpenedNotification)
             .catch((error) => {
@@ -168,9 +216,11 @@ export function usePushNotifications() {
 
         return () => {
             isMounted = false;
+            clearRetryTimeout();
             unsubscribeOnMessage();
             unsubscribeOnOpen();
             unsubscribeOnTokenRefresh();
+            appStateSubscription.remove();
         };
-    }, [isAuthenticated, isLoading]);
+    }, [isAuthenticated, isLoading, language]);
 }

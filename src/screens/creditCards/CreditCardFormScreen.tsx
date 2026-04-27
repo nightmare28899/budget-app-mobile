@@ -350,6 +350,7 @@ export function CreditCardFormScreen({
                             label={t('creditCards.closingDay')}
                             placeholder="25"
                             keyboardType="number-pad"
+                            maxLength={2}
                             value={closingDay}
                             onChangeText={(value) => setClosingDay(digitsOnly(value).slice(0, 2))}
                             onFocus={createScrollOnFocusHandler(200)}
@@ -359,6 +360,7 @@ export function CreditCardFormScreen({
                             label={t('creditCards.paymentDueDay')}
                             placeholder="12"
                             keyboardType="number-pad"
+                            maxLength={2}
                             value={paymentDueDay}
                             onChangeText={(value) => setPaymentDueDay(digitsOnly(value).slice(0, 2))}
                             onFocus={createScrollOnFocusHandler(200)}

@@ -24,7 +24,7 @@ export type MainTabParamList = {
   Activity:
     | {
         successMessage?: string;
-        initialTab?: 'expenses' | 'subscriptions';
+        initialTab?: 'expenses' | 'subscriptions' | 'incomes';
       }
     | undefined;
 };

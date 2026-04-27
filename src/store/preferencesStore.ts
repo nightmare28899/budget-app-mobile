@@ -12,8 +12,11 @@ type PreferenceScopedUser = {
     email?: string | null;
 };
 
+type LanguagePreferenceSource = 'device' | 'manual';
+
 interface PreferencesState {
     language: AppLanguage;
+    languageSource: LanguagePreferenceSource;
     themeMode: ThemeMode;
     hasCompletedOnboarding: boolean;
     manualPremiumByUser: Record<string, boolean>;
@@ -27,6 +30,7 @@ interface PreferencesState {
 }
 
 const LANGUAGE_KEY = 'language';
+const LANGUAGE_SOURCE_KEY = 'languageSource';
 const THEME_MODE_KEY = 'themeMode';
 const ONBOARDING_COMPLETED_KEY = 'completedOnboardingByUser';
 const MANUAL_PREMIUM_KEY = 'manualPremiumByUser';
@@ -113,16 +117,65 @@ function isThemeMode(value: string | null | undefined): value is ThemeMode {
     );
 }
 
+function isLanguagePreferenceSource(
+    value: string | null | undefined,
+): value is LanguagePreferenceSource {
+    return value === 'device' || value === 'manual';
+}
+
+type ResolvedPreferences = Pick<
+    PreferencesState,
+    | 'language'
+    | 'languageSource'
+    | 'themeMode'
+    | 'hasCompletedOnboarding'
+    | 'manualPremiumByUser'
+>;
+
+function resolveStoredPreferences(): ResolvedPreferences {
+    const storedLanguage = storage.getString(LANGUAGE_KEY);
+    const storedLanguageSource = storage.getString(LANGUAGE_SOURCE_KEY);
+    const storedThemeMode = storage.getString(THEME_MODE_KEY);
+    const hasCompletedOnboarding = readOnboardingCompleted(
+        storage.getString(ONBOARDING_COMPLETED_KEY),
+    );
+    const manualPremiumByUser = readBooleanMap(
+        storage.getString(MANUAL_PREMIUM_KEY),
+    );
+    const deviceLanguage = detectDeviceLanguage();
+    const languageSource = isLanguagePreferenceSource(storedLanguageSource)
+        ? storedLanguageSource
+        : 'device';
+
+    if (languageSource === 'manual' && isAppLanguage(storedLanguage)) {
+        return {
+            language: storedLanguage,
+            languageSource,
+            themeMode: isThemeMode(storedThemeMode) ? storedThemeMode : 'system',
+            hasCompletedOnboarding,
+            manualPremiumByUser,
+        };
+    }
+
+    return {
+        language: deviceLanguage,
+        languageSource: 'device',
+        themeMode: isThemeMode(storedThemeMode) ? storedThemeMode : 'system',
+        hasCompletedOnboarding,
+        manualPremiumByUser,
+    };
+}
+
+const initialPreferences = resolveStoredPreferences();
+
 export const usePreferencesStore = create<PreferencesState>((set) => ({
-    language: detectDeviceLanguage(),
-    themeMode: 'system',
-    hasCompletedOnboarding: false,
-    manualPremiumByUser: {},
+    ...initialPreferences,
     isHydrated: false,
 
     setLanguage: (language) => {
         storage.set(LANGUAGE_KEY, language);
-        set({ language });
+        storage.set(LANGUAGE_SOURCE_KEY, 'manual');
+        set({ language, languageSource: 'manual' });
     },
 
     setThemeMode: (themeMode) => {
@@ -160,35 +213,15 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
     },
 
     hydrate: () => {
-        const storedLanguage = storage.getString(LANGUAGE_KEY);
-        const storedThemeMode = storage.getString(THEME_MODE_KEY);
-        const hasCompletedOnboarding = readOnboardingCompleted(
-            storage.getString(ONBOARDING_COMPLETED_KEY),
-        );
-        const manualPremiumByUser = readBooleanMap(
-            storage.getString(MANUAL_PREMIUM_KEY),
-        );
-        if (isAppLanguage(storedLanguage)) {
-            set({
-                language: storedLanguage,
-                themeMode: isThemeMode(storedThemeMode) ? storedThemeMode : 'system',
-                hasCompletedOnboarding,
-                manualPremiumByUser,
-                isHydrated: true,
-            });
-            return;
-        }
+        const preferences = resolveStoredPreferences();
 
-        const deviceLanguage = detectDeviceLanguage();
-        storage.set(LANGUAGE_KEY, deviceLanguage);
-        if (!isThemeMode(storedThemeMode)) {
+        storage.set(LANGUAGE_KEY, preferences.language);
+        storage.set(LANGUAGE_SOURCE_KEY, preferences.languageSource);
+        if (!isThemeMode(storage.getString(THEME_MODE_KEY))) {
             storage.set(THEME_MODE_KEY, 'system');
         }
         set({
-            language: deviceLanguage,
-            themeMode: isThemeMode(storedThemeMode) ? storedThemeMode : 'system',
-            hasCompletedOnboarding,
-            manualPremiumByUser,
+            ...preferences,
             isHydrated: true,
         });
     },

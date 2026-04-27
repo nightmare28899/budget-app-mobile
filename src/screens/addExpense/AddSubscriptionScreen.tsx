@@ -233,8 +233,8 @@ export function AddSubscriptionScreen({
                                     styles.amountInput,
                                     {
                                         fontSize: scaleFont(typography.fontSize['5xl']),
-                                        lineHeight: scaleFont(typography.fontSize['5xl']),
-                                        minWidth: isSmallPhone ? 120 : 140,
+                                        lineHeight: scaleFont(typography.fontSize['5xl'] * 1.08),
+                                        height: scaleFont(typography.fontSize['5xl'] + 18),
                                     },
                                 ]}
                                 placeholder="0.00"
@@ -581,6 +581,7 @@ export function AddSubscriptionScreen({
                             value={parseDateOrToday(chargeDate)}
                             mode="date"
                             display="inline"
+                            themeVariant="dark"
                             onChange={onChangeDate}
                             style={styles.iosPicker}
                         />
@@ -872,6 +873,9 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: spacing.xl,
+        width: '100%',
+        maxWidth: 360,
+        alignSelf: 'center',
     },
     currencySign: {
         fontSize: typography.fontSize['3xl'],
@@ -883,11 +887,15 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         fontSize: typography.fontSize['5xl'],
         fontWeight: typography.fontWeight.extrabold,
         color: colors.textPrimary,
-        minWidth: 120,
+        flexGrow: 1,
+        flexShrink: 1,
+        minWidth: Platform.OS === 'android' ? 150 : 130,
+        maxWidth: Platform.OS === 'android' ? 240 : 250,
         textAlign: 'center',
         textAlignVertical: 'center',
-        includeFontPadding: false,
-        paddingVertical: 0,
+        includeFontPadding: Platform.OS === 'android',
+        paddingVertical: Platform.OS === 'android' ? spacing.xs : 0,
+        paddingHorizontal: spacing.xs,
     },
     amountCurrencyBadge: {
         marginLeft: spacing.sm,

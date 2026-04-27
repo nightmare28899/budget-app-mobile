@@ -38,6 +38,11 @@ import { budgetLabel } from '../../utils/domain/budget';
 import { formatCurrency, formatDate } from '../../utils/core/format';
 import { getCurrencyLocale } from '../../utils/domain/currency';
 import { withAlpha } from '../../utils/domain/subscriptions';
+import {
+    MAX_COST_LABEL,
+    MAX_COST_VALUE,
+    sanitizeMoneyInput,
+} from '../../utils/platform/moneyInput';
 
 function buildRangeLabel(start?: string | null, end?: string | null) {
     if (!start || !end) {
@@ -139,6 +144,10 @@ export function CategoryBudgetsScreen({
         const nextAmount = Number.parseFloat(normalized);
         if (!normalized.length || Number.isNaN(nextAmount) || nextAmount < 0) {
             setBudgetError(t('categoryBudgets.validationAmount'));
+            return;
+        }
+        if (nextAmount > MAX_COST_VALUE) {
+            setBudgetError(t('common.maxAmountExceeded', { max: MAX_COST_LABEL }));
             return;
         }
 
@@ -451,7 +460,7 @@ export function CategoryBudgetsScreen({
                             label={t('categoryBudgets.inputLabel')}
                             value={budgetValue}
                             onChangeText={(value) => {
-                                setBudgetValue(value);
+                                setBudgetValue(sanitizeMoneyInput(value));
                                 if (budgetError) {
                                     setBudgetError(undefined);
                                 }

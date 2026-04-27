@@ -487,6 +487,7 @@ export function SavingsGoalFormModal({
                                             display="inline"
                                             value={parseDateOrToday(targetDate)}
                                             minimumDate={new Date()}
+                                            themeVariant="dark"
                                             onChange={onChangeDate}
                                         />
                                     </View>

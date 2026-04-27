@@ -18,6 +18,7 @@ import {
 } from '../../../theme/index';
 import { withAlpha } from '../../../utils/domain/subscriptions';
 import { useI18n } from '../../../hooks/useI18n';
+import { usePreferencesStore } from '../../../store/preferencesStore';
 
 const DOT_COUNT = 3;
 
@@ -25,6 +26,7 @@ export function AppSplashScreen() {
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
     const { t } = useI18n();
+    const isPreferencesHydrated = usePreferencesStore((s) => s.isHydrated);
     const glow = useRef(new Animated.Value(0.55)).current;
     const float = useRef(new Animated.Value(0)).current;
     const dots = useRef(
@@ -125,7 +127,9 @@ export function AppSplashScreen() {
                     <Icon name="wallet-outline" size={44} color={colors.textPrimary} />
                 </Animated.View>
                 <Text style={styles.title}>{t('app.name')}</Text>
-                <Text style={styles.subtitle}>{t('app.tagline')}</Text>
+                {isPreferencesHydrated ? (
+                    <Text style={styles.subtitle}>{t('app.tagline')}</Text>
+                ) : null}
             </View>
 
             <View style={styles.loaderRow}>

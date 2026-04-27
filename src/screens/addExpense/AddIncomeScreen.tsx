@@ -39,7 +39,6 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
     const isEmbedded = route.params?.embedded === true;
     const editingIncome = route.params?.income ?? null;
     const {
-        isSmallPhone,
         scaleFont,
     } = useResponsive();
     const { t, language } = useI18n();
@@ -71,10 +70,6 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
                 day: 'numeric',
             }),
         [date, locale],
-    );
-    const amountInputSizeStyle = useMemo(
-        () => ({ minWidth: isSmallPhone ? 100 : 120 }),
-        [isSmallPhone],
     );
     const previewAmount = Number.parseFloat(amount);
     const amountPreview = Number.isFinite(previewAmount) && previewAmount > 0
@@ -109,13 +104,21 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
             if (!isEditMode) {
                 resetForm();
             }
+            if (isEmbedded) {
+                navigation.goBack();
+                return;
+            }
 
             navigation.navigate('Main', {
-                screen: 'Incomes',
+                screen: 'Tabs',
                 params: {
-                    successMessage: isEditMode
-                        ? t('income.updatedSuccess')
-                        : t('income.savedSuccess'),
+                    screen: 'Activity',
+                    params: {
+                        initialTab: 'incomes',
+                        successMessage: isEditMode
+                            ? t('income.updatedSuccess')
+                            : t('income.savedSuccess'),
+                    },
                 },
             });
         });
@@ -140,9 +143,9 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
                             styles.amountInput,
                             {
                                 fontSize: scaleFont(typography.fontSize['5xl']),
-                                lineHeight: scaleFont(typography.fontSize['5xl']),
+                                lineHeight: scaleFont(typography.fontSize['5xl'] * 1.08),
+                                height: scaleFont(typography.fontSize['5xl'] + 18),
                             },
-                            amountInputSizeStyle,
                         ]}
                         placeholder={t('income.amountPlaceholder')}
                         placeholderTextColor={colors.textMuted}
@@ -202,6 +205,7 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
                         display="inline"
                         value={parseDateOrToday(date)}
                         maximumDate={new Date()}
+                        themeVariant="dark"
                         onChange={onChangeDate}
                     />
                 ) : null}
@@ -279,9 +283,12 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     amountContainer: {
         flexDirection: 'row',
-        alignItems: 'flex-end',
+        alignItems: 'center',
         justifyContent: 'center',
         gap: spacing.sm,
+        width: '100%',
+        maxWidth: 360,
+        alignSelf: 'center',
     },
     currencySign: {
         color: colors.textPrimary,
@@ -291,8 +298,15 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     amountInput: {
         color: colors.textPrimary,
         fontWeight: typography.fontWeight.bold,
-        minWidth: 120,
+        flexGrow: 1,
+        flexShrink: 1,
+        minWidth: Platform.OS === 'android' ? 150 : 130,
+        maxWidth: Platform.OS === 'android' ? 240 : 250,
         textAlign: 'center',
+        textAlignVertical: 'center',
+        includeFontPadding: Platform.OS === 'android',
+        paddingVertical: Platform.OS === 'android' ? spacing.xs : 0,
+        paddingHorizontal: spacing.xs,
     },
     amountCurrencyBadge: {
         alignSelf: 'center',

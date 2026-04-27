@@ -468,7 +468,7 @@ export function ReportsScreen({
                 title={t('reports.shareCta')}
                 onPress={onShareReport}
                 variant="secondary"
-                containerStyle={styles.actionButton}
+                containerStyle={styles.actionButtonCompact}
                 disabled={!report}
               />
               {!isGuest && (
@@ -477,7 +477,7 @@ export function ReportsScreen({
                   onPress={onSaveReport}
                   variant="secondary"
                   loading={saveReportMutation.isPending}
-                  containerStyle={styles.actionButton}
+                  containerStyle={styles.actionButtonCompact}
                   disabled={!report}
                 />
               )}
@@ -486,7 +486,7 @@ export function ReportsScreen({
                   title={t('reports.emailCta')}
                   onPress={onEmailReport}
                   loading={sendReportMutation.isPending}
-                  containerStyle={styles.actionButton}
+                  containerStyle={styles.actionButtonPrimary}
                   disabled={!report}
                 />
               )}
@@ -515,6 +515,8 @@ export function ReportsScreen({
                 display="spinner"
                 value={pickerDateValue}
                 maximumDate={new Date()}
+                themeVariant="dark"
+                textColor={colors.textPrimary}
                 onChange={onChangeSelectedDate}
               />
             </View>
@@ -1276,9 +1278,12 @@ const createStyles = (colors: SemanticColors) =>
       flexWrap: 'wrap',
       gap: spacing.sm,
     },
-    actionButton: {
+    actionButtonCompact: {
       flex: 1,
       minWidth: 120,
+    },
+    actionButtonPrimary: {
+      width: '100%',
     },
     rangeLabel: {
       color: colors.textMuted,

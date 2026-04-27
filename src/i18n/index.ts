@@ -1,4 +1,4 @@
-import { NativeModules, Platform } from 'react-native';
+import { I18nManager, NativeModules, Platform } from 'react-native';
 
 export type AppLanguage = 'en' | 'es';
 export type TranslationValues = Record<string, string | number>;
@@ -21,6 +21,8 @@ const en = {
   'common.notAvailable': 'Not available',
   'common.maxAmountExceeded': 'Amount cannot exceed {max}',
   'common.amountPlaceholder': '0.00',
+  'push.defaultTitle': 'New notification',
+  'push.defaultBody': 'Open BudgetApp to review the latest update.',
 
   'language.label': 'Language',
   'language.english': 'English',
@@ -175,6 +177,12 @@ const en = {
   'onboarding.back': 'Back',
   'onboarding.next': 'Next',
   'onboarding.finish': 'Start using the app',
+  'onboarding.accessChoiceTitle': 'How do you want to continue?',
+  'onboarding.accessChoiceMessage':
+    'Choose guest mode to save everything on this device, or use an account to keep your data in the cloud.',
+  'onboarding.accessChoiceGuest': 'Continue as guest (local)',
+  'onboarding.accessChoiceRegister': 'Create account (cloud)',
+  'onboarding.accessChoiceLogin': 'Sign in (cloud)',
   'onboarding.skipSetup': 'Skip setup for now',
   'onboarding.welcomeTitle': 'Start with a quick walkthrough',
   'onboarding.welcomeDescription':
@@ -575,6 +583,7 @@ const en = {
   'history.noRecordsTitle': 'No records found',
   'history.noRecordsDesc': 'Adjust category/date filters or add new entries.',
   'history.manualExpense': 'Manual expense',
+  'history.installmentExpense': 'Installment purchase',
   'history.autoSubscription': 'Auto subscription',
   'history.subscriptionBadge': 'Subscription',
   'history.filterAction': 'Filter transactions',
@@ -829,7 +838,7 @@ const en = {
   'creditCards.deactivateTitle': 'Deactivate credit card',
   'creditCards.deactivateMessage':
     'Do you want to deactivate {name}? Historical records will keep their link.',
-  'creditCards.deactivateAction': 'Deactivate',
+  'creditCards.deactivateAction': 'Desactivate',
   'creditCards.activateAction': 'Activate',
   'creditCards.failedCreate': 'Could not create the credit card',
   'creditCards.failedUpdate': 'Could not update the credit card',
@@ -958,6 +967,7 @@ const en = {
     '{count} installments: {amount} and a final payment of {finalAmount}',
   'expense.installmentFrequencyMonthly': 'Monthly schedule • Total {total}',
   'expense.installmentPositionLabel': 'Installment {current} of {count}',
+  'expense.installmentCurrentChargeLabel': 'Current installment',
   'expense.installmentPlanTotalLabel': 'Plan total',
   'expense.chooseCurrency': 'Please choose a currency',
   'expense.chooseCategory': 'Please choose a category',
@@ -1130,6 +1140,8 @@ const es: Record<TranslationKeyInternal, string> = {
   'common.notAvailable': 'No disponible',
   'common.maxAmountExceeded': 'El monto no puede superar {max}',
   'common.amountPlaceholder': '0.00',
+  'push.defaultTitle': 'Nueva notificacion',
+  'push.defaultBody': 'Abre BudgetApp para revisar la ultima novedad.',
 
   'language.label': 'Idioma',
   'language.english': 'Inglés',
@@ -1286,6 +1298,12 @@ const es: Record<TranslationKeyInternal, string> = {
   'onboarding.back': 'Atrás',
   'onboarding.next': 'Siguiente',
   'onboarding.finish': 'Empezar a usar la app',
+  'onboarding.accessChoiceTitle': '¿Cómo quieres continuar?',
+  'onboarding.accessChoiceMessage':
+    'Elige modo invitado para guardar todo en este dispositivo, o usa una cuenta para guardar tus datos en la nube.',
+  'onboarding.accessChoiceGuest': 'Continuar como invitado (local)',
+  'onboarding.accessChoiceRegister': 'Crear cuenta (nube)',
+  'onboarding.accessChoiceLogin': 'Iniciar sesión (nube)',
   'onboarding.skipSetup': 'Omitir configuración por ahora',
   'onboarding.welcomeTitle': 'Empieza con un recorrido corto',
   'onboarding.welcomeDescription':
@@ -1693,6 +1711,7 @@ const es: Record<TranslationKeyInternal, string> = {
   'history.noRecordsDesc':
     'Ajusta los filtros de categoría/fecha o agrega nuevos movimientos.',
   'history.manualExpense': 'Gasto manual',
+  'history.installmentExpense': 'Compra a meses',
   'history.autoSubscription': 'Suscripción automática',
   'history.subscriptionBadge': 'Suscripción',
   'history.filterAction': 'Filtrar movimientos',
@@ -2087,6 +2106,7 @@ const es: Record<TranslationKeyInternal, string> = {
     '{count} mensualidades: {amount} y un último pago de {finalAmount}',
   'expense.installmentFrequencyMonthly': 'Plan mensual • Total {total}',
   'expense.installmentPositionLabel': 'Mensualidad {current} de {count}',
+  'expense.installmentCurrentChargeLabel': 'Mensualidad actual',
   'expense.installmentPlanTotalLabel': 'Total del plan',
   'expense.chooseCurrency': 'Selecciona una moneda',
   'expense.chooseCategory': 'Por favor elige una categoría',
@@ -2247,26 +2267,145 @@ export function isAppLanguage(
   return value === 'en' || value === 'es';
 }
 
-export function detectDeviceLanguage(): AppLanguage {
-  const normalize = (locale?: string): AppLanguage => {
-    if (!locale) {
-      return 'en';
-    }
-    return locale.toLowerCase().startsWith('es') ? 'es' : 'en';
-  };
-
-  if (Platform.OS === 'ios') {
-    const settings = (NativeModules.SettingsManager?.settings ?? {}) as {
-      AppleLocale?: string;
-      AppleLanguages?: string[];
-    };
-    const locale = settings.AppleLocale || settings.AppleLanguages?.[0];
-    return normalize(locale);
+function normalizeLanguageFromLocale(locale: unknown): AppLanguage | null {
+  if (typeof locale !== 'string') {
+    return null;
   }
 
-  const androidLocale = (NativeModules.I18nManager?.localeIdentifier ??
-    NativeModules.I18nManager?.locale) as string | undefined;
-  return normalize(androidLocale);
+  const normalized = locale.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  return normalized.startsWith('es') ? 'es' : 'en';
+}
+
+function collectDeviceLocaleCandidates(): string[] {
+  const candidates = new Set<string>();
+  const pushCandidate = (value: unknown) => {
+    if (typeof value === 'string' && value.trim()) {
+      candidates.add(value.trim());
+    }
+  };
+
+  const pushLocaleArray = (value: unknown) => {
+    if (!Array.isArray(value)) {
+      return;
+    }
+
+    value.forEach((entry) => {
+      if (typeof entry === 'string') {
+        pushCandidate(entry);
+        return;
+      }
+
+      if (entry && typeof entry === 'object') {
+        const localeEntry = entry as {
+          languageTag?: string;
+          localeIdentifier?: string;
+          identifier?: string;
+        };
+        pushCandidate(localeEntry.languageTag);
+        pushCandidate(localeEntry.localeIdentifier);
+        pushCandidate(localeEntry.identifier);
+      }
+    });
+  };
+
+  const settings = (NativeModules.SettingsManager?.settings ?? {}) as {
+    AppleLocale?: string;
+    AppleLanguages?: string[];
+  };
+  pushCandidate(settings.AppleLocale);
+  pushLocaleArray(settings.AppleLanguages);
+
+  try {
+    const i18nConstants = I18nManager.getConstants();
+    pushCandidate(i18nConstants?.localeIdentifier);
+  } catch {
+    // Ignore I18nManager failures and keep the fallback candidates below.
+  }
+
+  const nativeI18nManager = NativeModules.I18nManager as
+    | {
+        localeIdentifier?: string;
+        locale?: string;
+        locales?: unknown[];
+        getConstants?: () => {
+          localeIdentifier?: string;
+          locale?: string;
+          locales?: unknown[];
+        };
+      }
+    | undefined;
+  const legacyI18nConstants =
+    typeof nativeI18nManager?.getConstants === 'function'
+      ? nativeI18nManager.getConstants()
+      : nativeI18nManager;
+  pushCandidate(legacyI18nConstants?.localeIdentifier);
+  pushCandidate(legacyI18nConstants?.locale);
+  pushLocaleArray(legacyI18nConstants?.locales);
+
+  const platformConstantsModule = NativeModules.PlatformConstants as
+    | {
+        localeIdentifier?: string;
+        locale?: string;
+        locales?: unknown[];
+        getConstants?: () => {
+          localeIdentifier?: string;
+          locale?: string;
+          locales?: unknown[];
+        };
+      }
+    | undefined;
+  const platformConstants =
+    typeof platformConstantsModule?.getConstants === 'function'
+      ? platformConstantsModule.getConstants()
+      : platformConstantsModule;
+  pushCandidate(platformConstants?.localeIdentifier);
+  pushCandidate(platformConstants?.locale);
+  pushLocaleArray(platformConstants?.locales);
+
+  const platform = Platform.constants as {
+    localeIdentifier?: string;
+    locale?: string;
+    locales?: unknown[];
+  };
+  pushCandidate(platform.localeIdentifier);
+  pushCandidate(platform.locale);
+  pushLocaleArray(platform.locales);
+
+  try {
+    pushCandidate(Intl.DateTimeFormat().resolvedOptions().locale);
+  } catch {
+    // Ignore Intl failures and keep the fallback below.
+  }
+
+  return Array.from(candidates);
+}
+
+export function detectDeviceLanguage(): AppLanguage {
+  const localeCandidates = collectDeviceLocaleCandidates();
+
+  if (Platform.OS === 'ios') {
+    for (const locale of localeCandidates) {
+      const language = normalizeLanguageFromLocale(locale);
+      if (language) {
+        return language;
+      }
+    }
+
+    return 'en';
+  }
+
+  for (const locale of localeCandidates) {
+    const language = normalizeLanguageFromLocale(locale);
+    if (language) {
+      return language;
+    }
+  }
+
+  return 'en';
 }
 
 export function translate(

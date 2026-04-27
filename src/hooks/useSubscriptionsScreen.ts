@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-    EventArg,
-    NavigationAction,
     Easing as ReanimatedEasing,
-    runOnJS,
     useAnimatedReaction,
     useSharedValue,
     withTiming,
 } from 'react-native-reanimated';
-import { useFocusEffect } from '@react-navigation/native';
+import { EventArg, NavigationAction, useFocusEffect } from '@react-navigation/native';
 import { subscriptionsApi } from '../api/resources/subscriptions';
 import { useSubscriptionManager } from '../modules/subscriptions/useSubscriptionManager';
 import { useAuthStore } from '../store/authStore';
@@ -208,7 +205,7 @@ export function useSubscriptionsScreen({
     useAnimatedReaction(
         () => animatedTotalValue.value,
         (nextValue) => {
-            runOnJS(setAnimatedTotal)(nextValue);
+            setAnimatedTotal(nextValue);
         },
     );
 

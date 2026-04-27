@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useQuery } from '@tanstack/react-query';
@@ -151,6 +152,7 @@ export function RootNavigator() {
                             options={{
                                 headerShown: false,
                                 animation: 'slide_from_right',
+                                gestureEnabled: false,
                             }}
                         />
                         <Stack.Screen
@@ -159,6 +161,7 @@ export function RootNavigator() {
                             options={{
                                 headerShown: false,
                                 animation: 'slide_from_right',
+                                gestureEnabled: false,
                             }}
                         />
                         <Stack.Screen
@@ -198,7 +201,10 @@ export function RootNavigator() {
                             component={AddEntryScreen}
                             options={{
                                 headerShown: false,
+                                presentation: Platform.OS === 'ios' ? 'modal' : 'transparentModal',
+                                gestureEnabled: true,
                                 animation: 'slide_from_bottom',
+                                contentStyle: Platform.OS === 'android' ? { backgroundColor: 'transparent' } : undefined,
                             }}
                         />
                         <Stack.Screen
@@ -206,6 +212,8 @@ export function RootNavigator() {
                             component={AddExpenseScreen}
                             options={{
                                 headerShown: false,
+                                presentation: Platform.OS === 'ios' ? 'modal' : 'card',
+                                gestureEnabled: true,
                                 animation: 'slide_from_bottom',
                             }}
                         />
@@ -214,6 +222,8 @@ export function RootNavigator() {
                             component={AddIncomeScreen}
                             options={{
                                 headerShown: false,
+                                presentation: Platform.OS === 'ios' ? 'modal' : 'card',
+                                gestureEnabled: true,
                                 animation: 'slide_from_bottom',
                             }}
                         />

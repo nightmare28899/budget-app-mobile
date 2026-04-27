@@ -39,7 +39,7 @@ type UseSubscriptionFormParams = {
 export function useSubscriptionForm({
     navigation,
     editingSubscription,
-    embedded: _embedded,
+    embedded = false,
 }: UseSubscriptionFormParams) {
     const { colors } = useTheme();
     const { alert } = useAppAlert();
@@ -165,10 +165,6 @@ export function useSubscriptionForm({
         setName(preset.name);
         setServiceColor(preset.color);
         setServiceIcon(preset.icon);
-
-        if (preset.defaultPrice !== undefined) {
-            setCost(String(preset.defaultPrice));
-        }
     }, []);
 
     const onChangeCost = useCallback((value: string) => {
@@ -254,6 +250,11 @@ export function useSubscriptionForm({
                 setServiceIcon('sparkles-outline');
                 setBillingCycle('MONTHLY');
 
+                if (embedded) {
+                    navigation.goBack();
+                    return;
+                }
+
                 navigation.navigate('Main', {
                     screen: 'Tabs',
                     params: {
@@ -292,6 +293,7 @@ export function useSubscriptionForm({
         t,
         updateSubscription,
         defaultCurrency,
+        embedded,
     ]);
 
     const onDelete = useCallback(() => {

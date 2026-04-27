@@ -172,6 +172,10 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
     const onSave = async () => {
         await saveExpense(() => {
             resetForm();
+            if (isEmbedded) {
+                navigation.goBack();
+                return;
+            }
             navigation.navigate('Main', {
                     screen: 'Tabs',
                     params: {
@@ -248,8 +252,8 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                             styles.amountInput,
                             {
                                 fontSize: scaleFont(typography.fontSize['5xl']),
-                                lineHeight: scaleFont(typography.fontSize['5xl']),
-                                minWidth: isSmallPhone ? 100 : 120,
+                                lineHeight: scaleFont(typography.fontSize['5xl'] * 1.08),
+                                height: scaleFont(typography.fontSize['5xl'] + 18),
                             },
                         ]}
                         placeholder={t('addExpense.amountPlaceholder')}
@@ -360,6 +364,8 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                             mode="date"
                             display="spinner"
                             value={parseDateOrToday(date)}
+                            themeVariant="dark"
+                            textColor={colors.textPrimary}
                             onChange={createDateChangeHandler('purchase')}
                         />
                     </View>
@@ -373,9 +379,10 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                         placeholder={t('expense.installmentCountPlaceholder')}
                         value={installmentCount}
                         onChangeText={(value) =>
-                            setInstallmentCount(value.replace(/[^0-9]/g, ''))
+                            setInstallmentCount(value.replace(/[^0-9]/g, '').slice(0, 3))
                         }
                         keyboardType="number-pad"
+                        maxLength={3}
                         onFocus={createScrollOnFocusHandler(128)}
                         containerStyle={styles.fieldContainer}
                     />
@@ -407,6 +414,8 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                                     mode="date"
                                     display="spinner"
                                     value={parseDateOrToday(firstPaymentDate)}
+                                    themeVariant="dark"
+                                    textColor={colors.textPrimary}
                                     onChange={createDateChangeHandler('firstPayment')}
                                 />
                             </View>
@@ -670,6 +679,9 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: spacing.xl,
+        width: '100%',
+        maxWidth: 360,
+        alignSelf: 'center',
     },
     currencySign: {
         fontSize: typography.fontSize['3xl'],
@@ -681,11 +693,15 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         fontSize: typography.fontSize['5xl'],
         fontWeight: typography.fontWeight.extrabold,
         color: colors.textPrimary,
-        minWidth: 120,
+        flexGrow: 1,
+        flexShrink: 1,
+        minWidth: Platform.OS === 'android' ? 150 : 130,
+        maxWidth: Platform.OS === 'android' ? 240 : 250,
         textAlign: 'center',
         textAlignVertical: 'center',
-        includeFontPadding: false,
-        paddingVertical: 0,
+        includeFontPadding: Platform.OS === 'android',
+        paddingVertical: Platform.OS === 'android' ? spacing.xs : 0,
+        paddingHorizontal: spacing.xs,
     },
     amountCurrencyBadge: {
         marginLeft: spacing.sm,

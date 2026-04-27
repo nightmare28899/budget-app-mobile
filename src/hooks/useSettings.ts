@@ -36,6 +36,11 @@ import { normalizeUserRecord, resolveBudgetAmount } from '../utils/domain/user';
 import { useI18n } from './useI18n';
 import { useTheme } from '../theme/index';
 import { ThemeMode } from '../theme/themes';
+import {
+  MAX_COST_LABEL,
+  MAX_COST_VALUE,
+  sanitizeMoneyInput,
+} from '../utils/platform/moneyInput';
 
 function inferImageMimeType(filename?: string): string {
   const lower = filename?.toLowerCase() || '';
@@ -72,7 +77,7 @@ export function useSettings() {
   const { themeMode, setThemeMode, resolvedThemeId, themeOptions } = useTheme();
 
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
-  const [budgetAmount, setBudgetAmount] = useState(
+  const [budgetAmount, setBudgetAmountState] = useState(
     String(toNum(user?.budgetAmount)),
   );
   const [currency, setCurrency] = useState(
@@ -99,7 +104,7 @@ export function useSettings() {
   >(null);
 
   useEffect(() => {
-    setBudgetAmount(String(toNum(user?.budgetAmount)));
+    setBudgetAmountState(String(toNum(user?.budgetAmount)));
     setCurrency(normalizeCurrency(user?.currency, DEFAULT_CURRENCY));
     setBudgetPeriod(normalizeBudgetPeriod(user?.budgetPeriod, 'daily'));
     setBudgetPeriodStart(
@@ -560,7 +565,7 @@ export function useSettings() {
       queryClient.invalidateQueries({ queryKey: ['income-summary'] });
       alert(t('common.success'), t('settings.updated'));
       const nextBudgetAmount = resolveBudgetAmount(data);
-      setBudgetAmount(
+      setBudgetAmountState(
         data?.budgetAmount !== undefined || data?.dailyBudget !== undefined
           ? String(nextBudgetAmount)
           : budgetAmount,
@@ -605,6 +610,13 @@ export function useSettings() {
     const budget = parseFloat(budgetAmount);
     if (isNaN(budget) || budget < 0) {
       alert(t('common.error'), t('settings.enterValidBudget'));
+      return;
+    }
+    if (budget > MAX_COST_VALUE) {
+      alert(
+        t('common.error'),
+        t('common.maxAmountExceeded', { max: MAX_COST_LABEL }),
+      );
       return;
     }
 
@@ -833,6 +845,10 @@ export function useSettings() {
       t('settings.themeDialogMessage'),
       options,
     );
+  };
+
+  const setBudgetAmount = (value: string) => {
+    setBudgetAmountState(sanitizeMoneyInput(value));
   };
 
   return {

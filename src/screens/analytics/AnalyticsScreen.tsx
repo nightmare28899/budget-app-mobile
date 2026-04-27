@@ -33,6 +33,7 @@ import { AnalyticsSkeleton } from '../../components/ui/primitives/Skeleton';
 import { useI18n } from '../../hooks/useI18n';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
+import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
 import { withAlpha } from '../../utils/domain/subscriptions';
 
@@ -119,6 +120,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
         scaleSize,
         extraSpacing: isTablet ? spacing.xl : spacing.base,
     });
+    const bottomDockScroll = useBottomDockScrollVisibility();
     const weeklyTotal = weeklySummary?.totalSpent ?? 0;
     const weeklyAverage = weeklySummary?.dailyAverage ?? 0;
     const cashflowTone = (incomeSummary?.net ?? 0) >= 0 ? colors.success : colors.error;
@@ -753,6 +755,8 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                                 display="spinner"
                                 value={selectedDailyDateValue}
                                 maximumDate={new Date()}
+                                themeVariant="dark"
+                                textColor={colors.textPrimary}
                                 onChange={onChangeSelectedDate}
                             />
                         </View>
@@ -760,6 +764,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                 </View>
 
                 <ScrollView
+                    {...bottomDockScroll}
                     style={styles.scrollView}
                     contentContainerStyle={[
                         styles.content,

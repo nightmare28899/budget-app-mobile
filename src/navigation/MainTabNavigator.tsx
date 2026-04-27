@@ -1,6 +1,15 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {
+    Animated,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import {
+    BottomTabBar,
+    BottomTabBarProps,
+    createBottomTabNavigator,
+} from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -19,18 +28,69 @@ import {
     getMainTabFabBottomOffset,
     getMainTabFabSize,
 } from './mainTabLayout';
+import {
+    BottomDockVisibilityProvider,
+    useBottomDockVisibility,
+} from './bottomDockVisibility';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-function GlobalActionFab() {
+type GlobalActionFabProps = {
+    hideOffset: number;
+};
+
+type AnimatedMainTabBarProps = BottomTabBarProps & {
+    hideOffset: number;
+};
+
+function AnimatedMainTabBar({
+    hideOffset,
+    ...props
+}: AnimatedMainTabBarProps) {
+    const { isVisible, progress } = useBottomDockVisibility();
+    const translateY = React.useMemo(
+        () => progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [hideOffset, 0],
+        }),
+        [hideOffset, progress],
+    );
+
+    return (
+        <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+            <Animated.View
+                pointerEvents={isVisible ? 'box-none' : 'none'}
+                style={[
+                    StyleSheet.absoluteFill,
+                    {
+                        opacity: progress,
+                        transform: [{ translateY }],
+                    },
+                ]}
+            >
+                <BottomTabBar {...props} />
+            </Animated.View>
+        </View>
+    );
+}
+
+function GlobalActionFab({ hideOffset }: GlobalActionFabProps) {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const { isSmallPhone, isTablet, scaleSize } = useResponsive();
     const styles = useThemedStyles(createStyles);
+    const { isVisible, progress } = useBottomDockVisibility();
     const fabSize = getMainTabFabSize({ isSmallPhone, isTablet, scaleSize });
     const fabBottomOffset = getMainTabFabBottomOffset({
         isSmallPhone,
         isTablet,
     });
+    const translateY = React.useMemo(
+        () => progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [hideOffset, 0],
+        }),
+        [hideOffset, progress],
+    );
 
     const onOpenAddEntry = () => {
         navigation.navigate('AddEntry', { initialTab: 'expense' });
@@ -38,38 +98,58 @@ function GlobalActionFab() {
 
     return (
         <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-            <View
-                pointerEvents="box-none"
+            <Animated.View
+                pointerEvents={isVisible ? 'box-none' : 'none'}
                 style={[
-                    styles.fabLayer,
-                    { bottom: fabBottomOffset },
+                    styles.animationLayer,
+                    {
+                        opacity: progress,
+                        transform: [{ translateY }],
+                    },
                 ]}
             >
-                <TouchableOpacity
-                    activeOpacity={0.9}
+                <View
+                    pointerEvents="box-none"
                     style={[
-                        styles.fabMain,
-                        {
-                            width: fabSize,
-                            height: fabSize,
-                            borderRadius: fabSize / 2,
-                        },
+                        styles.fabLayer,
+                        { bottom: fabBottomOffset },
                     ]}
-                    onPress={onOpenAddEntry}
                 >
-                    <Icon name="add" size={Math.round(fabSize * 0.52)} color="#FFFFFF" />
-                </TouchableOpacity>
-            </View>
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        style={[
+                            styles.fabMain,
+                            {
+                                width: fabSize,
+                                height: fabSize,
+                                borderRadius: fabSize / 2,
+                            },
+                        ]}
+                        onPress={onOpenAddEntry}
+                    >
+                        <Icon name="add" size={Math.round(fabSize * 0.52)} color="#FFFFFF" />
+                    </TouchableOpacity>
+                </View>
+            </Animated.View>
         </View>
     );
 }
 
 export function MainTabNavigator() {
+    return (
+        <BottomDockVisibilityProvider>
+            <MainTabNavigatorContent />
+        </BottomDockVisibilityProvider>
+    );
+}
+
+function MainTabNavigatorContent() {
     const insets = useSafeAreaInsets();
     const {
         width,
         isSmallPhone,
         isTablet,
+        scaleSize,
         tabBarMaxWidth,
     } = useResponsive();
     const styles = useThemedStyles(createStyles);
@@ -80,6 +160,8 @@ export function MainTabNavigator() {
         isSmallPhone,
         isTablet,
     });
+    const fabSize = getMainTabFabSize({ isSmallPhone, isTablet, scaleSize });
+    const dockHideOffset = tabBarHeight + fabSize + spacing.xl;
     const tabBarSideOffset = isTablet && tabBarMaxWidth
         ? Math.max(Math.round((width - tabBarMaxWidth) / 2), spacing.base)
         : spacing.base;
@@ -96,6 +178,12 @@ export function MainTabNavigator() {
     return (
         <View style={styles.container}>
             <Tab.Navigator
+                tabBar={(props) => (
+                    <AnimatedMainTabBar
+                        {...props}
+                        hideOffset={dockHideOffset}
+                    />
+                )}
                 screenOptions={{
                     headerShown: false,
                     animation: 'none',
@@ -176,7 +264,7 @@ export function MainTabNavigator() {
                     }}
                 />
             </Tab.Navigator>
-            <GlobalActionFab />
+            <GlobalActionFab hideOffset={dockHideOffset} />
         </View>
     );
 }
@@ -185,6 +273,9 @@ const createStyles = (colors: SemanticColors) =>
     StyleSheet.create({
         container: {
             flex: 1,
+        },
+        animationLayer: {
+            ...StyleSheet.absoluteFillObject,
         },
         tabBar: {
             position: 'absolute',

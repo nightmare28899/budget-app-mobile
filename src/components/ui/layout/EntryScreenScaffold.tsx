@@ -61,6 +61,7 @@ export function EntryScreenScaffold({
     const styles = useThemedStyles(createStyles);
     const { colors } = useTheme();
     const { contentMaxWidth, horizontalPadding, scaleFont } = useResponsive();
+    const keyboardDismissMode = Platform.OS === 'ios' ? 'interactive' : 'none';
 
     return (
         <KeyboardAvoidingView
@@ -80,7 +81,8 @@ export function EntryScreenScaffold({
                         styles.header,
                         {
                             backgroundColor: colors.background,
-                            paddingTop: embedded ? spacing.base : insets.top + spacing.base,
+                            paddingTop: embedded ? spacing.xs : insets.top + spacing.base,
+                            marginBottom: embedded ? spacing.xs : spacing.base,
                             paddingHorizontal: horizontalPadding,
                         },
                     ]}
@@ -130,9 +132,12 @@ export function EntryScreenScaffold({
                             : null,
                     ]}
                     keyboardShouldPersistTaps="handled"
-                    keyboardDismissMode="on-drag"
+                    keyboardDismissMode={keyboardDismissMode}
                     automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
                     showsVerticalScrollIndicator={showsVerticalScrollIndicator}
+                    bounces={false}
+                    alwaysBounceVertical={false}
+                    overScrollMode="never"
                 >
                     {children}
                 </ScrollView>

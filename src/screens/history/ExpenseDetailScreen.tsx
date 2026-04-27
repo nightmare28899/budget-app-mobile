@@ -150,6 +150,16 @@ export function ExpenseDetailScreen({
                                 })}
                             </Text>
                         ) : null}
+                    {isInstallment ? (
+                        <Text
+                            style={[
+                                styles.amountLabel,
+                                { fontSize: scaleFont(typography.fontSize.sm) },
+                            ]}
+                        >
+                            {t('expense.installmentCurrentChargeLabel')}
+                        </Text>
+                    ) : null}
                     <Text style={[styles.amount, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>
                         {formatCurrency(Number(expense.cost), expense.currency, locale)}
                     </Text>
@@ -312,6 +322,11 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     installmentBadge: {
         color: colors.primaryLight,
         fontWeight: typography.fontWeight.semibold,
+        marginBottom: spacing.xs,
+    },
+    amountLabel: {
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.medium,
         marginBottom: spacing.xs,
     },
     amount: {

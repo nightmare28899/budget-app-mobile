@@ -946,6 +946,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
         <ScrollView
           ref={scrollRef}
           style={styles.scrollView}
+          removeClippedSubviews={false}
           contentContainerStyle={[
             styles.content,
             {

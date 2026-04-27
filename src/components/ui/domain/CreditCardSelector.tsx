@@ -1,6 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+    Animated,
+    Dimensions,
+    Easing,
     Modal,
+    PanResponder,
+    Pressable,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -46,6 +52,11 @@ export function CreditCardSelector({
     const styles = useThemedStyles(createStyles);
     const { scaleFont } = useResponsive();
     const { t } = useI18n();
+    const windowHeight = Dimensions.get('window').height;
+    const sheetHeight = Math.min(560, Math.max(360, windowHeight * 0.68));
+    const optionListMaxHeight = Math.max(180, sheetHeight - 220);
+    const translateY = useRef(new Animated.Value(sheetHeight)).current;
+    const backdropOpacity = useRef(new Animated.Value(0)).current;
 
     const selectedCard = useMemo(
         () => cards.find((item) => item.id === value) ?? null,
@@ -63,10 +74,84 @@ export function CreditCardSelector({
             ? t('creditCards.helper')
             : t('creditCards.emptyHint');
 
+    const closeSheet = useCallback(() => {
+        Animated.parallel([
+            Animated.timing(translateY, {
+                toValue: sheetHeight,
+                duration: 220,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+            }),
+            Animated.timing(backdropOpacity, {
+                toValue: 0,
+                duration: 180,
+                useNativeDriver: true,
+            }),
+        ]).start(({ finished }) => {
+            if (finished) {
+                setVisible(false);
+            }
+        });
+    }, [backdropOpacity, sheetHeight, translateY]);
+
+    const openSheet = useCallback(() => {
+        setVisible(true);
+        requestAnimationFrame(() => {
+            Animated.parallel([
+                Animated.timing(translateY, {
+                    toValue: 0,
+                    duration: 260,
+                    easing: Easing.out(Easing.cubic),
+                    useNativeDriver: true,
+                }),
+                Animated.timing(backdropOpacity, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        });
+    }, [backdropOpacity, translateY]);
+
     const handleSelect = (nextValue?: string) => {
         onChange(nextValue);
-        setVisible(false);
+        closeSheet();
     };
+
+    const panResponder = useMemo(
+        () =>
+            PanResponder.create({
+                onMoveShouldSetPanResponder: (_evt, gestureState) =>
+                    gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+                onPanResponderMove: (_evt, gestureState) => {
+                    if (gestureState.dy <= 0) return;
+                    const progress = Math.max(0, Math.min(1, gestureState.dy / sheetHeight));
+                    translateY.setValue(gestureState.dy);
+                    backdropOpacity.setValue(1 - progress);
+                },
+                onPanResponderRelease: (_evt, gestureState) => {
+                    const shouldClose = gestureState.dy > 100 || gestureState.vy > 1;
+                    if (shouldClose) {
+                        closeSheet();
+                        return;
+                    }
+                    Animated.parallel([
+                        Animated.spring(translateY, {
+                            toValue: 0,
+                            bounciness: 0,
+                            speed: 18,
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(backdropOpacity, {
+                            toValue: 1,
+                            duration: 160,
+                            useNativeDriver: true,
+                        }),
+                    ]).start();
+                },
+            }),
+        [backdropOpacity, closeSheet, sheetHeight, translateY],
+    );
 
     return (
         <View style={styles.container}>
@@ -77,7 +162,7 @@ export function CreditCardSelector({
             <TouchableOpacity
                 style={styles.selectorButton}
                 activeOpacity={0.75}
-                onPress={() => setVisible(true)}
+                onPress={openSheet}
             >
                 <View style={styles.selectorContent}>
                     <Icon
@@ -131,13 +216,27 @@ export function CreditCardSelector({
             <Modal
                 visible={visible}
                 transparent
-                animationType="fade"
-                onRequestClose={() => setVisible(false)}
+                animationType="none"
+                onRequestClose={closeSheet}
             >
-                <TouchableWithoutFeedback onPress={() => setVisible(false)}>
-                    <View style={styles.modalOverlay}>
+                <View style={styles.modalOverlay}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet}>
+                        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]} />
+                    </Pressable>
+                    <Animated.View
+                        style={[
+                            styles.modalContent,
+                            {
+                                maxHeight: sheetHeight,
+                                transform: [{ translateY }],
+                            },
+                        ]}
+                    >
+                        <View style={styles.dragZone} {...panResponder.panHandlers}>
+                            <View style={styles.dragHandle} />
+                        </View>
                         <TouchableWithoutFeedback>
-                            <View style={styles.modalContent}>
+                            <View style={styles.modalBody}>
                                 <Text
                                     style={[
                                         styles.modalTitle,
@@ -147,82 +246,88 @@ export function CreditCardSelector({
                                     {t('creditCards.label')}
                                 </Text>
 
-                                <TouchableOpacity
-                                    style={[
-                                        styles.optionButton,
-                                        !value ? styles.optionButtonSelected : null,
-                                    ]}
-                                    activeOpacity={0.75}
-                                    onPress={() => handleSelect(undefined)}
+                                <ScrollView
+                                    style={[styles.optionsScroll, { maxHeight: optionListMaxHeight }]}
+                                    contentContainerStyle={styles.optionsContent}
+                                    showsVerticalScrollIndicator={false}
                                 >
-                                    <View style={styles.optionTextWrap}>
-                                        <Text
-                                            style={[
-                                                styles.optionText,
-                                                { fontSize: scaleFont(typography.fontSize.base) },
-                                                !value ? styles.optionTextSelected : null,
-                                            ]}
-                                        >
-                                            {t('creditCards.none')}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.optionButton,
+                                            !value ? styles.optionButtonSelected : null,
+                                        ]}
+                                        activeOpacity={0.75}
+                                        onPress={() => handleSelect(undefined)}
+                                    >
+                                        <View style={styles.optionTextWrap}>
+                                            <Text
+                                                style={[
+                                                    styles.optionText,
+                                                    { fontSize: scaleFont(typography.fontSize.base) },
+                                                    !value ? styles.optionTextSelected : null,
+                                                ]}
+                                            >
+                                                {t('creditCards.none')}
+                                            </Text>
+                                        </View>
+                                    </TouchableOpacity>
 
-                                {cards.map((card) => {
-                                    const isSelected = value === card.id;
-                                    return (
-                                        <TouchableOpacity
-                                            key={card.id}
-                                            style={[
-                                                styles.optionButton,
-                                                isSelected ? styles.optionButtonSelected : null,
-                                            ]}
-                                            activeOpacity={0.75}
-                                            onPress={() => handleSelect(card.id)}
-                                        >
-                                            <View style={styles.optionRow}>
-                                                <View
-                                                    style={[
-                                                        styles.optionColorDot,
-                                                        {
-                                                            backgroundColor:
-                                                                card.color || colors.primaryAction,
-                                                        },
-                                                    ]}
-                                                />
-                                                <View style={styles.optionTextWrap}>
-                                                    <Text
+                                    {cards.map((card) => {
+                                        const isSelected = value === card.id;
+                                        return (
+                                            <TouchableOpacity
+                                                key={card.id}
+                                                style={[
+                                                    styles.optionButton,
+                                                    isSelected ? styles.optionButtonSelected : null,
+                                                ]}
+                                                activeOpacity={0.75}
+                                                onPress={() => handleSelect(card.id)}
+                                            >
+                                                <View style={styles.optionRow}>
+                                                    <View
                                                         style={[
-                                                            styles.optionText,
-                                                            { fontSize: scaleFont(typography.fontSize.base) },
-                                                            isSelected ? styles.optionTextSelected : null,
+                                                            styles.optionColorDot,
+                                                            {
+                                                                backgroundColor:
+                                                                    card.color || colors.primaryAction,
+                                                            },
                                                         ]}
-                                                    >
-                                                        {formatCreditCardLabel(card)}
-                                                    </Text>
-                                                    <Text
-                                                        style={[
-                                                            styles.optionHint,
-                                                            { fontSize: scaleFont(typography.fontSize.xs) },
-                                                        ]}
-                                                    >
-                                                        {formatCreditCardSummary(card)}
-                                                    </Text>
+                                                    />
+                                                    <View style={styles.optionTextWrap}>
+                                                        <Text
+                                                            style={[
+                                                                styles.optionText,
+                                                                { fontSize: scaleFont(typography.fontSize.base) },
+                                                                isSelected ? styles.optionTextSelected : null,
+                                                            ]}
+                                                        >
+                                                            {formatCreditCardLabel(card)}
+                                                        </Text>
+                                                        <Text
+                                                            style={[
+                                                                styles.optionHint,
+                                                                { fontSize: scaleFont(typography.fontSize.xs) },
+                                                            ]}
+                                                        >
+                                                            {formatCreditCardSummary(card)}
+                                                        </Text>
+                                                    </View>
                                                 </View>
-                                            </View>
-                                            {isSelected ? (
-                                                <Icon name="checkmark" size={22} color={colors.primaryLight} />
-                                            ) : null}
-                                        </TouchableOpacity>
-                                    );
-                                })}
+                                                {isSelected ? (
+                                                    <Icon name="checkmark" size={22} color={colors.primaryLight} />
+                                                ) : null}
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </ScrollView>
 
                                 {onAddCard ? (
                                     <TouchableOpacity
                                         style={styles.addCardFooter}
                                         activeOpacity={0.78}
                                         onPress={() => {
-                                            setVisible(false);
+                                            closeSheet();
                                             onAddCard();
                                         }}
                                     >
@@ -236,11 +341,11 @@ export function CreditCardSelector({
                                             {t('creditCards.addNew')}
                                         </Text>
                                     </TouchableOpacity>
-                                ) : null}
+                                    ) : null}
                             </View>
                         </TouchableWithoutFeedback>
-                    </View>
-                </TouchableWithoutFeedback>
+                    </Animated.View>
+                </View>
             </Modal>
         </View>
     );
@@ -297,19 +402,41 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
+        justifyContent: 'flex-end',
+    },
+    backdrop: {
+        ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: spacing.xl,
     },
     modalContent: {
         width: '100%',
-        maxWidth: 420,
         backgroundColor: colors.surfaceCard,
-        borderRadius: borderRadius.lg,
-        padding: spacing.lg,
+        borderTopLeftRadius: borderRadius.xl,
+        borderTopRightRadius: borderRadius.xl,
         borderWidth: 1,
         borderColor: colors.border,
+    },
+    modalBody: {
+        paddingHorizontal: spacing.lg,
+        paddingBottom: spacing.xl,
+        paddingTop: spacing.sm,
+        gap: spacing.sm,
+    },
+    dragZone: {
+        alignItems: 'center',
+        paddingTop: spacing.sm,
+        paddingBottom: spacing.xs,
+    },
+    dragHandle: {
+        width: 44,
+        height: 5,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.border,
+    },
+    optionsScroll: {
+        width: '100%',
+    },
+    optionsContent: {
         gap: spacing.sm,
     },
     modalTitle: {

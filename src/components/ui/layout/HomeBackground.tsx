@@ -31,9 +31,7 @@ export function HomeBackground() {
 }
 
 const styles = StyleSheet.create({
-    backgroundArt: {
-        ...StyleSheet.absoluteFillObject,
-    },
+    backgroundArt: StyleSheet.absoluteFill,
     orb: {
         position: 'absolute',
         borderRadius: 999,

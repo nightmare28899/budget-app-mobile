@@ -1,11 +1,20 @@
+#import <Foundation/Foundation.h>
 #import <React/RCTBridgeModule.h>
 #import <Security/Security.h>
 
 static NSString *const kBudgetAppSecureKeyStoreService = @"com.budgetapp.securekeys";
 static NSString *const kBudgetAppSecureKeyStoreAccount = @"mmkv-storage-key-v2";
 static NSUInteger const kBudgetAppMMKVKeyLength = 16;
+static NSString *const kBudgetAppSecureKeyStoreFallbackDefaultsKey = @"BudgetAppSecureKeyStore.mmkv-storage-key-v2";
 
 @interface BudgetAppSecureKeyStore : NSObject <RCTBridgeModule>
+ + (NSMutableDictionary *)baseQuery;
+ + (NSString *)readStoredKey;
+ + (void)storeKey:(NSString *)key;
+ + (NSString *)generateMMKVKey;
+ + (NSString *)readFallbackKey;
+ + (void)storeFallbackKey:(NSString *)key;
+ + (BOOL)isRecoverableKeychainError:(OSStatus)status;
 @end
 
 @implementation BudgetAppSecureKeyStore
@@ -19,13 +28,13 @@ RCT_EXPORT_MODULE();
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getOrCreateMMKVKey)
 {
-  NSString *existingKey = [self readStoredKey];
+  NSString *existingKey = [[self class] readStoredKey];
   if (existingKey != nil) {
     return existingKey;
   }
 
-  NSString *generatedKey = [self generateMMKVKey];
-  [self storeKey:generatedKey];
+  NSString *generatedKey = [[self class] generateMMKVKey];
+  [[self class] storeKey:generatedKey];
   return generatedKey;
 }
 
@@ -47,17 +56,21 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getOrCreateMMKVKey)
   CFTypeRef result = nil;
   OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, &result);
   if (status == errSecItemNotFound) {
-    return nil;
+    return [self readFallbackKey];
   }
   if (status != errSecSuccess) {
-    @throw [NSException exceptionWithName:@"BudgetAppSecureKeyStoreError"
-                                   reason:[NSString stringWithFormat:@"Keychain read failed with status %d", (int)status]
-                                 userInfo:nil];
+    if ([self isRecoverableKeychainError:status]) {
+      NSLog(@"[BudgetAppSecureKeyStore] Keychain read unavailable (%d), using fallback storage.", (int)status);
+      return [self readFallbackKey];
+    }
+
+    NSLog(@"[BudgetAppSecureKeyStore] Keychain read failed with status %d, using fallback storage when available.", (int)status);
+    return [self readFallbackKey];
   }
 
   NSData *data = CFBridgingRelease(result);
   if (data.length == 0) {
-    return nil;
+    return [self readFallbackKey];
   }
 
   return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
@@ -75,9 +88,9 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getOrCreateMMKVKey)
 
   OSStatus status = SecItemAdd((__bridge CFDictionaryRef)query, nil);
   if (status != errSecSuccess) {
-    @throw [NSException exceptionWithName:@"BudgetAppSecureKeyStoreError"
-                                   reason:[NSString stringWithFormat:@"Keychain write failed with status %d", (int)status]
-                                 userInfo:nil];
+    NSLog(@"[BudgetAppSecureKeyStore] Keychain write failed with status %d, storing fallback key locally.", (int)status);
+    [self storeFallbackKey:key];
+    return;
   }
 }
 
@@ -88,9 +101,9 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getOrCreateMMKVKey)
   uint8_t randomBytes[kBudgetAppMMKVKeyLength];
   OSStatus status = SecRandomCopyBytes(kSecRandomDefault, sizeof(randomBytes), randomBytes);
   if (status != errSecSuccess) {
-    @throw [NSException exceptionWithName:@"BudgetAppSecureKeyStoreError"
-                                   reason:[NSString stringWithFormat:@"Secure random generation failed with status %d", (int)status]
-                                 userInfo:nil];
+    NSString *fallbackUUID = [[[NSUUID UUID].UUIDString stringByReplacingOccurrencesOfString:@"-" withString:@""] substringToIndex:kBudgetAppMMKVKeyLength];
+    NSLog(@"[BudgetAppSecureKeyStore] Secure random generation failed with status %d, using UUID fallback.", (int)status);
+    return fallbackUUID;
   }
 
   NSMutableString *result = [NSMutableString stringWithCapacity:kBudgetAppMMKVKeyLength];
@@ -101,6 +114,35 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getOrCreateMMKVKey)
   }
 
   return result;
+}
+
++ (NSString *)readFallbackKey
+{
+  NSString *key = [[NSUserDefaults standardUserDefaults] stringForKey:kBudgetAppSecureKeyStoreFallbackDefaultsKey];
+  if (key.length == 0) {
+    return nil;
+  }
+
+  return key;
+}
+
++ (void)storeFallbackKey:(NSString *)key
+{
+  if (key.length == 0) {
+    return;
+  }
+
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  [defaults setObject:key forKey:kBudgetAppSecureKeyStoreFallbackDefaultsKey];
+  [defaults synchronize];
+}
+
++ (BOOL)isRecoverableKeychainError:(OSStatus)status
+{
+  return status == errSecMissingEntitlement
+    || status == errSecNotAvailable
+    || status == errSecInteractionNotAllowed
+    || status == errSecAuthFailed;
 }
 
 @end
