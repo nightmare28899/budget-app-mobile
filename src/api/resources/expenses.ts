@@ -1,6 +1,7 @@
 import apiClient from '../client';
 import {
     Expense,
+    ExpenseLocationSuggestionsResponse,
     TodaySummary,
     CreateExpensePayload,
     ExpensesListParams,
@@ -50,6 +51,14 @@ function inferImageMimeType(image: ExpenseUploadImage): string {
 export function normalizeExpense(expense: any): Expense {
     return {
         ...expense,
+        merchantName:
+            typeof expense?.merchantName === 'string'
+                ? expense.merchantName
+                : null,
+        locationLabel:
+            typeof expense?.locationLabel === 'string'
+                ? expense.locationLabel
+                : null,
         isInstallment: expense?.isInstallment === true,
         installmentGroupId:
             typeof expense?.installmentGroupId === 'string'
@@ -232,6 +241,8 @@ function buildLocalExpensePayload(
     );
     const baseExpense = {
         title: payload.title.trim(),
+        merchantName: payload.merchantName?.trim() || undefined,
+        locationLabel: payload.locationLabel?.trim() || undefined,
         currency: normalizedCurrency,
         note: payload.note?.trim() || undefined,
         paymentMethod: normalizePaymentMethod(payload.paymentMethod),
@@ -297,6 +308,14 @@ function buildLocalUpdatePayload(
 
     return {
         title: payload.title ?? currentExpense.title,
+        merchantName:
+            payload.merchantName !== undefined
+                ? payload.merchantName
+                : currentExpense.merchantName ?? undefined,
+        locationLabel:
+            payload.locationLabel !== undefined
+                ? payload.locationLabel
+                : currentExpense.locationLabel ?? undefined,
         cost: currentIsInstallment
             ? toNum(payload.cost ?? currentExpense.installmentTotalAmount ?? currentExpense.cost)
             : toNum(payload.cost ?? currentExpense.cost),
@@ -335,6 +354,137 @@ function buildLocalUpdatePayload(
 function getLocalExpenses(params: ExpensesListParams = {}) {
     const state = ensureGuestDataHydrated();
     return filterExpensesList(state.expenses, params);
+}
+
+function normalizeSuggestionTerm(value: string | null | undefined): string {
+    return String(value ?? '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+}
+
+function buildLocalLocationSuggestions(params: {
+    locationLabel: string;
+    categoryId?: string;
+    q?: string;
+    limit?: number;
+}): ExpenseLocationSuggestionsResponse {
+    const state = ensureGuestDataHydrated();
+    const normalizedLocation = normalizeSuggestionTerm(params.locationLabel);
+    const normalizedTitleSearch = normalizeSuggestionTerm(params.q);
+    const limit = Math.min(10, Math.max(1, toNum(params.limit || 5)));
+
+    if (!normalizedLocation) {
+        return {
+            locationLabel: params.locationLabel,
+            suggestions: [],
+        };
+    }
+
+    const grouped = new Map<
+        string,
+        {
+            title: string;
+            categoryId: string | null;
+            categoryName: string | null;
+            categoryIcon: string | null;
+            categoryColor: string | null;
+            currency: string;
+            merchantName: string | null;
+            locationLabel: string | null;
+            occurrenceCount: number;
+            totalCost: number;
+            lastPurchasedAt: string;
+        }
+    >();
+
+    for (const expense of state.expenses) {
+        const categoryId = expense.categoryId ?? expense.category?.id;
+        if (params.categoryId && categoryId !== params.categoryId) {
+            continue;
+        }
+
+        const locationHaystack = normalizeSuggestionTerm(
+            [expense.locationLabel, expense.merchantName, expense.note].filter(Boolean).join(' '),
+        );
+        if (!locationHaystack.includes(normalizedLocation)) {
+            continue;
+        }
+
+        const normalizedTitle = normalizeSuggestionTerm(expense.title);
+        if (!normalizedTitle) {
+            continue;
+        }
+        if (normalizedTitleSearch && !normalizedTitle.includes(normalizedTitleSearch)) {
+            continue;
+        }
+
+        const key = `${normalizedTitle}::${categoryId ?? 'uncategorized'}::${expense.currency}`;
+        const current = grouped.get(key);
+
+        if (!current) {
+            grouped.set(key, {
+                title: expense.title,
+                categoryId: categoryId ?? null,
+                categoryName: expense.category?.name ?? null,
+                categoryIcon: expense.category?.icon ?? null,
+                categoryColor: expense.category?.color ?? null,
+                currency: expense.currency,
+                merchantName: expense.merchantName ?? null,
+                locationLabel: expense.locationLabel ?? null,
+                occurrenceCount: 1,
+                totalCost: toNum(expense.cost),
+                lastPurchasedAt: expense.date,
+            });
+            continue;
+        }
+
+        current.occurrenceCount += 1;
+        current.totalCost += toNum(expense.cost);
+        if (new Date(expense.date).getTime() > new Date(current.lastPurchasedAt).getTime()) {
+            current.lastPurchasedAt = expense.date;
+        }
+        if (!current.locationLabel && expense.locationLabel) {
+            current.locationLabel = expense.locationLabel;
+        }
+        if (!current.merchantName && expense.merchantName) {
+            current.merchantName = expense.merchantName;
+        }
+    }
+
+    const now = Date.now();
+    const suggestions = Array.from(grouped.values())
+        .map((item) => {
+            const averageCost = item.totalCost / item.occurrenceCount;
+            const recencyDays = Math.max(
+                0,
+                Math.round((now - new Date(item.lastPurchasedAt).getTime()) / (1000 * 60 * 60 * 24)),
+            );
+            const recencyBoost = 1 / (1 + recencyDays / 14);
+            const score = item.occurrenceCount * 10 + recencyBoost * 5;
+
+            return {
+                title: item.title,
+                categoryId: item.categoryId,
+                categoryName: item.categoryName,
+                categoryIcon: item.categoryIcon,
+                categoryColor: item.categoryColor,
+                currency: item.currency,
+                merchantName: item.merchantName,
+                locationLabel: item.locationLabel,
+                occurrenceCount: item.occurrenceCount,
+                averageCost: Math.round(averageCost * 100) / 100,
+                lastPurchasedAt: item.lastPurchasedAt,
+                score: Math.round(score * 100) / 100,
+            };
+        })
+        .sort((a, b) => (b.score - a.score) || b.lastPurchasedAt.localeCompare(a.lastPurchasedAt))
+        .slice(0, limit);
+
+    return {
+        locationLabel: params.locationLabel,
+        suggestions,
+    };
 }
 
 export const expensesApi = {
@@ -508,6 +658,8 @@ export const expensesApi = {
         formData.append('currency', payload.currency);
 
         if (payload.note) formData.append('note', payload.note);
+        if (payload.merchantName) formData.append('merchantName', payload.merchantName);
+        if (payload.locationLabel) formData.append('locationLabel', payload.locationLabel);
         if (payload.isInstallment) formData.append('isInstallment', 'true');
         if (payload.installmentCount) {
             formData.append('installmentCount', String(payload.installmentCount));
@@ -645,6 +797,34 @@ export const expensesApi = {
 
         const { data } = await apiClient.delete(`/expenses/${id}`);
         return data;
+    },
+
+    getLocationSuggestions: async (params: {
+        locationLabel: string;
+        categoryId?: string;
+        q?: string;
+        limit?: number;
+    }) => {
+        if (isLocalMode()) {
+            return buildLocalLocationSuggestions(params);
+        }
+
+        const { data } = await apiClient.get<ExpenseLocationSuggestionsResponse>(
+            '/expenses/location-suggestions',
+            { params },
+        );
+
+        return {
+            locationLabel: String(data?.locationLabel ?? params.locationLabel),
+            suggestions: Array.isArray(data?.suggestions)
+                ? data.suggestions.map((item) => ({
+                    ...item,
+                    averageCost: toNum((item as any)?.averageCost),
+                    occurrenceCount: toNum((item as any)?.occurrenceCount),
+                    score: toNum((item as any)?.score),
+                }))
+                : [],
+        };
     },
 
     syncBatch: async (expenses: CreateExpensePayload[]) => {

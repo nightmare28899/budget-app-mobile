@@ -93,7 +93,13 @@ export function filterExpensesList(
         return true;
       }
 
-      const haystack = [expense.title, expense.note, expense.category?.name]
+      const haystack = [
+        expense.title,
+        expense.note,
+        expense.category?.name,
+        expense.merchantName,
+        expense.locationLabel,
+      ]
         .map(item => String(item ?? '').toLowerCase())
         .join(' ');
 

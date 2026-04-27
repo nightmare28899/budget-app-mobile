@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     TextInput,
 } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import DateTimePicker, {
     DateTimePickerAndroid,
     DateTimePickerEvent,
@@ -40,6 +41,7 @@ import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
 import { isCreditCardPaymentMethod } from '../../utils/domain/paymentMethod';
 import { useAppAccess } from '../../hooks/useAppAccess';
 import { usePremiumAccess } from '../../hooks/usePremiumAccess';
+import { expensesApi } from '../../api/resources/expenses';
 
 type DateField = 'purchase' | 'firstPayment';
 
@@ -67,6 +69,8 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         firstPaymentDate, setFirstPaymentDate,
         installmentBreakdown,
         note, setNote,
+        merchantName, setMerchantName,
+        locationLabel, setLocationLabel,
         paymentMethod, setPaymentMethod,
         selectedCreditCardId, setSelectedCreditCardId,
         selectedCategory, setSelectedCategory,
@@ -77,6 +81,8 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         isPending: isSavingExpense,
         resetForm,
     } = useExpenseForm();
+    const [debouncedLocationLabel, setDebouncedLocationLabel] = useState('');
+    const [suggestionSearch, setSuggestionSearch] = useState('');
     const currencySymbol = getCurrencySymbol(currency, locale);
     const parsedInstallmentCount = Number.parseInt(installmentCount, 10);
     const handleInstallmentMode = (nextValue: boolean) => {
@@ -114,6 +120,40 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         isPending: isCreatingCategory,
         onCreateCategory,
     } = useCategoryCreator((id) => setSelectedCategory(id));
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedLocationLabel(locationLabel.trim());
+        }, 260);
+
+        return () => clearTimeout(timer);
+    }, [locationLabel]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSuggestionSearch(title.trim());
+        }, 200);
+
+        return () => clearTimeout(timer);
+    }, [title]);
+
+    const {
+        data: locationSuggestions,
+        isFetching: isLoadingSuggestions,
+    } = useQuery({
+        queryKey: ['expenses', 'location-suggestions', debouncedLocationLabel, selectedCategory ?? 'all', suggestionSearch],
+        queryFn: () =>
+            expensesApi.getLocationSuggestions({
+                locationLabel: debouncedLocationLabel,
+                categoryId: selectedCategory,
+                q: suggestionSearch || undefined,
+                limit: 5,
+            }),
+        enabled: debouncedLocationLabel.length >= 2,
+        staleTime: 30_000,
+    });
+
+    const suggestions = locationSuggestions?.suggestions ?? [];
 
     useEffect(() => {
         if (!selectedCategory && categories.length > 0) {
@@ -191,6 +231,28 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
 
     const onChangeCost = (value: string) => {
         setCost(sanitizeMoneyInput(value));
+    };
+
+    const applyLocationSuggestion = (suggestion: {
+        title: string;
+        averageCost: number;
+        categoryId?: string | null;
+        locationLabel?: string | null;
+        merchantName?: string | null;
+    }) => {
+        setTitle(suggestion.title);
+        if (!cost || Number.parseFloat(cost) <= 0) {
+            setCost(String(suggestion.averageCost.toFixed(2)));
+        }
+        if (suggestion.categoryId) {
+            setSelectedCategory(suggestion.categoryId);
+        }
+        if (suggestion.locationLabel && !locationLabel.trim()) {
+            setLocationLabel(suggestion.locationLabel);
+        }
+        if (suggestion.merchantName && !merchantName.trim()) {
+            setMerchantName(suggestion.merchantName);
+        }
     };
 
     const applyDateValue = (field: DateField, value?: Date) => {
@@ -334,6 +396,95 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                 onFocus={createScrollOnFocusHandler()}
                 containerStyle={styles.fieldContainer}
             />
+
+            <Input
+                label={t('addExpense.locationLabel')}
+                placeholder={t('addExpense.locationPlaceholder')}
+                value={locationLabel}
+                onChangeText={setLocationLabel}
+                onFocus={createScrollOnFocusHandler()}
+                containerStyle={styles.fieldContainer}
+            />
+
+            <Input
+                label={t('addExpense.merchantLabel')}
+                placeholder={t('addExpense.merchantPlaceholder')}
+                value={merchantName}
+                onChangeText={setMerchantName}
+                onFocus={createScrollOnFocusHandler()}
+                containerStyle={styles.fieldContainer}
+            />
+
+            {debouncedLocationLabel.length >= 2 ? (
+                <View style={styles.suggestionsCard}>
+                    <View style={styles.suggestionsHeader}>
+                        <Text
+                            style={[
+                                styles.suggestionsTitle,
+                                { fontSize: scaleFont(typography.fontSize.sm) },
+                            ]}
+                        >
+                            {t('addExpense.suggestionsTitle')}
+                        </Text>
+                        {isLoadingSuggestions ? (
+                            <Text
+                                style={[
+                                    styles.suggestionsMeta,
+                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                ]}
+                            >
+                                {t('common.loading')}
+                            </Text>
+                        ) : null}
+                    </View>
+                    {suggestions.length ? (
+                        <View style={styles.suggestionItems}>
+                            {suggestions.map((item) => (
+                                <TouchableOpacity
+                                    key={`${item.title}-${item.categoryId ?? 'none'}-${item.lastPurchasedAt}`}
+                                    style={styles.suggestionItem}
+                                    onPress={() => applyLocationSuggestion(item)}
+                                    activeOpacity={0.84}
+                                >
+                                    <View style={styles.suggestionItemLeft}>
+                                        <Text
+                                            style={[
+                                                styles.suggestionItemTitle,
+                                                { fontSize: scaleFont(typography.fontSize.sm) },
+                                            ]}
+                                            numberOfLines={1}
+                                        >
+                                            {item.title}
+                                        </Text>
+                                        <Text
+                                            style={[
+                                                styles.suggestionItemMeta,
+                                                { fontSize: scaleFont(typography.fontSize.xs) },
+                                            ]}
+                                            numberOfLines={1}
+                                        >
+                                            {t('addExpense.suggestionMeta', {
+                                                count: item.occurrenceCount,
+                                                amount: formatCurrency(item.averageCost, item.currency, locale),
+                                            })}
+                                        </Text>
+                                    </View>
+                                    <Icon name="arrow-forward-circle-outline" size={18} color={colors.primaryLight} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    ) : (
+                        <Text
+                            style={[
+                                styles.suggestionsEmpty,
+                                { fontSize: scaleFont(typography.fontSize.xs) },
+                            ]}
+                        >
+                            {t('addExpense.suggestionsEmpty')}
+                        </Text>
+                    )}
+                </View>
+            ) : null}
 
             <View style={styles.fieldContainer}>
                 <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
@@ -722,6 +873,56 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     categorySection: {
         marginBottom: spacing.lg,
+    },
+    suggestionsCard: {
+        marginBottom: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surfaceCard,
+        padding: spacing.md,
+        gap: spacing.sm,
+    },
+    suggestionsHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    suggestionsTitle: {
+        color: colors.textSecondary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    suggestionsMeta: {
+        color: colors.textMuted,
+    },
+    suggestionItems: {
+        gap: spacing.xs,
+    },
+    suggestionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.md,
+        backgroundColor: colors.surfaceElevated,
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.sm,
+        gap: spacing.sm,
+    },
+    suggestionItemLeft: {
+        flex: 1,
+    },
+    suggestionItemTitle: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    suggestionItemMeta: {
+        marginTop: 2,
+        color: colors.textMuted,
+    },
+    suggestionsEmpty: {
+        color: colors.textMuted,
     },
     label: {
         fontSize: typography.fontSize.sm,

@@ -85,6 +85,8 @@ export interface CategoryBudgetOverview {
 export interface Expense {
   id: string;
   title: string;
+  merchantName?: string | null;
+  locationLabel?: string | null;
   cost: number;
   currency: string;
   subscriptionId?: string | null;
@@ -491,6 +493,8 @@ export interface RegisterResponse extends AuthResponse {
 
 export interface CreateExpensePayload {
   title: string;
+  merchantName?: string;
+  locationLabel?: string;
   cost: number;
   currency: string;
   isInstallment?: boolean;
@@ -506,6 +510,26 @@ export interface CreateExpensePayload {
 }
 
 export type UpdateExpensePayload = Partial<CreateExpensePayload>;
+
+export interface ExpenseLocationSuggestion {
+  title: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  categoryIcon?: string | null;
+  categoryColor?: string | null;
+  currency: string;
+  merchantName?: string | null;
+  locationLabel?: string | null;
+  occurrenceCount: number;
+  averageCost: number;
+  lastPurchasedAt: string;
+  score: number;
+}
+
+export interface ExpenseLocationSuggestionsResponse {
+  locationLabel: string;
+  suggestions: ExpenseLocationSuggestion[];
+}
 
 export interface CreateIncomePayload {
   title: string;

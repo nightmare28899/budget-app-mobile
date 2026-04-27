@@ -47,6 +47,8 @@ export function useExpenseForm(expenseId?: string) {
     const [installmentCount, setInstallmentCount] = useState('');
     const [firstPaymentDate, setFirstPaymentDate] = useState(todayISO());
     const [note, setNote] = useState('');
+    const [merchantName, setMerchantName] = useState('');
+    const [locationLabel, setLocationLabel] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<string | undefined>();
     const [selectedCreditCardId, setSelectedCreditCardId] = useState<string | undefined>();
     const [selectedCategory, setSelectedCategory] = useState<string | undefined>();
@@ -75,6 +77,8 @@ export function useExpenseForm(expenseId?: string) {
                     : '',
             );
             setNote(expense.note || '');
+            setMerchantName(expense.merchantName || '');
+            setLocationLabel(expense.locationLabel || '');
             if (expense.categoryId) {
                 setSelectedCategory(expense.categoryId);
             }
@@ -256,6 +260,8 @@ export function useExpenseForm(expenseId?: string) {
             installmentPurchaseDate: isInstallment ? date : undefined,
             installmentFirstPaymentDate: isInstallment ? firstPaymentDate : undefined,
             note: note.trim() || undefined,
+            merchantName: merchantName.trim() || undefined,
+            locationLabel: locationLabel.trim() || undefined,
             paymentMethod: normalizePaymentMethod(paymentMethod),
             creditCardId: isCreditCardPaymentMethod(paymentMethod)
                 ? selectedCreditCardId
@@ -284,6 +290,8 @@ export function useExpenseForm(expenseId?: string) {
         setInstallmentCount('');
         setFirstPaymentDate(todayISO());
         setNote('');
+        setMerchantName('');
+        setLocationLabel('');
         setPaymentMethod(undefined);
         setSelectedCreditCardId(undefined);
         setSelectedCategory(undefined);
@@ -299,6 +307,8 @@ export function useExpenseForm(expenseId?: string) {
         firstPaymentDate, setFirstPaymentDate,
         installmentBreakdown,
         note, setNote,
+        merchantName, setMerchantName,
+        locationLabel, setLocationLabel,
         paymentMethod, setPaymentMethod,
         selectedCreditCardId, setSelectedCreditCardId,
         selectedCategory, setSelectedCategory,
