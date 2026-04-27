@@ -18,9 +18,14 @@ type RefreshResponse = {
 };
 
 type SessionDecision = 'renew' | 'close';
+type SessionRenewalResult =
+    | { kind: 'renewed'; tokens: RefreshResponse }
+    | { kind: 'closed' }
+    | { kind: 'failed' };
 
 let promptSessionRenewalPromise: Promise<SessionDecision> | null = null;
 let refreshTokensPromise: Promise<RefreshResponse> | null = null;
+let renewSessionPromise: Promise<SessionRenewalResult> | null = null;
 
 function t(key: TranslationKey) {
     const language = usePreferencesStore.getState().language;
@@ -115,6 +120,58 @@ function refreshTokens(refreshToken: string): Promise<RefreshResponse> {
     return refreshTokensPromise;
 }
 
+function notifyRenewalFailure() {
+    showGlobalAlert(
+        t('session.renewFailedTitle'),
+        t('session.renewFailedMessage'),
+        [{ text: t('common.ok') }],
+        { cancelable: false },
+    );
+}
+
+function renewSession(): Promise<SessionRenewalResult> {
+    if (renewSessionPromise) {
+        return renewSessionPromise;
+    }
+
+    const promise: Promise<SessionRenewalResult> = (async () => {
+        const { isAuthenticated } = useAuthStore.getState();
+        if (!isAuthenticated) {
+            return { kind: 'closed' } as const;
+        }
+
+        const decision = await askSessionRenewal();
+        if (decision === 'close') {
+            useAuthStore.getState().logout();
+            return { kind: 'closed' } as const;
+        }
+
+        const latestRefreshToken = useAuthStore.getState().refreshToken;
+        if (!latestRefreshToken) {
+            useAuthStore.getState().logout();
+            return { kind: 'closed' } as const;
+        }
+
+        try {
+            const tokens = await refreshTokens(latestRefreshToken);
+            useAuthStore.getState().setTokens(
+                tokens.accessToken,
+                tokens.refreshToken,
+            );
+            return { kind: 'renewed', tokens } as const;
+        } catch {
+            notifyRenewalFailure();
+            useAuthStore.getState().logout();
+            return { kind: 'failed' } as const;
+        }
+    })().finally(() => {
+        renewSessionPromise = null;
+    });
+
+    renewSessionPromise = promise;
+    return promise;
+}
+
 apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         if (isFormDataPayload(config.data)) {
@@ -161,7 +218,7 @@ apiClient.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        const { isAuthenticated, refreshToken } = useAuthStore.getState();
+        const { isAuthenticated } = useAuthStore.getState();
         const requestUrl = String(originalRequest.url || '');
         const isUnauthorized = error.response?.status === 401;
 
@@ -171,12 +228,7 @@ apiClient.interceptors.response.use(
             isAuthenticated &&
             !isAuthRoute(requestUrl)
         ) {
-            showGlobalAlert(
-                t('session.renewFailedTitle'),
-                t('session.renewFailedMessage'),
-                [{ text: t('common.ok') }],
-                { cancelable: false },
-            );
+            notifyRenewalFailure();
             useAuthStore.getState().logout();
             return Promise.reject(error);
         }
@@ -189,36 +241,18 @@ apiClient.interceptors.response.use(
         ) {
             originalRequest._retry = true;
 
-            if (!refreshToken) {
+            if (!useAuthStore.getState().refreshToken) {
                 useAuthStore.getState().logout();
                 return Promise.reject(error);
             }
 
-            const decision = await askSessionRenewal();
-            if (decision === 'close') {
-                useAuthStore.getState().logout();
+            const renewal = await renewSession();
+            if (renewal.kind !== 'renewed') {
                 return Promise.reject(error);
             }
 
-            try {
-                const tokens = await refreshTokens(refreshToken);
-                useAuthStore.getState().setTokens(
-                    tokens.accessToken,
-                    tokens.refreshToken,
-                );
-                originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
-
-                return apiClient(originalRequest);
-            } catch {
-                showGlobalAlert(
-                    t('session.renewFailedTitle'),
-                    t('session.renewFailedMessage'),
-                    [{ text: t('common.ok') }],
-                    { cancelable: false },
-                );
-                useAuthStore.getState().logout();
-                return Promise.reject(error);
-            }
+            originalRequest.headers.Authorization = `Bearer ${renewal.tokens.accessToken}`;
+            return apiClient(originalRequest);
         }
 
         return Promise.reject(error);
