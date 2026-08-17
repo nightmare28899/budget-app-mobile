@@ -17,6 +17,7 @@ export type SemanticColors = {
     warning: string;
     error: string;
     info: string;
+    textOnAction: string;
 
     background: string;
     surface: string;
@@ -72,6 +73,7 @@ const darkBase: ThemeDefinition = {
         warning: '#F59E0B',
         error: '#EF4444',
         info: '#38BDF8',
+        textOnAction: '#FFFFFF',
 
         // Dark gray base (not pure black)
         background: '#12141F',
@@ -121,6 +123,7 @@ const lightBase: ThemeDefinition = {
         warning: '#D97706',
         error: '#DC2626',
         info: '#0284C7',
+        textOnAction: '#FFFFFF',
 
         background: '#F5F7FA',
         surface: '#FFFFFF',
@@ -169,6 +172,7 @@ const midnightBlue: ThemeDefinition = {
         warning: '#F59E0B',
         error: '#F43F5E',
         info: '#38BDF8',
+        textOnAction: '#082F49',
 
         background: '#0F172A',
         surface: '#172554',
@@ -217,6 +221,7 @@ const emerald: ThemeDefinition = {
         warning: '#F59E0B',
         error: '#EF4444',
         info: '#22C55E',
+        textOnAction: '#052E16',
 
         background: '#0A1914',
         surface: '#11231C',
@@ -265,6 +270,7 @@ const amethystPurple: ThemeDefinition = {
         warning: '#FBBF24',
         error: '#FB7185',
         info: '#A78BFA',
+        textOnAction: '#FFFFFF',
 
         background: '#150E24',
         surface: '#211138',

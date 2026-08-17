@@ -8,6 +8,8 @@ import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useI18n } from './useI18n';
 import { SwipeableRef } from '../types/swipeable';
 
+const DASHBOARD_STALE_TIME = 30_000;
+
 export function useDashboard() {
     const queryClient = useQueryClient();
     const { alert } = useAppAlert();
@@ -23,6 +25,7 @@ export function useDashboard() {
     } = useQuery({
         queryKey: ['expenses', 'today'],
         queryFn: expensesApi.getToday,
+        staleTime: DASHBOARD_STALE_TIME,
     });
 
     const {
@@ -33,6 +36,7 @@ export function useDashboard() {
     } = useQuery({
         queryKey: ['analytics', 'budget-summary'],
         queryFn: () => analyticsApi.getBudgetSummary(),
+        staleTime: DASHBOARD_STALE_TIME,
     });
 
     const {
@@ -43,6 +47,7 @@ export function useDashboard() {
     } = useQuery({
         queryKey: ['income-summary', 'current'],
         queryFn: () => incomesApi.getSummary(),
+        staleTime: DASHBOARD_STALE_TIME,
     });
 
     const {
@@ -52,14 +57,37 @@ export function useDashboard() {
     } = useQuery({
         queryKey: ['analytics', 'insights', 'dashboard', 6],
         queryFn: () => analyticsApi.getInsights(undefined, 6),
+        staleTime: DASHBOARD_STALE_TIME,
     });
+
+    const refetchStaleDashboardQueries = useCallback(() => {
+        Promise.all([
+            queryClient.refetchQueries({
+                queryKey: ['expenses', 'today'],
+                type: 'active',
+                stale: true,
+            }),
+            queryClient.refetchQueries({
+                queryKey: ['analytics', 'budget-summary'],
+                type: 'active',
+                stale: true,
+            }),
+            queryClient.refetchQueries({
+                queryKey: ['income-summary', 'current'],
+                type: 'active',
+                stale: true,
+            }),
+            queryClient.refetchQueries({
+                queryKey: ['analytics', 'insights', 'dashboard', 6],
+                type: 'active',
+                stale: true,
+            }),
+        ]).catch(() => undefined);
+    }, [queryClient]);
 
     useFocusEffect(
         useCallback(() => {
-            refetch();
-            refetchBudgetSummary();
-            refetchIncomeSummary();
-            refetchDashboardInsights();
+            refetchStaleDashboardQueries();
             activeSwipeableRef.current?.close?.();
             activeSwipeableRef.current = null;
             activeSwipeableIdRef.current = null;
@@ -69,7 +97,7 @@ export function useDashboard() {
                 activeSwipeableRef.current = null;
                 activeSwipeableIdRef.current = null;
             };
-        }, [refetch, refetchBudgetSummary, refetchIncomeSummary, refetchDashboardInsights]),
+        }, [refetchStaleDashboardQueries]),
     );
 
     const refetchAll = useCallback(() => {

@@ -105,9 +105,9 @@ export interface Expense {
   paymentMethod?: PaymentMethodValue;
   creditCardId?: string | null;
   creditCard?: CreditCard | null;
+  categoryId?: string | null;
+  category?: Category | null;
   date: string;
-  categoryId?: string;
-  category?: Category;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -165,6 +165,8 @@ export interface Subscription {
   paymentMethod?: PaymentMethodValue;
   creditCardId?: string | null;
   creditCard?: CreditCard | null;
+  categoryId?: string | null;
+  category?: Category | null;
   currency: string;
   billingCycle: SubscriptionBillingCycle;
   nextPaymentDate: string;
@@ -203,6 +205,7 @@ export interface CreateSubscriptionPayload {
   isActive?: boolean;
   logoUrl?: string;
   hexColor?: string;
+  categoryId?: string | null;
 }
 
 export type UpdateSubscriptionPayload = Partial<CreateSubscriptionPayload>;

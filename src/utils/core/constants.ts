@@ -1,7 +1,13 @@
 import { NativeModules } from 'react-native';
-import { API_URL } from '@env';
+import { API_URL, DEBUG_API_URL } from '@env';
 
-const PROD_API_BASE_URL = API_URL;
+function normalizeEnvUrl(value: string | undefined): string | null {
+    const normalized = value?.trim();
+    return normalized ? normalized : null;
+}
+
+const PROD_API_BASE_URL = normalizeEnvUrl(API_URL) ?? '';
+const DEBUG_ENV_API_BASE_URL = normalizeEnvUrl(DEBUG_API_URL);
 
 function extractDevHostFromMetro(): string | null {
     if (!__DEV__) {
@@ -23,11 +29,11 @@ function extractDevHostFromMetro(): string | null {
 
 const FALLBACK_LOCAL_HOST = 'localhost';
 const LOCAL_DEV_HOST = extractDevHostFromMetro() ?? FALLBACK_LOCAL_HOST;
-const USE_LOCAL_API_IN_DEBUG = true;
 const LOCAL_API_BASE_URL = `http://${LOCAL_DEV_HOST}:3001/api`;
-const DEBUG_API_BASE_URL = USE_LOCAL_API_IN_DEBUG
-    ? LOCAL_API_BASE_URL
-    : PROD_API_BASE_URL;
+const DEBUG_API_BASE_URL =
+    DEBUG_ENV_API_BASE_URL
+    ?? normalizeEnvUrl(API_URL)
+    ?? LOCAL_API_BASE_URL;
 
 export const API_BASE_URL = __DEV__ ? DEBUG_API_BASE_URL : PROD_API_BASE_URL;
 

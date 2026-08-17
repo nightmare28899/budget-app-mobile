@@ -30,9 +30,11 @@ import { EmptyState } from '../../components/ui/primitives/EmptyState';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { HistorySkeleton } from '../../components/ui/primitives/Skeleton';
 import { Button } from '../../components/ui/primitives/Button';
+import { SwipeHintCard } from '../../components/ui/primitives/SwipeHintCard';
 import { useI18n } from '../../hooks/useI18n';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { useExpensesScreen } from '../../hooks/useExpensesScreen';
+import { useSwipeHint } from '../../hooks/useSwipeHint';
 
 export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Expenses'>) {
     const { colors } = useTheme();
@@ -48,6 +50,10 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
     } = useResponsive();
     const { t, tPlural, language } = useI18n();
     const locale = getCurrencyLocale(language);
+    const {
+        isVisible: expenseSwipeHintVisible,
+        dismiss: dismissExpenseSwipeHint,
+    } = useSwipeHint('expenses', user);
     const {
         items,
         totalCount,
@@ -84,6 +90,7 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
     const expensesCountLabel = tPlural('analytics.expenseCount', totalCount);
     const showSkeleton = isLoading && expenses.length === 0;
     const showInitialError = !!error && expenses.length === 0;
+    const showSwipeHint = expenseSwipeHintVisible && expenses.length > 0;
     const constrainedContentStyle = useMemo(
         () => (
             contentMaxWidth
@@ -146,6 +153,8 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
                         onPress={onOpenSidebar}
                         activeOpacity={0.78}
                         style={styles.menuButton}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('navigation.openMenu')}
                     >
                         <Icon name="menu-outline" size={21} color={colors.textPrimary} />
                     </TouchableOpacity>
@@ -163,6 +172,8 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
                         }
                         activeOpacity={0.85}
                         style={styles.addExpenseButton}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('addExpense.title')}
                     >
                         <Icon name="add" size={16} color={colors.textPrimary} />
                     </TouchableOpacity>
@@ -192,6 +203,13 @@ export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Exp
                     {expensesCountLabel}
                 </Text>
             </View>
+
+            {showSwipeHint ? (
+                <SwipeHintCard
+                    accentColor={colors.primary}
+                    onDismiss={dismissExpenseSwipeHint}
+                />
+            ) : null}
 
             {refreshError ? (
                 <View style={styles.inlineErrorCard}>

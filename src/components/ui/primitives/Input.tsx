@@ -4,7 +4,6 @@ import {
     View,
     ViewStyle,
     Text,
-    TextStyle,
     TextInput,
     TextInputProps,
     StyleSheet,
@@ -91,12 +90,21 @@ export function Input({
                         onBlur?.(event);
                     }}
                     {...props}
+                    accessibilityLabel={props.accessibilityLabel ?? label}
+                    accessibilityState={{
+                        ...props.accessibilityState,
+                        disabled: props.editable === false || props.accessibilityState?.disabled,
+                    }}
+                    accessibilityLiveRegion={error ? 'polite' : 'none'}
                 />
                 {isPassword && (
                     <TouchableOpacity
                         style={styles.eyeIcon}
                         onPress={() => setShowPassword(!showPassword)}
                         activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={label ? `${label} visibility` : 'Password visibility'}
+                        accessibilityState={{ checked: showPassword }}
                     >
                         <Icon
                             name={showPassword ? 'eye-outline' : 'eye-off-outline'}
@@ -106,7 +114,14 @@ export function Input({
                     </TouchableOpacity>
                 )}
             </View>
-            {error && <Text style={[styles.errorText, { fontSize: errorFontSize }]}>{error}</Text>}
+            {error && (
+                <Text
+                    style={[styles.errorText, { fontSize: errorFontSize }]}
+                    accessibilityLiveRegion="polite"
+                >
+                    {error}
+                </Text>
+            )}
         </View>
     );
 }

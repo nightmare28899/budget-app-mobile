@@ -16,9 +16,11 @@ import { EmptyState } from '../../components/ui/primitives/EmptyState';
 import { Button } from '../../components/ui/primitives/Button';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { useIncomesScreen } from '../../hooks/useIncomesScreen';
+import { IncomeItem } from '../../components/ui/domain/IncomeItem';
+import { SwipeHintCard } from '../../components/ui/primitives/SwipeHintCard';
 import { useI18n } from '../../hooks/useI18n';
 import { useAuthStore } from '../../store/authStore';
-import { formatCurrency, formatDate } from '../../utils/core/format';
+import { useSwipeHint } from '../../hooks/useSwipeHint';
 import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/domain/currency';
 import { withAlpha } from '../../utils/domain/subscriptions';
 import {
@@ -46,6 +48,10 @@ export function IncomesScreen({ route, navigation }: MainDrawerScreenProps<'Inco
     const { t, tPlural, language } = useI18n();
     const locale = getCurrencyLocale(language);
     const {
+        isVisible: incomeSwipeHintVisible,
+        dismiss: dismissIncomeSwipeHint,
+    } = useSwipeHint('incomes', user);
+    const {
         incomes,
         totalCount,
         currencyBreakdown,
@@ -54,6 +60,8 @@ export function IncomesScreen({ route, navigation }: MainDrawerScreenProps<'Inco
         error,
         refetch,
         onDeleteIncome,
+        activeSwipeableRef,
+        activeSwipeableIdRef,
     } = useIncomesScreen({
         navigation,
         successMessage: route.params?.successMessage,
@@ -67,6 +75,7 @@ export function IncomesScreen({ route, navigation }: MainDrawerScreenProps<'Inco
         }),
     });
     const incomeCountLabel = tPlural('income.count', totalCount);
+    const showSwipeHint = incomeSwipeHintVisible && incomes.length > 0;
     const constrainedContentStyle = useMemo(
         () => (
             contentMaxWidth
@@ -158,6 +167,13 @@ export function IncomesScreen({ route, navigation }: MainDrawerScreenProps<'Inco
                         </Text>
                     </View>
 
+                    {showSwipeHint ? (
+                        <SwipeHintCard
+                            accentColor={colors.success}
+                            onDismiss={dismissIncomeSwipeHint}
+                        />
+                    ) : null}
+
                     {error && incomes.length === 0 ? (
                         <View style={styles.emptyBlock}>
                             <EmptyState
@@ -189,64 +205,23 @@ export function IncomesScreen({ route, navigation }: MainDrawerScreenProps<'Inco
                     ) : (
                         <View style={styles.cardsList}>
                             {incomes.map((income, index) => (
-                                <TouchableOpacity
+                                <View
                                     key={income.id}
-                                    activeOpacity={0.86}
-                                    style={[
-                                        styles.incomeCard,
-                                        index < incomes.length - 1 ? styles.cardSpacing : null,
-                                    ]}
-                                    onPress={() => navigation.navigate('AddIncome', { income })}
+                                    style={index < incomes.length - 1 ? styles.cardSpacing : null}
                                 >
-                                    <View style={styles.incomeLeading}>
-                                        <View style={styles.iconWrap}>
-                                            <Icon
-                                                name="trending-up-outline"
-                                                size={18}
-                                                color={colors.success}
-                                            />
-                                        </View>
-                                        <View style={styles.incomeCopy}>
-                                            <Text
-                                                style={[
-                                                    styles.incomeTitle,
-                                                    { fontSize: scaleFont(typography.fontSize.base) },
-                                                ]}
-                                                numberOfLines={1}
-                                            >
-                                                {income.title}
-                                            </Text>
-                                            <Text
-                                                style={[
-                                                    styles.incomeMeta,
-                                                    { fontSize: scaleFont(typography.fontSize.sm) },
-                                                ]}
-                                                numberOfLines={2}
-                                            >
-                                                {[formatDate(income.date, 'MMM D, YYYY'), income.note]
-                                                    .filter(Boolean)
-                                                    .join(' • ')}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.incomeTrailing}>
-                                        <Text
-                                            style={[
-                                                styles.amountText,
-                                                { fontSize: scaleFont(typography.fontSize.base) },
-                                            ]}
-                                        >
-                                            {formatCurrency(income.amount, income.currency, locale)}
-                                        </Text>
-                                        <TouchableOpacity
-                                            activeOpacity={0.84}
-                                            style={styles.deleteButton}
-                                            onPress={() => onDeleteIncome(income.id, income.title)}
-                                        >
-                                            <Icon name="trash-outline" size={16} color={colors.error} />
-                                        </TouchableOpacity>
-                                    </View>
-                                </TouchableOpacity>
+                                    <IncomeItem
+                                        income={income}
+                                        locale={locale}
+                                        onPress={(selectedIncome) =>
+                                            navigation.navigate('AddIncome', { income: selectedIncome })}
+                                        onEdit={(selectedIncome) =>
+                                            navigation.navigate('AddIncome', { income: selectedIncome })}
+                                        onDelete={onDeleteIncome}
+                                        activeSwipeableRef={activeSwipeableRef}
+                                        activeSwipeableIdRef={activeSwipeableIdRef}
+                                        animationDelay={Math.min(index * 45, 180)}
+                                    />
+                                </View>
                             ))}
                         </View>
                     )}

@@ -4,10 +4,12 @@ import {
   DrawerContentScrollView,
   createDrawerNavigator,
 } from '@react-navigation/drawer';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MainDrawerParamList } from './types';
+import { MainDrawerParamList, RootStackParamList } from './types';
 import { MainTabNavigator } from './MainTabNavigator';
 import { ExpensesScreen } from '../screens/expenses/ExpensesScreen';
 import { IncomesScreen } from '../screens/incomes/IncomesScreen';
@@ -51,6 +53,8 @@ type AppDrawerContentProps = DrawerContentComponentProps & {
   premiumInactiveLabel: string;
   accountLabel: string;
   guestLabel: string;
+  settingsLabel: string;
+  onOpenSettings: () => void;
   colors: Record<string, string>;
 };
 
@@ -67,6 +71,8 @@ function AppDrawerContent({
   premiumInactiveLabel,
   accountLabel,
   guestLabel,
+  settingsLabel,
+  onOpenSettings,
   colors,
   state,
   navigation,
@@ -173,6 +179,20 @@ function AppDrawerContent({
           { paddingBottom: Math.max(insets.bottom, spacing.base) },
         ]}
       >
+        <TouchableOpacity
+          style={styles.settingsAction}
+          onPress={() => {
+            navigation.closeDrawer();
+            onOpenSettings();
+          }}
+          activeOpacity={0.82}
+          accessibilityRole="button"
+          accessibilityLabel={settingsLabel}
+        >
+          <Icon name="settings-outline" size={18} color={colors.textSecondary} />
+          <Text style={styles.settingsActionText}>{settingsLabel}</Text>
+          <Icon name="chevron-forward" size={16} color={colors.textMuted} />
+        </TouchableOpacity>
         <Text style={styles.drawerFooterText}>{versionLabel}</Text>
       </View>
     </View>
@@ -182,6 +202,7 @@ function AppDrawerContent({
 export function MainDrawerNavigator() {
   const { t } = useI18n();
   const { colors } = useTheme();
+  const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <Drawer.Navigator
@@ -201,6 +222,10 @@ export function MainDrawerNavigator() {
           premiumInactiveLabel={t('premium.inactiveStatus')}
           accountLabel={t('guest.statusAccount')}
           guestLabel={t('guest.statusGuest')}
+          settingsLabel={t('tab.settings')}
+          onOpenSettings={() => {
+            rootNavigation.navigate('Settings');
+          }}
           colors={colors as Record<string, string>}
         />
       )}
@@ -472,6 +497,24 @@ const createStyles = (colors: Record<string, string>) =>
       borderTopColor: withAlpha(colors.border, 0.9),
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.base,
+    },
+    settingsAction: {
+      minHeight: 46,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      marginBottom: spacing.sm,
+      backgroundColor: withAlpha(colors.surfaceCard, 0.72),
+      borderWidth: 1,
+      borderColor: withAlpha(colors.border, 0.85),
+    },
+    settingsActionText: {
+      flex: 1,
+      color: colors.textSecondary,
+      fontSize: typography.fontSize.sm,
+      fontWeight: typography.fontWeight.semibold,
     },
     drawerFooterText: {
       textAlign: 'center',

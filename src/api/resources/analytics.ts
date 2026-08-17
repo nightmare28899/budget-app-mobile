@@ -4,7 +4,6 @@ import {
     AnalyticsInsights,
     DailyTotal,
     CategoryBreakdown,
-    WeeklySummary,
     BudgetSummary,
 } from '../../types/index';
 import { normalizeBudgetPeriod } from '../../utils/domain/budget';
@@ -22,7 +21,17 @@ import { ensureGuestDataHydrated } from '../../store/guestDataStore';
 import { useAuthStore } from '../../store/authStore';
 import { dateOnly } from '../../utils/core/filters';
 
-function normalizePeriod(period: any, summary?: any) {
+import {
+    RawPeriod,
+    RawSummaryData,
+    RawSpendInsight,
+    RawInsightsData,
+    RawSubscriptionInsight,
+    RawCategoryBudgetOverview,
+    RawCategoryBudgetItem,
+} from './analytics.types';
+
+function normalizePeriod(period?: RawPeriod | null, summary?: RawSummaryData | null) {
     return {
         type: normalizeBudgetPeriod(
             period?.type ?? summary?.budgetPeriod,
@@ -43,7 +52,7 @@ function normalizePeriod(period: any, summary?: any) {
     };
 }
 
-function normalizeSummary(data: any): BudgetSummary {
+function normalizeSummary(data?: RawSummaryData | null): BudgetSummary {
     const budgetAmount = toNum(data?.budgetAmount ?? data?.weeklyBudget);
     const hasReservedSubscriptions =
         !!data &&
@@ -67,7 +76,7 @@ function normalizeSummary(data: any): BudgetSummary {
     };
 }
 
-function normalizeSpendInsight(data: any) {
+function normalizeSpendInsight(data?: RawSpendInsight | null) {
     return {
         start: String(data?.start ?? ''),
         end: String(data?.end ?? ''),
@@ -85,7 +94,7 @@ function normalizeSpendInsight(data: any) {
     };
 }
 
-function normalizeInsights(data: any): AnalyticsInsights {
+function normalizeInsights(data?: RawInsightsData | null): AnalyticsInsights {
     return {
         referenceDate: String(data?.referenceDate ?? ''),
         weeklySpend: normalizeSpendInsight(data?.weeklySpend),
@@ -108,7 +117,7 @@ function normalizeInsights(data: any): AnalyticsInsights {
             projectedSavings: toNum(data?.subscriptionSavings?.projectedSavings),
             activeSubscriptions: toNum(data?.subscriptionSavings?.activeSubscriptions),
             topSubscriptions: Array.isArray(data?.subscriptionSavings?.topSubscriptions)
-                ? data.subscriptionSavings.topSubscriptions.map((item: any) => ({
+                ? data!.subscriptionSavings!.topSubscriptions!.map((item: RawSubscriptionInsight) => ({
                     id: String(item?.id ?? ''),
                     name: String(item?.name ?? ''),
                     currency: String(item?.currency ?? ''),
@@ -123,10 +132,10 @@ function normalizeInsights(data: any): AnalyticsInsights {
     };
 }
 
-function normalizeCategoryBudgetOverview(data: any): CategoryBudgetOverview {
+function normalizeCategoryBudgetOverview(data?: RawCategoryBudgetOverview | null): CategoryBudgetOverview {
     const period = normalizePeriod(data?.period);
     const items = Array.isArray(data?.items)
-        ? data.items.map((item: any) => ({
+        ? data!.items!.map((item: RawCategoryBudgetItem) => ({
             categoryId: String(item?.categoryId ?? ''),
             name: String(item?.name ?? ''),
             icon: String(item?.icon ?? 'cube-outline'),
@@ -234,7 +243,7 @@ export const analyticsApi = {
             });
         }
 
-        const { data } = await apiClient.get<CategoryBudgetOverview>(
+        const { data } = await apiClient.get<RawCategoryBudgetOverview>(
             '/analytics/category-budgets',
             { params: { referenceDate } },
         );
@@ -254,7 +263,7 @@ export const analyticsApi = {
             });
         }
 
-        const { data } = await apiClient.get<BudgetSummary>(
+        const { data } = await apiClient.get<RawSummaryData>(
             '/analytics/budget-summary',
             { params: { referenceDate } },
         );
@@ -272,7 +281,7 @@ export const analyticsApi = {
             });
         }
 
-        const { data } = await apiClient.get<WeeklySummary>(
+        const { data } = await apiClient.get<RawSummaryData>(
             '/analytics/weekly-summary',
             { params: { referenceDate } },
         );
@@ -292,7 +301,7 @@ export const analyticsApi = {
             }, horizonMonths);
         }
 
-        const { data } = await apiClient.get<AnalyticsInsights>(
+        const { data } = await apiClient.get<RawInsightsData>(
             '/analytics/insights',
             { params: { referenceDate, horizonMonths } },
         );

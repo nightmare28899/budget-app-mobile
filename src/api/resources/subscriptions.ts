@@ -5,6 +5,7 @@ import {
     Subscription,
     SubscriptionProjection,
     UpdateSubscriptionPayload,
+    Category,
 } from '../../types/index';
 import { toNum } from '../../utils/core/number';
 import {
@@ -78,6 +79,22 @@ export function normalizeSubscription(item: any): Subscription {
         isActive: item?.isActive !== false,
         logoUrl: typeof item?.logoUrl === 'string' ? item.logoUrl : null,
         hexColor: typeof item?.hexColor === 'string' ? item.hexColor : null,
+        categoryId:
+            typeof item?.categoryId === 'string'
+                ? item.categoryId
+                : typeof item?.category?.id === 'string'
+                    ? item.category.id
+                    : null,
+        category: item?.category && typeof item.category === 'object'
+            ? {
+                id: String(item.category.id ?? ''),
+                name: String(item.category.name ?? ''),
+                icon: typeof item.category.icon === 'string' ? item.category.icon : undefined,
+                color: typeof item.category.color === 'string' ? item.category.color : undefined,
+                budgetAmount: null,
+                userId: typeof item.category.userId === 'string' ? item.category.userId : '',
+            } satisfies Category
+            : null,
         userId: typeof item?.userId === 'string' ? item.userId : undefined,
         chargeDate: toDateOnly(item?.nextPaymentDate),
         color,

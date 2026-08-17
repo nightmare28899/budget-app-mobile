@@ -7,9 +7,14 @@ import { useTheme, useThemedStyles, SemanticColors,
 type ScreenBackButtonProps = {
     onPress: () => void;
     containerStyle?: StyleProp<ViewStyle>;
+    accessibilityLabel?: string;
 };
 
-export function ScreenBackButton({ onPress, containerStyle }: ScreenBackButtonProps) {
+export function ScreenBackButton({
+    onPress,
+    containerStyle,
+    accessibilityLabel = 'Go back',
+}: ScreenBackButtonProps) {
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
 
@@ -18,6 +23,8 @@ export function ScreenBackButton({ onPress, containerStyle }: ScreenBackButtonPr
             style={[styles.button, containerStyle]}
             onPress={onPress}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={accessibilityLabel}
         >
             <Icon name="arrow-back" size={20} color={colors.textPrimary} />
         </TouchableOpacity>

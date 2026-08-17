@@ -16,6 +16,7 @@ export function useAnalytics(selectedDate?: string, horizonMonths = 6) {
     } = useQuery({
         queryKey: ['analytics', 'weekly', selectedDate ?? 'today'],
         queryFn: () => analyticsApi.getWeeklySummary(selectedDate),
+        staleTime: 30_000,
     });
 
     const {
@@ -25,6 +26,7 @@ export function useAnalytics(selectedDate?: string, horizonMonths = 6) {
     } = useQuery({
         queryKey: ['analytics', 'daily', selectedDate ?? 'today'],
         queryFn: () => analyticsApi.getDailyTotals(7, selectedDate),
+        staleTime: 30_000,
     });
 
     const {
@@ -34,6 +36,7 @@ export function useAnalytics(selectedDate?: string, horizonMonths = 6) {
     } = useQuery({
         queryKey: ['analytics', 'categories', selectedDate ?? 'today'],
         queryFn: () => analyticsApi.getCategoryBreakdown(undefined, undefined, selectedDate),
+        staleTime: 30_000,
     });
 
     const {
@@ -43,6 +46,7 @@ export function useAnalytics(selectedDate?: string, horizonMonths = 6) {
     } = useQuery({
         queryKey: ['analytics', 'insights', selectedDate ?? 'today', horizonMonths],
         queryFn: () => analyticsApi.getInsights(selectedDate, horizonMonths),
+        staleTime: 30_000,
     });
 
     const {
@@ -52,6 +56,7 @@ export function useAnalytics(selectedDate?: string, horizonMonths = 6) {
     } = useQuery({
         queryKey: ['income-summary', selectedDate ?? 'today'],
         queryFn: () => incomesApi.getSummary(selectedDate),
+        staleTime: 30_000,
     });
 
     const isLoading =

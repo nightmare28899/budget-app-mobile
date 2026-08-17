@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { expensesApi } from '../api/resources/expenses';
+import { categoriesApi } from '../api/resources/categories';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useI18n } from './useI18n';
 
@@ -13,6 +14,18 @@ export function useExpenseDetail(id: string, onDeleted: () => void) {
         queryKey: ['expense', id],
         queryFn: () => expensesApi.getOne(id),
     });
+    const categoryId = expense?.categoryId ?? expense?.category?.id;
+    const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+        queryKey: ['categories'],
+        queryFn: categoriesApi.getAll,
+        enabled: Boolean(categoryId && !expense?.category?.name),
+    });
+    const resolvedCategory = expense?.category?.name
+        ? expense.category
+        : categories.find((category) => category.id === categoryId);
+    const resolvedExpense = expense && resolvedCategory
+        ? { ...expense, category: resolvedCategory }
+        : expense;
 
     const deleteMutation = useMutation({
         mutationFn: () => expensesApi.delete(id),
@@ -45,8 +58,10 @@ export function useExpenseDetail(id: string, onDeleted: () => void) {
     }, [alert, deleteMutation, expense?.isInstallment, t]);
 
     return {
-        expense,
-        isLoading,
+        expense: resolvedExpense,
+        isLoading: isLoading || (
+            Boolean(categoryId && !expense?.category?.name) && categoriesLoading
+        ),
         onDelete,
     };
 }

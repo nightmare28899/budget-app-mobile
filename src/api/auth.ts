@@ -1,7 +1,7 @@
 import apiClient from './client';
 import { AuthResponse, RegisterResponse } from '../types/index';
 import { normalizeUserRecord } from '../utils/domain/user';
-import { createApiError, toMultipartFileValue } from '../utils/platform/api';
+import { toMultipartFileValue } from '../utils/platform/api';
 
 export interface RegisterAvatarPayload {
     uri: string;
@@ -16,21 +16,6 @@ function inferMimeType(filename?: string): string {
     if (lower.endsWith('.heic')) return 'image/heic';
     if (lower.endsWith('.heif')) return 'image/heif';
     return 'image/jpeg';
-}
-
-async function parseResponsePayload(response: Response) {
-    const rawText = await response.text();
-    const trimmed = rawText.trim();
-
-    if (!trimmed) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(trimmed);
-    } catch {
-        return trimmed;
-    }
 }
 
 function normalizeAuthResponse<T extends AuthResponse | RegisterResponse>(data: T): T {
@@ -84,24 +69,12 @@ export const authApi = {
             );
         }
 
-        const response = await fetch(`${apiClient.defaults.baseURL}/auth/register`, {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json',
-            },
-            body: formData,
-        });
+        const { data } = await apiClient.post<RegisterResponse>(
+            '/auth/register',
+            formData,
+        );
 
-        const payload = await parseResponsePayload(response);
-        if (!response.ok) {
-            throw createApiError(
-                response.status,
-                payload,
-                `Request failed with status ${response.status}`,
-            );
-        }
-
-        return normalizeAuthResponse(payload as RegisterResponse);
+        return normalizeAuthResponse(data);
     },
 
     login: async (email: string, password: string) => {

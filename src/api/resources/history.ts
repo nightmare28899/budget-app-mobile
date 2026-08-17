@@ -64,29 +64,16 @@ function extractHistoryPayload(raw: any): any {
         return {};
     }
 
-    if (
-        Object.prototype.hasOwnProperty.call(raw, 'user') ||
-        Object.prototype.hasOwnProperty.call(raw, 'summary') ||
-        Object.prototype.hasOwnProperty.call(raw, 'expenses') ||
-        Object.prototype.hasOwnProperty.call(raw, 'subscriptions')
-    ) {
+    const historyKeys = ['user', 'summary', 'expenses', 'subscriptions'];
+    if (historyKeys.some((key) => Object.prototype.hasOwnProperty.call(raw, key))) {
         return raw;
     }
 
-    if (raw.data && typeof raw.data === 'object') {
-        return extractHistoryPayload(raw.data);
-    }
-
-    if (raw.result && typeof raw.result === 'object') {
-        return extractHistoryPayload(raw.result);
-    }
-
-    if (raw.payload && typeof raw.payload === 'object') {
-        return extractHistoryPayload(raw.payload);
-    }
-
-    if (raw.history && typeof raw.history === 'object') {
-        return extractHistoryPayload(raw.history);
+    const wrapperKeys = ['data', 'result', 'payload', 'history'];
+    for (const key of wrapperKeys) {
+        if (raw[key] && typeof raw[key] === 'object') {
+            return extractHistoryPayload(raw[key]);
+        }
     }
 
     return raw;
@@ -145,6 +132,32 @@ function normalizeHistoryPayload(rawPayload: any): HistoryPayload {
     };
 }
 
+export type PartialHistoryError = Error & {
+    partialData: HistoryPayload;
+    failedSources: Array<'user' | 'expenses' | 'subscriptions'>;
+};
+
+function createPartialHistoryError(
+    partialData: HistoryPayload,
+    failedSources: PartialHistoryError['failedSources'],
+): PartialHistoryError {
+    const error = new Error('History data is incomplete.') as PartialHistoryError;
+    error.partialData = partialData;
+    error.failedSources = failedSources;
+    return error;
+}
+
+export function isPartialHistoryError(
+    error: unknown,
+): error is PartialHistoryError {
+    return (
+        error instanceof Error
+        && 'partialData' in error
+        && 'failedSources' in error
+        && Array.isArray(error.failedSources)
+    );
+}
+
 export const historyApi = {
     getAll: async () => {
         if (isLocalMode()) {
@@ -194,7 +207,7 @@ export const historyApi = {
             0,
         );
 
-        return {
+        const fallbackPayload: HistoryPayload = {
             user,
             summary: normalizeSummary(
                 null,
@@ -206,5 +219,22 @@ export const historyApi = {
             expenses,
             subscriptions,
         };
+
+        const failedSources: PartialHistoryError['failedSources'] = [];
+        if (userResult.status === 'rejected') {
+            failedSources.push('user');
+        }
+        if (expensesResult.status === 'rejected') {
+            failedSources.push('expenses');
+        }
+        if (subscriptionsResult.status === 'rejected') {
+            failedSources.push('subscriptions');
+        }
+
+        if (failedSources.length > 0) {
+            throw createPartialHistoryError(fallbackPayload, failedSources);
+        }
+
+        return fallbackPayload;
     },
 };

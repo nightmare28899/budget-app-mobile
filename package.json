@@ -7,6 +7,7 @@
     "ios": "node scripts/run-ios-simulator.js",
     "ios:release": "node scripts/run-ios-simulator.js --release",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "postinstall": "patch-package && node scripts/patch-react-native-drawer-layout.js",
     "start": "react-native start",
     "test": "jest"

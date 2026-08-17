@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
     KeyboardAvoidingView,
     Platform,
@@ -18,7 +18,6 @@ import { Input } from '../../components/ui/primitives/Input';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { useI18n } from '../../hooks/useI18n';
-import { TranslationKey } from '../../i18n/index';
 import { RootScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
@@ -35,16 +34,8 @@ import {
     sanitizeMoneyInput,
 } from '../../utils/platform/moneyInput';
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 2;
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-type FeatureCard = {
-    id: string;
-    icon: string;
-    titleKey: TranslationKey;
-    descriptionKey: TranslationKey;
-    bullets: TranslationKey[];
-};
 
 function isValidIsoDate(value: string): boolean {
     if (!ISO_DATE_RE.test(value)) {
@@ -74,7 +65,6 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
     } = useResponsive();
 
     const [currentStep, setCurrentStep] = useState(0);
-    const [selectedFeatureId, setSelectedFeatureId] = useState('expenses');
     const [budgetAmount, setBudgetAmount] = useState(
         String(toNum(user?.budgetAmount ?? 0)),
     );
@@ -93,52 +83,6 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const featureCards = useMemo<FeatureCard[]>(() => [
-        {
-            id: 'expenses',
-            icon: 'receipt-outline',
-            titleKey: 'onboarding.moduleExpensesTitle',
-            descriptionKey: 'onboarding.moduleExpensesDescription',
-            bullets: [
-                'onboarding.moduleExpensesBullet1',
-                'onboarding.moduleExpensesBullet2',
-            ],
-        },
-        {
-            id: 'subscriptions',
-            icon: 'albums-outline',
-            titleKey: 'onboarding.moduleSubscriptionsTitle',
-            descriptionKey: 'onboarding.moduleSubscriptionsDescription',
-            bullets: [
-                'onboarding.moduleSubscriptionsBullet1',
-                'onboarding.moduleSubscriptionsBullet2',
-            ],
-        },
-        {
-            id: 'savings',
-            icon: 'wallet-outline',
-            titleKey: 'onboarding.moduleSavingsTitle',
-            descriptionKey: 'onboarding.moduleSavingsDescription',
-            bullets: [
-                'onboarding.moduleSavingsBullet1',
-                'onboarding.moduleSavingsBullet2',
-            ],
-        },
-        {
-            id: 'analytics',
-            icon: 'stats-chart-outline',
-            titleKey: 'onboarding.moduleAnalyticsTitle',
-            descriptionKey: 'onboarding.moduleAnalyticsDescription',
-            bullets: [
-                'onboarding.moduleAnalyticsBullet1',
-                'onboarding.moduleAnalyticsBullet2',
-            ],
-        },
-    ], []);
-
-    const selectedFeature =
-        featureCards.find((item) => item.id === selectedFeatureId) ?? featureCards[0];
 
     const finishOnboarding = async (skipSetup: boolean) => {
         if (!user) {
@@ -217,8 +161,9 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
 
     const completeOnboardingAndRoute = async (
         target: 'guest' | 'register' | 'login',
+        skipSetup = false,
     ) => {
-        const completed = await finishOnboarding(false);
+        const completed = await finishOnboarding(skipSetup);
         if (!completed) {
             return;
         }
@@ -233,7 +178,7 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
         }
     };
 
-    const openAccessChoice = () => {
+    const openAccessChoice = (skipSetup = false) => {
         alert(
             t('onboarding.accessChoiceTitle'),
             t('onboarding.accessChoiceMessage'),
@@ -242,19 +187,19 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
                     text: t('onboarding.accessChoiceGuest'),
                     style: 'cancel',
                     onPress: () => {
-                        completeOnboardingAndRoute('guest').catch(() => {});
+                        completeOnboardingAndRoute('guest', skipSetup).catch(() => {});
                     },
                 },
                 {
                     text: t('onboarding.accessChoiceRegister'),
                     onPress: () => {
-                        completeOnboardingAndRoute('register').catch(() => {});
+                        completeOnboardingAndRoute('register', skipSetup).catch(() => {});
                     },
                 },
                 {
                     text: t('onboarding.accessChoiceLogin'),
                     onPress: () => {
-                        completeOnboardingAndRoute('login').catch(() => {});
+                        completeOnboardingAndRoute('login', skipSetup).catch(() => {});
                     },
                 },
             ],
@@ -272,15 +217,11 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
 
     const stepTitle = [
         t('onboarding.welcomeTitle'),
-        t('onboarding.featuresTitle'),
-        t('onboarding.workflowTitle'),
         t('onboarding.setupTitle'),
     ][currentStep];
 
     const stepDescription = [
         t('onboarding.welcomeDescription'),
-        t('onboarding.featuresDescription'),
-        t('onboarding.workflowDescription'),
         t('onboarding.setupDescription'),
     ][currentStep];
     const isSetupStep = currentStep === TOTAL_STEPS - 1;
@@ -337,7 +278,7 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
                         ) : (
                             <TouchableOpacity
                                 activeOpacity={0.8}
-                                onPress={() => finishOnboarding(true)}
+                                onPress={() => openAccessChoice(true)}
                                 disabled={isSubmitting}
                             >
                                 <Text
@@ -469,165 +410,7 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
                         </View>
                     )}
 
-                    {currentStep === 1 && (
-                        <View style={styles.sectionStack}>
-                            <View style={styles.featureGrid}>
-                                {featureCards.map((item) => {
-                                    const isActive = item.id === selectedFeature.id;
-                                    return (
-                                        <TouchableOpacity
-                                            key={item.id}
-                                            style={[
-                                                styles.featureCard,
-                                                isActive ? styles.featureCardActive : null,
-                                            ]}
-                                            activeOpacity={0.85}
-                                            onPress={() => setSelectedFeatureId(item.id)}
-                                        >
-                                            <View
-                                                style={[
-                                                    styles.featureIconWrap,
-                                                    isActive ? styles.featureIconWrapActive : null,
-                                                ]}
-                                            >
-                                                <Icon
-                                                    name={item.icon}
-                                                    size={scaleSize(20, 0.3)}
-                                                    color={
-                                                        isActive
-                                                            ? colors.primaryAction
-                                                            : colors.textSecondary
-                                                    }
-                                                />
-                                            </View>
-                                            <Text
-                                                style={[
-                                                    styles.featureCardTitle,
-                                                    { fontSize: scaleFont(typography.fontSize.base) },
-                                                ]}
-                                            >
-                                                {t(item.titleKey)}
-                                            </Text>
-                                            <Text
-                                                style={[
-                                                    styles.featureCardText,
-                                                    { fontSize: scaleFont(typography.fontSize.xs) },
-                                                ]}
-                                            >
-                                                {t(item.descriptionKey)}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </View>
-
-                            <View style={styles.detailCard}>
-                                <Text
-                                    style={[
-                                        styles.detailCardTitle,
-                                        { fontSize: scaleFont(typography.fontSize.lg) },
-                                    ]}
-                                >
-                                    {t(selectedFeature.titleKey)}
-                                </Text>
-                                <Text
-                                    style={[
-                                        styles.detailCardText,
-                                        { fontSize: scaleFont(typography.fontSize.sm) },
-                                    ]}
-                                >
-                                    {t(selectedFeature.descriptionKey)}
-                                </Text>
-
-                                <View style={styles.detailBullets}>
-                                    {selectedFeature.bullets.map((bulletKey) => (
-                                        <View key={bulletKey} style={styles.detailBulletRow}>
-                                            <Icon
-                                                name="checkmark-circle-outline"
-                                                size={scaleSize(18, 0.3)}
-                                                color={colors.success}
-                                            />
-                                            <Text
-                                                style={[
-                                                    styles.detailBulletText,
-                                                    { fontSize: scaleFont(typography.fontSize.sm) },
-                                                ]}
-                                            >
-                                                {t(bulletKey)}
-                                            </Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            </View>
-                        </View>
-                    )}
-
-                    {currentStep === 2 && (
-                        <View style={styles.sectionStack}>
-                            {[
-                                {
-                                    icon: 'home-outline',
-                                    title: t('onboarding.workflowHomeTitle'),
-                                    description: t('onboarding.workflowHomeDescription'),
-                                },
-                                {
-                                    icon: 'add-outline',
-                                    title: t('onboarding.workflowAddTitle'),
-                                    description: t('onboarding.workflowAddDescription'),
-                                },
-                                {
-                                    icon: 'wallet-outline',
-                                    title: t('onboarding.workflowSavingsTitle'),
-                                    description: t('onboarding.workflowSavingsDescription'),
-                                },
-                                {
-                                    icon: 'settings-outline',
-                                    title: t('onboarding.workflowSettingsTitle'),
-                                    description: t('onboarding.workflowSettingsDescription'),
-                                },
-                            ].map((item, index) => (
-                                <View key={item.title} style={styles.workflowCard}>
-                                    <View style={styles.workflowIndex}>
-                                        <Text
-                                            style={[
-                                                styles.workflowIndexText,
-                                                { fontSize: scaleFont(typography.fontSize.sm) },
-                                            ]}
-                                        >
-                                            {index + 1}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.workflowContent}>
-                                        <View style={styles.workflowTitleRow}>
-                                            <Icon
-                                                name={item.icon}
-                                                size={scaleSize(18, 0.25)}
-                                                color={colors.primaryLight}
-                                            />
-                                            <Text
-                                                style={[
-                                                    styles.workflowTitle,
-                                                    { fontSize: scaleFont(typography.fontSize.base) },
-                                                ]}
-                                            >
-                                                {item.title}
-                                            </Text>
-                                        </View>
-                                        <Text
-                                            style={[
-                                                styles.workflowText,
-                                                { fontSize: scaleFont(typography.fontSize.sm) },
-                                            ]}
-                                        >
-                                            {item.description}
-                                        </Text>
-                                    </View>
-                                </View>
-                            ))}
-                        </View>
-                    )}
-
-                    {currentStep === 3 && (
+                    {isSetupStep && (
                         <View style={styles.sectionStack}>
                             <View style={styles.setupCard}>
                                 <Text
@@ -855,15 +638,27 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
                     ]}
                 >
                     {isSetupStep ? (
-                        <Button
-                            title={t('onboarding.finish')}
-                            onPress={handleContinue}
-                            loading={isSubmitting}
-                            containerStyle={[
-                                styles.primaryButton,
-                                styles.footerActionFullWidth,
-                            ]}
-                        />
+                        <View style={styles.setupFooterActions}>
+                            <Button
+                                title={t('onboarding.finish')}
+                                onPress={handleContinue}
+                                loading={isSubmitting}
+                                containerStyle={[
+                                    styles.primaryButton,
+                                    styles.footerActionFullWidth,
+                                ]}
+                            />
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={() => openAccessChoice(true)}
+                                disabled={isSubmitting}
+                                style={styles.setupSkipButton}
+                            >
+                                <Text style={styles.setupSkipText}>
+                                    {t('onboarding.skipSetup')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     ) : (
                         <>
                             {currentStep > 0 ? (
@@ -1212,5 +1007,17 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     footerActionFullWidth: {
         width: '100%',
         minWidth: 0,
+    },
+    setupFooterActions: {
+        width: '100%',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
+    setupSkipButton: {
+        paddingVertical: spacing.xs,
+    },
+    setupSkipText: {
+        color: colors.textSecondary,
+        fontWeight: typography.fontWeight.semibold,
     },
 });

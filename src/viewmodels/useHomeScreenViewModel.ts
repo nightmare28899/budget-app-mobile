@@ -1,7 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { analyticsApi } from '../api/resources/analytics';
-import { historyApi } from '../api/resources/history';
+import {
+    historyApi,
+    isPartialHistoryError,
+} from '../api/resources/history';
 import { subscriptionsApi } from '../api/resources/subscriptions';
 import { useDashboard } from '../hooks/useDashboard';
 import { useI18n } from '../hooks/useI18n';
@@ -58,10 +61,11 @@ export function useHomeScreenViewModel({
     } = useQuery({
         queryKey: ['analytics', 'category-budgets', 'dashboard'],
         queryFn: () => analyticsApi.getCategoryBudgetOverview(),
+        staleTime: 30_000,
     });
 
     const {
-        data: historyData,
+        data: fetchedHistoryData,
         isLoading: historyLoading,
         isRefetching: historyRefetching,
         error: historyError,
@@ -69,7 +73,11 @@ export function useHomeScreenViewModel({
     } = useQuery({
         queryKey: ['history', 'all'],
         queryFn: historyApi.getAll,
+        staleTime: 30_000,
     });
+
+    const historyData = fetchedHistoryData
+        ?? (isPartialHistoryError(historyError) ? historyError.partialData : null);
 
     const {
         data: upcomingSubscriptions,
@@ -80,6 +88,7 @@ export function useHomeScreenViewModel({
     } = useQuery({
         queryKey: ['subscriptions', 'upcoming', upcomingDays],
         queryFn: () => subscriptionsApi.getUpcoming(upcomingDays),
+        staleTime: 30_000,
     });
 
     const todayMaximumSpent = Math.max(
@@ -278,7 +287,7 @@ export function useHomeScreenViewModel({
     const showSkeleton = (isLoading || historyLoading) && !todayData && !historyData;
     const isUpcomingLoading = upcomingLoading || upcomingRefetching;
     const hasUpcomingError = !!upcomingError;
-    const hasHistoryError = !!historyError && !historyData;
+    const hasHistoryError = !!historyError;
     const hasBudgetError =
         (!!todayError || !!budgetSummaryError) &&
         !todayData &&

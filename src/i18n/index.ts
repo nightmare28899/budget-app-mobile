@@ -5,6 +5,7 @@ export type TranslationValues = Record<string, string | number>;
 
 const en = {
   'common.ok': 'OK',
+  'common.gotIt': 'Got it',
   'common.cancel': 'Cancel',
   'common.continue': 'Continue',
   'common.save': 'Save',
@@ -173,7 +174,7 @@ const en = {
     'We could not renew your session. Please sign in again.',
 
   'onboarding.stepLabel': 'Step {current} of {total}',
-  'onboarding.skip': 'Skip',
+  'onboarding.skip': 'Skip intro',
   'onboarding.back': 'Back',
   'onboarding.next': 'Next',
   'onboarding.finish': 'Start using the app',
@@ -270,16 +271,24 @@ const en = {
     'We could not save your setup right now. Please try again.',
 
   'tab.home': 'Home',
-  'tab.activity': 'Records',
+  'tab.activity': 'Transactions',
   'tab.history': 'History',
   'tab.analytics': 'Analytics',
   'tab.settings': 'Settings',
+  'navigation.addEntry': 'Add a financial entry',
+  'navigation.openMenu': 'Open menu',
+  'navigation.openNotifications': 'Open notifications',
+  'navigation.openSettings': 'Open settings',
 
   'filters.category': 'Category',
   'filters.allCategories': 'All categories',
   'filters.date': 'Date',
   'filters.datePlaceholder': 'YYYY-MM-DD',
   'filters.dateHint': 'Use YYYY-MM-DD format',
+  'swipeHint.title': 'Tap to edit. Swipe for quick actions.',
+  'swipeHint.description':
+    'Tap a record to open it directly. Swipe left to reveal Edit and Delete.',
+  'swipeHint.gesture': 'Swipe left',
 
   'dashboard.hello': 'Hello, {name}',
   'dashboard.helloGeneric': 'Hello',
@@ -895,6 +904,11 @@ const en = {
   'addExpense.suggestionMeta': '{count} times • Avg {amount}',
   'addExpense.dateLabel': 'Purchase Date',
   'addExpense.categoryRequired': 'Category *',
+  'addExpense.showOptionalDetails': 'More details',
+  'addExpense.hideOptionalDetails': 'Hide details',
+  'addExpense.optionalDetailsHint':
+    'Payment method, installments, note, and currency.',
+  'addExpense.optionalDetailsCount': '{count} optional details added',
   'addExpense.showCategoryCreator': 'Create new category',
   'addExpense.hideCategoryCreator': 'Hide category creator',
   'addExpense.categoryNamePlaceholder': 'Category name',
@@ -1132,6 +1146,7 @@ export type TranslationKey = TranslationKeyInternal;
 
 const es: Record<TranslationKeyInternal, string> = {
   'common.ok': 'Aceptar',
+  'common.gotIt': 'Entendido',
   'common.cancel': 'Cancelar',
   'common.continue': 'Continuar',
   'common.save': 'Guardar',
@@ -1301,7 +1316,7 @@ const es: Record<TranslationKeyInternal, string> = {
   'common.currency': 'Moneda',
 
   'onboarding.stepLabel': 'Paso {current} de {total}',
-  'onboarding.skip': 'Omitir',
+  'onboarding.skip': 'Omitir introducción',
   'onboarding.back': 'Atrás',
   'onboarding.next': 'Siguiente',
   'onboarding.finish': 'Empezar a usar la app',
@@ -1399,16 +1414,24 @@ const es: Record<TranslationKeyInternal, string> = {
     'No pudimos guardar tu configuración ahora mismo. Inténtalo de nuevo.',
 
   'tab.home': 'Inicio',
-  'tab.activity': 'Registros',
+  'tab.activity': 'Movimientos',
   'tab.history': 'Historial',
   'tab.analytics': 'Analíticas',
   'tab.settings': 'Ajustes',
+  'navigation.addEntry': 'Agregar movimiento financiero',
+  'navigation.openMenu': 'Abrir menú',
+  'navigation.openNotifications': 'Abrir notificaciones',
+  'navigation.openSettings': 'Abrir ajustes',
 
   'filters.category': 'Categoría',
   'filters.allCategories': 'Todas las categorías',
   'filters.date': 'Fecha',
   'filters.datePlaceholder': 'YYYY-MM-DD',
   'filters.dateHint': 'Usa el formato YYYY-MM-DD',
+  'swipeHint.title': 'Toca para editar. Desliza para acciones rápidas.',
+  'swipeHint.description':
+    'Toca un registro para abrirlo directo. Desliza a la izquierda para ver Editar y Eliminar.',
+  'swipeHint.gesture': 'Desliza a la izquierda',
 
   'dashboard.hello': 'Hola, {name}',
   'dashboard.helloGeneric': 'Hola',
@@ -2041,6 +2064,11 @@ const es: Record<TranslationKeyInternal, string> = {
   'addExpense.suggestionMeta': '{count} veces • Promedio {amount}',
   'addExpense.dateLabel': 'Fecha de compra',
   'addExpense.categoryRequired': 'Categoría *',
+  'addExpense.showOptionalDetails': 'Más detalles',
+  'addExpense.hideOptionalDetails': 'Ocultar detalles',
+  'addExpense.optionalDetailsHint':
+    'Método de pago, meses, nota y moneda.',
+  'addExpense.optionalDetailsCount': '{count} detalles opcionales agregados',
   'addExpense.showCategoryCreator': 'Crear nueva categoría',
   'addExpense.hideCategoryCreator': 'Ocultar creador de categoría',
   'addExpense.categoryNamePlaceholder': 'Nombre de categoría',

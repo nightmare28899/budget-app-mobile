@@ -59,6 +59,12 @@ export function normalizeExpense(expense: any): Expense {
             typeof expense?.locationLabel === 'string'
                 ? expense.locationLabel
                 : null,
+        categoryId:
+            typeof expense?.categoryId === 'string'
+                ? expense.categoryId
+                : typeof expense?.category?.id === 'string'
+                    ? expense.category.id
+                    : undefined,
         isInstallment: expense?.isInstallment === true,
         installmentGroupId:
             typeof expense?.installmentGroupId === 'string'

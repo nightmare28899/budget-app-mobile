@@ -9,10 +9,8 @@ import {
   Expense,
   HistoryPayload,
   HistorySummary,
-  Income,
   ReportPeriodType,
   ReportSnapshot,
-  SavingsGoal,
   Subscription,
 } from '../../types/index';
 import {

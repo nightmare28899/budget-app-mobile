@@ -8,10 +8,8 @@ import {
     statusCodes,
 } from '@react-native-google-signin/google-signin';
 import { useAuthStore } from '../store/authStore';
-import { useOfflineRegistrationStore } from '../store/offlineRegistrationStore';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { authApi } from '../api/auth';
-import { usersApi } from '../api/resources/users';
 import { expensesApi } from '../api/resources/expenses';
 import { analyticsApi } from '../api/resources/analytics';
 import { incomesApi } from '../api/resources/incomes';
@@ -79,8 +77,6 @@ export function useAuth() {
     const [loading, setLoading] = useState(false);
     const queryClient = useQueryClient();
     const setAuth = useAuthStore((s) => s.setAuth);
-    const { isSyncing, queue } = useOfflineRegistrationStore();
-    const pendingRegistrationsCount = queue.length;
     const { alert } = useAppAlert();
     const { t } = useI18n();
     const registrationFallbackMessage = t('auth.registrationTryAgain');
@@ -105,10 +101,6 @@ export function useAuth() {
         queryClient.removeQueries({ queryKey: ['users', 'me'] });
 
         Promise.allSettled([
-            queryClient.fetchQuery({
-                queryKey: ['users', 'me'],
-                queryFn: usersApi.getMe,
-            }),
             queryClient.fetchQuery({
                 queryKey: ['expenses', 'today'],
                 queryFn: expensesApi.getToday,
@@ -375,7 +367,5 @@ export function useAuth() {
         loginWithGoogle,
         register,
         loading,
-        pendingRegistrationsCount,
-        isSyncingOfflineRegistrations: isSyncing,
     };
 }

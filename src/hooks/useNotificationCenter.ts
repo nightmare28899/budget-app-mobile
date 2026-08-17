@@ -93,8 +93,9 @@ export function useNotificationCenter() {
         error: categoryBudgetsError,
         refetch: refetchCategoryBudgets,
     } = useQuery({
-        queryKey: ['analytics', 'category-budgets', 'notifications'],
+        queryKey: ['analytics', 'category-budgets', 'dashboard'],
         queryFn: () => analyticsApi.getCategoryBudgetOverview(),
+        staleTime: 30_000,
     });
     const {
         data: upcomingSubscriptions,
@@ -104,6 +105,7 @@ export function useNotificationCenter() {
     } = useQuery({
         queryKey: ['subscriptions', 'upcoming', 'notifications', 7],
         queryFn: () => subscriptionsApi.getUpcoming(7),
+        staleTime: 30_000,
     });
     const {
         data: savingsGoals,
@@ -113,6 +115,7 @@ export function useNotificationCenter() {
     } = useQuery({
         queryKey: ['savings', 'goals', 'notifications'],
         queryFn: savingsApi.getSavingsGoals,
+        staleTime: 30_000,
     });
     const {
         overview: creditCardsOverview,

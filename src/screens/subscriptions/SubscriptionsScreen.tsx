@@ -12,6 +12,7 @@ import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { EmptyState } from '../../components/ui/primitives/EmptyState';
 import { Button } from '../../components/ui/primitives/Button';
 import { SubscriptionItem } from '../../components/ui/domain/SubscriptionItem';
+import { SwipeHintCard } from '../../components/ui/primitives/SwipeHintCard';
 import { formatCurrencyBreakdown } from '../../utils/domain/currency';
 import { withAlpha } from '../../utils/domain/subscriptions';
 import {
@@ -25,6 +26,7 @@ import {
 } from '../../theme/index';
 import { useI18n } from '../../hooks/useI18n';
 import { useSubscriptionsScreen } from '../../hooks/useSubscriptionsScreen';
+import { useSwipeHint } from '../../hooks/useSwipeHint';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 
@@ -87,6 +89,24 @@ export function SubscriptionsScreen({
         upcomingOnly: isUpcomingOnly,
         upcomingDays,
     });
+    const {
+        isVisible: subscriptionsSwipeHintVisible,
+        dismiss: dismissSubscriptionsSwipeHint,
+    } = useSwipeHint('subscriptions', user);
+    const showSwipeHint =
+        subscriptionsSwipeHintVisible && !isUpcomingOnly && subscriptions.length > 0;
+    const constrainedContentStyle = useMemo(
+        () => (
+            contentMaxWidth
+                ? {
+                    alignSelf: 'center' as const,
+                    maxWidth: contentMaxWidth,
+                    width: '100%' as const,
+                }
+                : null
+        ),
+        [contentMaxWidth],
+    );
     const upcomingDateGroups = useMemo(() => {
         if (!isUpcomingOnly) {
             return [] as Array<{ date: string; items: typeof subscriptions }>;
@@ -126,9 +146,7 @@ export function SubscriptionsScreen({
                             paddingHorizontal: horizontalPadding,
                             paddingBottom: insets.bottom + spacing['5xl'],
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        constrainedContentStyle,
                     ]}
                     refreshControl={
                         <RefreshControl
@@ -186,6 +204,13 @@ export function SubscriptionsScreen({
                             </Text>
                         </View>
                     )}
+
+                    {showSwipeHint ? (
+                        <SwipeHintCard
+                            accentColor={colors.primary}
+                            onDismiss={dismissSubscriptionsSwipeHint}
+                        />
+                    ) : null}
 
                     {isUpcomingOnly && hasUpcomingError ? (
                         <View style={styles.emptyBlock}>

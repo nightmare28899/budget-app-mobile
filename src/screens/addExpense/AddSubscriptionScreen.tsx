@@ -14,6 +14,7 @@ import { RootScreenProps } from '../../navigation/types';
 import { EntryScreenScaffold } from '../../components/ui/layout/EntryScreenScaffold';
 import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
 import { CreditCardSelector } from '../../components/ui/domain/CreditCardSelector';
+import { CategorySelector } from '../../components/ui/domain/CategorySelector';
 import { Input } from '../../components/ui/primitives/Input';
 import { Button } from '../../components/ui/primitives/Button';
 import { PaymentMethodSelector } from '../../components/ui/domain/PaymentMethodSelector';
@@ -94,6 +95,8 @@ export function AddSubscriptionScreen({
         setPaymentMethod,
         selectedCreditCardId,
         setSelectedCreditCardId,
+        selectedCategoryId,
+        setSelectedCategoryId,
         chargeDateLabel,
         serviceColor,
         serviceIcon,
@@ -107,6 +110,8 @@ export function AddSubscriptionScreen({
         isRemoving,
         creditCards,
         creditCardsLoading,
+        categories,
+        categoriesLoading,
         onChangeDate,
         openDatePicker,
         onPickPreset,
@@ -271,6 +276,23 @@ export function AddSubscriptionScreen({
                         onFocus={createScrollOnFocusHandler()}
                         containerStyle={styles.fieldContainer}
                     />
+
+                    <View style={styles.categoryBlock}>
+                        <Text
+                            style={[
+                                styles.blockTitle,
+                                { fontSize: scaleFont(typography.fontSize.sm) },
+                            ]}
+                        >
+                            {t('editExpense.category')}
+                        </Text>
+                        <CategorySelector
+                            categories={categories}
+                            isLoading={categoriesLoading}
+                            selectedCategory={selectedCategoryId}
+                            onSelectCategory={setSelectedCategoryId}
+                        />
+                    </View>
 
                     <View style={styles.quickPickBlock}>
                         <Text
@@ -686,6 +708,9 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     content: {
         paddingBottom: spacing['5xl'],
+    },
+    categoryBlock: {
+        marginBottom: spacing.lg,
     },
     quickPickBlock: {
         marginBottom: spacing.lg,

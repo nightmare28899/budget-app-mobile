@@ -79,8 +79,9 @@ export function useExpenseForm(expenseId?: string) {
             setNote(expense.note || '');
             setMerchantName(expense.merchantName || '');
             setLocationLabel(expense.locationLabel || '');
-            if (expense.categoryId) {
-                setSelectedCategory(expense.categoryId);
+            const categoryId = expense.categoryId ?? expense.category?.id;
+            if (categoryId) {
+                setSelectedCategory(categoryId);
             }
             if (expense.paymentMethod) {
                 setPaymentMethod(expense.paymentMethod);

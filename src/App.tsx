@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from './navigation/RootNavigator';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { AlertProvider } from './components/alerts/AlertProvider';
 import { OfflineRegistrationSync } from './components/OfflineRegistrationSync';
 import { usePreferencesStore } from './store/preferencesStore';
@@ -30,18 +31,20 @@ export default function App() {
     }, [hydrateGuestData, hydratePreferences]);
 
     return (
-        <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaProvider>
-                <QueryClientProvider client={queryClient}>
-                    <ThemeProvider>
-                        <AlertProvider>
-                            <OfflineRegistrationSync />
-                            <ThemedRoot />
-                        </AlertProvider>
-                    </ThemeProvider>
-                </QueryClientProvider>
-            </SafeAreaProvider>
-        </GestureHandlerRootView>
+        <ErrorBoundary>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+                <SafeAreaProvider>
+                    <QueryClientProvider client={queryClient}>
+                        <ThemeProvider>
+                            <AlertProvider>
+                                <OfflineRegistrationSync />
+                                <ThemedRoot />
+                            </AlertProvider>
+                        </ThemeProvider>
+                    </QueryClientProvider>
+                </SafeAreaProvider>
+            </GestureHandlerRootView>
+        </ErrorBoundary>
     );
 }
 

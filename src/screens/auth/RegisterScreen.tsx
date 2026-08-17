@@ -43,8 +43,6 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         register,
         loginWithGoogle,
         loading,
-        pendingRegistrationsCount,
-        isSyncingOfflineRegistrations,
     } = useAuth();
 
     const { profileImage, setProfileImage, promptPickImage } = useImagePicker();
@@ -73,7 +71,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     const onGoogleRegister = async () => {
         await loginWithGoogle();
     };
-    const { t, tPlural } = useI18n();
+    const { t } = useI18n();
 
     return (
         <KeyboardAvoidingView
@@ -128,6 +126,12 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                                 ]}
                                 onPress={promptPickImage}
                                 activeOpacity={0.8}
+                                accessibilityRole="button"
+                                accessibilityLabel={
+                                    profileImage?.uri
+                                        ? t('auth.changePhoto')
+                                        : t('auth.addPhoto')
+                                }
                             >
                                 {profileImage?.uri ? (
                                     <Image
@@ -148,6 +152,12 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                                     style={styles.avatarActionButton}
                                     onPress={promptPickImage}
                                     activeOpacity={0.8}
+                                    accessibilityRole="button"
+                                    accessibilityLabel={
+                                        profileImage?.uri
+                                            ? t('auth.changePhoto')
+                                            : t('auth.addPhoto')
+                                    }
                                 >
                                     <Icon
                                         name="image-outline"
@@ -168,6 +178,8 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                                     <TouchableOpacity
                                         onPress={() => setProfileImage(null)}
                                         activeOpacity={0.8}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={t('auth.removePhoto')}
                                     >
                                         <Text
                                             style={[
@@ -279,28 +291,6 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                             </Text>
                         </View>
 
-                        {pendingRegistrationsCount > 0 && (
-                            <View style={styles.offlineNotice}>
-                                <Text
-                                    style={[
-                                        styles.offlineNoticeTitle,
-                                        { fontSize: scaleFont(typography.fontSize.sm) },
-                                    ]}
-                                >
-                                    {isSyncingOfflineRegistrations
-                                        ? t('auth.syncingPendingRegistrations')
-                                        : tPlural('auth.pendingOfflineRegistrations', pendingRegistrationsCount)}
-                                </Text>
-                                <Text
-                                    style={[
-                                        styles.offlineNoticeBody,
-                                        { fontSize: scaleFont(typography.fontSize.xs) },
-                                    ]}
-                                >
-                                    {t('auth.offlineSavedHint')}
-                                </Text>
-                            </View>
-                        )}
                     </View>
 
                     <TouchableOpacity

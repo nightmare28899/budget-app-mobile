@@ -1,8 +1,10 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useFocusEffect } from '@react-navigation/native';
 import { incomesApi } from '../api/resources/incomes';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { useI18n } from './useI18n';
+import { SwipeableRef } from '../types/swipeable';
 
 type NavigationLike = {
     setParams: (params: { successMessage?: string | undefined }) => void;
@@ -11,15 +13,19 @@ type NavigationLike = {
 type UseIncomesScreenParams = {
     navigation: NavigationLike;
     successMessage?: string;
+    enabled?: boolean;
 };
 
 export function useIncomesScreen({
     navigation,
     successMessage,
+    enabled = true,
 }: UseIncomesScreenParams) {
     const queryClient = useQueryClient();
     const { alert } = useAppAlert();
     const { t } = useI18n();
+    const activeSwipeableRef = useRef<SwipeableRef | null>(null);
+    const activeSwipeableIdRef = useRef<string | null>(null);
 
     const {
         data,
@@ -31,6 +37,7 @@ export function useIncomesScreen({
         queryKey: ['incomes', 'list'],
         queryFn: () => incomesApi.getAll(),
         staleTime: 30_000,
+        enabled,
     });
 
     useEffect(() => {
@@ -42,6 +49,20 @@ export function useIncomesScreen({
         navigation.setParams({ successMessage: undefined });
         refetch();
     }, [alert, navigation, refetch, successMessage, t]);
+
+    useFocusEffect(
+        useCallback(() => {
+            activeSwipeableRef.current?.close?.();
+            activeSwipeableRef.current = null;
+            activeSwipeableIdRef.current = null;
+
+            return () => {
+                activeSwipeableRef.current?.close?.();
+                activeSwipeableRef.current = null;
+                activeSwipeableIdRef.current = null;
+            };
+        }, []),
+    );
 
     const deleteMutation = useMutation({
         mutationFn: (id: string) => incomesApi.remove(id),
@@ -75,5 +96,7 @@ export function useIncomesScreen({
         error,
         refetch,
         onDeleteIncome,
+        activeSwipeableRef,
+        activeSwipeableIdRef,
     };
 }

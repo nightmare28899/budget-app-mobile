@@ -54,12 +54,17 @@ export function EmptyState({ icon, title, description, containerStyle, iconColor
                     ],
                 },
             ]}
+            accessible
+            accessibilityRole="text"
+            accessibilityLabel={[title, description].filter(Boolean).join('. ')}
+            accessibilityLiveRegion="polite"
         >
             <Icon
                 name={icon}
                 size={iconSize}
                 color={resolvedIconColor}
                 style={styles.emptyIcon}
+                accessible={false}
             />
             <Text style={[styles.emptyText, { fontSize: scaleFont(typography.fontSize.lg) }]}>
                 {title}

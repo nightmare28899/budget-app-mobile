@@ -1,11 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-    Easing as ReanimatedEasing,
-    useAnimatedReaction,
-    useSharedValue,
-    withTiming,
-} from 'react-native-reanimated';
 import { EventArg, NavigationAction, useFocusEffect } from '@react-navigation/native';
 import { subscriptionsApi } from '../api/resources/subscriptions';
 import { useSubscriptionManager } from '../modules/subscriptions/useSubscriptionManager';
@@ -76,7 +70,6 @@ export function useSubscriptionsScreen({
         isLoading,
         isRefreshing,
         subscriptions: storedSubscriptions,
-        monthlyTotal,
         monthlyCurrencyBreakdown,
         activeCount,
         refetch,
@@ -170,20 +163,9 @@ export function useSubscriptionsScreen({
     const visibleSubscriptions = upcomingOnly
         ? upcomingSubscriptions
         : storedSubscriptions;
-    const totalToDisplay = useMemo(
-        () =>
-            upcomingOnly
-                ? upcomingSubscriptions.reduce((sum, item) => sum + item.cost, 0)
-                : monthlyTotal,
-        [monthlyTotal, upcomingOnly, upcomingSubscriptions],
-    );
-
-    const [animatedTotal, setAnimatedTotal] = useState(totalToDisplay);
-    const previousTotal = useRef(totalToDisplay);
     const handlingBackRef = useRef(false);
     const activeSwipeableRef = useRef<SwipeableRef | null>(null);
     const activeSwipeableIdRef = useRef<string | null>(null);
-    const animatedTotalValue = useSharedValue(totalToDisplay);
     const locale: 'es-MX' | 'en-US' = language === 'es' ? 'es-MX' : 'en-US';
 
     useEffect(() => {
@@ -192,22 +174,6 @@ export function useSubscriptionsScreen({
             navigation.setParams({ successMessage: undefined });
         }
     }, [alert, navigation, successMessage, t]);
-
-    useEffect(() => {
-        const isRising = totalToDisplay > previousTotal.current;
-        animatedTotalValue.value = withTiming(totalToDisplay, {
-            duration: isRising ? 900 : 400,
-            easing: ReanimatedEasing.out(ReanimatedEasing.cubic),
-        });
-        previousTotal.current = totalToDisplay;
-    }, [animatedTotalValue, totalToDisplay]);
-
-    useAnimatedReaction(
-        () => animatedTotalValue.value,
-        (nextValue) => {
-            setAnimatedTotal(nextValue);
-        },
-    );
 
     const goHomeOnBack = useCallback(() => {
         if (handlingBackRef.current) {
@@ -308,7 +274,6 @@ export function useSubscriptionsScreen({
         isRefreshing: upcomingOnly ? upcomingRefetching : isRefreshing,
         subscriptions: visibleSubscriptions,
         refetch: refetchScreen,
-        animatedTotal,
         monthlyCurrencyBreakdown,
         locale,
         activeCountLabel,

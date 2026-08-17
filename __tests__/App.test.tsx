@@ -47,6 +47,10 @@ jest.mock('../src/components/OfflineRegistrationSync', () => ({
     OfflineRegistrationSync: () => null,
 }));
 
+jest.mock('../src/hooks/usePushNotifications', () => ({
+    usePushNotifications: jest.fn(),
+}));
+
 jest.mock('../src/theme', () => ({
     ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
     useTheme: () => ({

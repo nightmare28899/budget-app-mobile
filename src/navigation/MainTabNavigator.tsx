@@ -76,6 +76,7 @@ function AnimatedMainTabBar({
 
 function GlobalActionFab({ hideOffset }: GlobalActionFabProps) {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const { t } = useI18n();
     const { isSmallPhone, isTablet, scaleSize } = useResponsive();
     const styles = useThemedStyles(createStyles);
     const { isVisible, progress } = useBottomDockVisibility();
@@ -126,6 +127,8 @@ function GlobalActionFab({ hideOffset }: GlobalActionFabProps) {
                             },
                         ]}
                         onPress={onOpenAddEntry}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('navigation.addEntry')}
                     >
                         <Icon name="add" size={Math.round(fabSize * 0.52)} color="#FFFFFF" />
                     </TouchableOpacity>

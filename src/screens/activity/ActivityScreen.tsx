@@ -11,18 +11,20 @@ import {
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { MainTabScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { useSubscriptionsScreen } from '../../hooks/useSubscriptionsScreen';
 import { formatCurrency } from '../../utils/core/format';
 import { withAlpha } from '../../utils/domain/subscriptions';
-import { Expense, Income } from '../../types/index';
+import { Category, Expense, Income } from '../../types/index';
 import { ExpenseItem } from '../../components/ui/domain/ExpenseItem';
+import { IncomeItem } from '../../components/ui/domain/IncomeItem';
 import { SubscriptionItem } from '../../components/ui/domain/SubscriptionItem';
 import { EmptyState } from '../../components/ui/primitives/EmptyState';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { HistorySkeleton } from '../../components/ui/primitives/Skeleton';
+import { SwipeHintCard } from '../../components/ui/primitives/SwipeHintCard';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { useI18n } from '../../hooks/useI18n';
 import { Button } from '../../components/ui/primitives/Button';
@@ -39,20 +41,37 @@ import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibi
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
 import { useExpensesScreen } from '../../hooks/useExpensesScreen';
 import { useIncomesScreen } from '../../hooks/useIncomesScreen';
-import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/domain/currency';
+import { useSwipeHint } from '../../hooks/useSwipeHint';
+import {
+    aggregateCurrencyTotals,
+    formatCurrencyBreakdown,
+    getCurrencyLocale,
+} from '../../utils/domain/currency';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { categoriesApi } from '../../api/resources/categories';
 
 type CardsTab = 'expenses' | 'subscriptions' | 'incomes';
 type CardsSection<T> = {
     title: string;
     data: T[];
+    showMonthHeader?: boolean;
+    monthTitle?: string;
+    monthValue?: string;
+    monthMeta?: string;
 };
+
+function normalizeActivityTab(value: unknown): CardsTab {
+    if (value === 'subscriptions' || value === 'incomes') {
+        return value;
+    }
+
+    return 'expenses';
+}
 
 export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activity'>) {
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
     const insets = useSafeAreaInsets();
+    const queryClient = useQueryClient();
     const {
         horizontalPadding,
         contentMaxWidth,
@@ -63,9 +82,15 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
     } = useResponsive();
     const { t, tPlural, language } = useI18n();
     const user = useAuthStore((s) => s.user);
+    const {
+        isVisible: activitySwipeHintVisible,
+        dismiss: dismissActivitySwipeHint,
+    } = useSwipeHint('activity', user);
     const initialTab = route.params?.initialTab;
     const successMessage = route.params?.successMessage;
-    const [activeTab, setActiveTab] = useState<CardsTab>(initialTab ?? 'expenses');
+    const [activeTab, setActiveTab] = useState<CardsTab>(
+        normalizeActivityTab(initialTab),
+    );
     const [expenseSearchQuery, setExpenseSearchQuery] = useState('');
     const [subscriptionSearchQuery, setSubscriptionSearchQuery] = useState('');
     const [incomeSearchQuery, setIncomeSearchQuery] = useState('');
@@ -77,8 +102,9 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
             return;
         }
 
-        if (initialTab !== activeTab) {
-            setActiveTab(initialTab);
+        const normalizedTab = normalizeActivityTab(initialTab);
+        if (normalizedTab !== activeTab) {
+            setActiveTab(normalizedTab);
         }
 
         navigation.setParams({ initialTab: undefined });
@@ -105,12 +131,6 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
     } = useExpensesScreen({
         navigation,
         successMessage: initialTab === 'expenses' ? successMessage : undefined,
-    });
-
-    const { data: categories = [] } = useQuery({
-        queryKey: ['categories', 'activity-filters'],
-        queryFn: categoriesApi.getAll,
-        staleTime: 5 * 60_000,
     });
 
     const parentNavigation = navigation.getParent();
@@ -152,9 +172,12 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         error: incomesError,
         refetch: refetchIncomes,
         onDeleteIncome,
+        activeSwipeableRef: incomeSwipeableRef,
+        activeSwipeableIdRef: incomeSwipeableIdRef,
     } = useIncomesScreen({
         navigation,
         successMessage: initialTab === 'incomes' ? successMessage : undefined,
+        enabled: activeTab === 'incomes',
     });
 
     useEffect(() => {
@@ -259,10 +282,19 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         [filteredSubscriptions],
     );
 
+    const cachedCategories = useMemo(() => {
+        const data = queryClient.getQueryData<Category[]>(['categories']);
+        return Array.isArray(data) ? data : [];
+    }, [queryClient]);
+
     const expenseCategoryOptions = useMemo(() => {
         const map = new Map<string, string>();
 
-        for (const category of categories) {
+        for (const category of cachedCategories) {
+            if (!category?.id || !category?.name) {
+                continue;
+            }
+
             map.set(category.id, category.name);
         }
 
@@ -276,11 +308,11 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         }
 
         const options = Array.from(map.entries())
-            .map(([id, name]) => ({ id, name }))
+            .map(([id, name]) => ({ id, name: String(name) }))
             .sort((a, b) => a.name.localeCompare(b.name));
 
         return options;
-    }, [categories, expenses, t]);
+    }, [cachedCategories, expenses, t]);
 
     const activeSearchQuery = isExpensesTab
         ? expenseSearchQuery
@@ -316,6 +348,20 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
     const showExpensesInitialError = !!expensesError;
 
     const sectionLocale: 'en-US' | 'es-MX' = locale === 'es-MX' ? 'es-MX' : 'en-US';
+    const formatMonthTitle = useCallback((monthKey: string) => {
+        const monthDate = new Date(`${monthKey}-01T12:00:00`);
+        if (Number.isNaN(monthDate.getTime())) {
+            return monthKey;
+        }
+
+        const label = monthDate.toLocaleDateString(sectionLocale, {
+            month: 'long',
+            year: 'numeric',
+        });
+
+        return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+    }, [sectionLocale]);
+
     const formatSectionDateTitle = useCallback((date: string) => {
         const dateObj = new Date(`${date}T12:00:00`);
         const dayAndMonth = dateObj.toLocaleDateString(sectionLocale, {
@@ -342,14 +388,59 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
             acc[dateStr].push(expense);
             return acc;
         }, {});
+        const monthGroups = expenses.reduce<Record<string, Expense[]>>((acc, expense) => {
+            const dateStr = expense.date ? expense.date.slice(0, 10) : todayKey;
+            const monthKey = dateStr.slice(0, 7);
+
+            if (!acc[monthKey]) acc[monthKey] = [];
+            acc[monthKey].push(expense);
+            return acc;
+        }, {});
+        const seenMonths = new Set<string>();
 
         return Object.entries(grouped)
             .sort(([a], [b]) => b.localeCompare(a))
-            .map(([date, items]) => ({
-                title: formatSectionDateTitle(date),
-                data: items,
-            }));
-    }, [expenses, todayKey, formatSectionDateTitle]);
+            .map(([date, items]) => {
+                const monthKey = date.slice(0, 7);
+                const showMonthHeader = !seenMonths.has(monthKey);
+                if (showMonthHeader) {
+                    seenMonths.add(monthKey);
+                }
+
+                const monthItems = monthGroups[monthKey] ?? [];
+                const monthValue = formatCurrencyBreakdown(
+                    aggregateCurrencyTotals(
+                        monthItems,
+                        (expense) => expense.cost,
+                        (expense) => expense.currency,
+                        user?.currency,
+                    ),
+                    {
+                        locale: sectionLocale,
+                        emptyCurrency: user?.currency,
+                    },
+                );
+
+                return {
+                    title: formatSectionDateTitle(date),
+                    data: items,
+                    showMonthHeader,
+                    monthTitle: showMonthHeader ? formatMonthTitle(monthKey) : undefined,
+                    monthValue,
+                    monthMeta: showMonthHeader
+                        ? tPlural('analytics.expenseCount', monthItems.length)
+                        : undefined,
+                };
+            });
+    }, [
+        expenses,
+        formatMonthTitle,
+        formatSectionDateTitle,
+        sectionLocale,
+        tPlural,
+        todayKey,
+        user?.currency,
+    ]);
 
     const expensesFooter = useMemo(() => {
         if (expensesLoadingMore) {
@@ -425,22 +516,76 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
             acc[dateStr].push(income);
             return acc;
         }, {});
+        const monthGroups = filteredIncomes.reduce<Record<string, Income[]>>((acc, income) => {
+            const dateStr = income.date ? income.date.slice(0, 10) : todayKey;
+            const monthKey = dateStr.slice(0, 7);
+
+            if (!acc[monthKey]) acc[monthKey] = [];
+            acc[monthKey].push(income);
+            return acc;
+        }, {});
+        const seenMonths = new Set<string>();
 
         return Object.entries(grouped)
             .sort(([a], [b]) => b.localeCompare(a))
-            .map(([date, items]) => ({
-                title: formatSectionDateTitle(date),
-                data: items,
-            }));
-    }, [filteredIncomes, formatSectionDateTitle, todayKey]);
+            .map(([date, items]) => {
+                const monthKey = date.slice(0, 7);
+                const showMonthHeader = !seenMonths.has(monthKey);
+                if (showMonthHeader) {
+                    seenMonths.add(monthKey);
+                }
+
+                const monthItems = monthGroups[monthKey] ?? [];
+                const monthValue = formatCurrencyBreakdown(
+                    aggregateCurrencyTotals(
+                        monthItems,
+                        (income) => income.amount,
+                        (income) => income.currency,
+                        user?.currency,
+                    ),
+                    {
+                        locale: sectionLocale,
+                        emptyCurrency: user?.currency,
+                    },
+                );
+
+                return {
+                    title: formatSectionDateTitle(date),
+                    data: items,
+                    showMonthHeader,
+                    monthTitle: showMonthHeader ? formatMonthTitle(monthKey) : undefined,
+                    monthValue,
+                    monthMeta: showMonthHeader
+                        ? tPlural('income.count', monthItems.length)
+                        : undefined,
+                };
+            });
+    }, [
+        filteredIncomes,
+        formatMonthTitle,
+        formatSectionDateTitle,
+        sectionLocale,
+        tPlural,
+        todayKey,
+        user?.currency,
+    ]);
     const bottomDockScroll = useBottomDockScrollVisibility({
         forceVisible: isExpensesTab
             ? expenseSections.length === 0
             : isIncomesTab
                 ? incomeSections.length === 0
-                : subscriptionSections.length === 0,
+            : subscriptionSections.length === 0,
         resetKey: `${activeTab}:${expenseSections.length}:${incomeSections.length}:${subscriptionSections.length}`,
     });
+    const showActivitySwipeHint =
+        activitySwipeHintVisible &&
+        (
+            isExpensesTab
+                ? expenseSections.length > 0
+                : isIncomesTab
+                    ? incomeSections.length > 0
+                    : subscriptionSections.length > 0
+        );
 
     const renderModuleHeader = ({
         title,
@@ -506,6 +651,54 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         </View>
     );
 
+    const renderMonthHeader = ({
+        title,
+        value,
+        meta,
+        toneColor,
+    }: {
+        title?: string;
+        value?: string;
+        meta?: string;
+        toneColor: string;
+    }) => {
+        if (!title) {
+            return null;
+        }
+
+        return (
+            <View
+                style={[
+                    styles.monthSummaryCard,
+                    {
+                        marginHorizontal: horizontalPadding,
+                        borderColor: withAlpha(toneColor, 0.24),
+                        backgroundColor: withAlpha(toneColor, 0.1),
+                    },
+                    constrainedContentStyle,
+                ]}
+            >
+                <Text
+                    style={[styles.monthSummaryTitle, { fontSize: scaleFont(typography.fontSize.base) }]}
+                >
+                    {title}
+                </Text>
+                <Text
+                    style={[styles.monthSummaryValue, { fontSize: scaleFont(typography.fontSize.xl) }]}
+                >
+                    {value}
+                </Text>
+                {meta ? (
+                    <Text
+                        style={[styles.monthSummaryMeta, { fontSize: scaleFont(typography.fontSize.xs) }]}
+                    >
+                        {meta}
+                    </Text>
+                ) : null}
+            </View>
+        );
+    };
+
     const expensesHeader = (
         <>
             {renderModuleHeader({
@@ -515,6 +708,20 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                 summaryValue: formatCurrency(total, user?.currency),
                 summaryMeta: expensesCountLabel,
             })}
+            {showActivitySwipeHint ? (
+                <View
+                    style={[
+                        styles.swipeHintWrap,
+                        { marginHorizontal: horizontalPadding },
+                        constrainedContentStyle,
+                    ]}
+                >
+                    <SwipeHintCard
+                        accentColor={colors.primaryAction}
+                        onDismiss={dismissActivitySwipeHint}
+                    />
+                </View>
+            ) : null}
             {expensesRefreshError ? (
                 <View
                     style={[
@@ -546,13 +753,50 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         summaryValue: formatCurrency(filteredSubscriptionsTotal, user?.currency),
         summaryMeta: tPlural('subscriptions.activeCount', filteredSubscriptions.length),
     });
-    const incomesHeader = renderModuleHeader({
-        title: t('income.title'),
-        subtitle: incomeSummaryText,
-        summaryLabel: t('income.totalIncome'),
-        summaryValue: incomeBreakdownFiltered,
-        summaryMeta: incomeCountLabel,
-    });
+    const subscriptionsHeaderWithHint = (
+        <>
+            {subscriptionsHeader}
+            {showActivitySwipeHint ? (
+                <View
+                    style={[
+                        styles.swipeHintWrap,
+                        { marginHorizontal: horizontalPadding },
+                        constrainedContentStyle,
+                    ]}
+                >
+                    <SwipeHintCard
+                        accentColor={colors.primary}
+                        onDismiss={dismissActivitySwipeHint}
+                    />
+                </View>
+            ) : null}
+        </>
+    );
+    const incomesHeader = (
+        <>
+            {renderModuleHeader({
+                title: t('income.title'),
+                subtitle: incomeSummaryText,
+                summaryLabel: t('income.totalIncome'),
+                summaryValue: incomeBreakdownFiltered,
+                summaryMeta: incomeCountLabel,
+            })}
+            {showActivitySwipeHint ? (
+                <View
+                    style={[
+                        styles.swipeHintWrap,
+                        { marginHorizontal: horizontalPadding },
+                        constrainedContentStyle,
+                    ]}
+                >
+                    <SwipeHintCard
+                        accentColor={colors.success}
+                        onDismiss={dismissActivitySwipeHint}
+                    />
+                </View>
+            ) : null}
+        </>
+    );
 
     return (
         <View style={styles.container}>
@@ -789,7 +1033,19 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                                     tintColor={colors.primary}
                                 />
                             }
-                            renderSectionHeader={({ section }) => renderDateSectionHeader(section.title)}
+                            renderSectionHeader={({ section }) => (
+                                <>
+                                    {section.showMonthHeader
+                                        ? renderMonthHeader({
+                                            title: section.monthTitle,
+                                            value: section.monthValue,
+                                            meta: section.monthMeta,
+                                            toneColor: colors.primaryAction,
+                                        })
+                                        : null}
+                                    {renderDateSectionHeader(section.title)}
+                                </>
+                            )}
                             renderItem={({ item, index }: { item: Expense; index: number }) => (
                                 <View style={[{ marginHorizontal: horizontalPadding }, constrainedContentStyle]}>
                                     <ExpenseItem
@@ -842,60 +1098,42 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                                 tintColor={colors.primary}
                             />
                         }
-                        renderSectionHeader={({ section }) => renderDateSectionHeader(section.title)}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                activeOpacity={0.86}
+                        renderSectionHeader={({ section }) => (
+                            <>
+                                {section.showMonthHeader
+                                    ? renderMonthHeader({
+                                        title: section.monthTitle,
+                                        value: section.monthValue,
+                                        meta: section.monthMeta,
+                                        toneColor: colors.success,
+                                    })
+                                    : null}
+                                {renderDateSectionHeader(section.title)}
+                            </>
+                        )}
+                        renderItem={({ item, index }) => (
+                            <View
                                 style={[
-                                    styles.incomeCard,
+                                    styles.compactIncomeCard,
                                     { marginHorizontal: horizontalPadding },
                                     constrainedContentStyle,
                                 ]}
-                                onPress={() => navigation.navigate('AddIncome', { income: item })}
                             >
-                                <View style={styles.incomeLeading}>
-                                    <View style={styles.incomeIconWrap}>
-                                        <Icon name="trending-up-outline" size={17} color={colors.success} />
-                                    </View>
-                                    <View style={styles.incomeCopy}>
-                                        <Text
-                                            style={[
-                                                styles.incomeTitle,
-                                                { fontSize: scaleFont(typography.fontSize.base) },
-                                            ]}
-                                            numberOfLines={1}
-                                        >
-                                            {item.title}
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.incomeMeta,
-                                                { fontSize: scaleFont(typography.fontSize.sm) },
-                                            ]}
-                                            numberOfLines={2}
-                                        >
-                                            {item.note || t('income.receivedOn')}
-                                        </Text>
-                                    </View>
-                                </View>
-                                <View style={styles.incomeTrailing}>
-                                    <Text
-                                        style={[
-                                            styles.incomeAmount,
-                                            { fontSize: scaleFont(typography.fontSize.base) },
-                                        ]}
-                                    >
-                                        {formatCurrency(item.amount, item.currency, incomeLocale)}
-                                    </Text>
-                                    <TouchableOpacity
-                                        activeOpacity={0.82}
-                                        style={styles.incomeDelete}
-                                        onPress={() => onDeleteIncome(item.id, item.title)}
-                                    >
-                                        <Icon name="trash-outline" size={16} color={colors.error} />
-                                    </TouchableOpacity>
-                                </View>
-                            </TouchableOpacity>
+                                <IncomeItem
+                                    income={item}
+                                    locale={incomeLocale}
+                                    onPress={(selectedIncome) =>
+                                        navigation.navigate('AddIncome', { income: selectedIncome })}
+                                    onEdit={(selectedIncome) =>
+                                        navigation.navigate('AddIncome', { income: selectedIncome })}
+                                    onDelete={onDeleteIncome}
+                                    activeSwipeableRef={incomeSwipeableRef}
+                                    activeSwipeableIdRef={incomeSwipeableIdRef}
+                                    animationDelay={Math.min(index * 40, 180)}
+                                    compact
+                                    showDateInMeta={false}
+                                />
+                            </View>
                         )}
                         ListEmptyComponent={
                             <View style={[styles.emptyBlock, { marginHorizontal: horizontalPadding }, constrainedContentStyle]}>
@@ -929,12 +1167,12 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                         ]}
                     />
                 ) : (
-                    <SectionList
-                        {...bottomDockScroll}
-                        sections={subscriptionSections}
-                        keyExtractor={(item) => item.id}
-                        stickySectionHeadersEnabled={false}
-                        ListHeaderComponent={subscriptionsHeader}
+                        <SectionList
+                            {...bottomDockScroll}
+                            sections={subscriptionSections}
+                            keyExtractor={(item) => item.id}
+                            stickySectionHeadersEnabled={false}
+                            ListHeaderComponent={subscriptionsHeaderWithHint}
                         refreshControl={
                             <RefreshControl
                                 refreshing={subscriptionsRefreshing || subscriptionsLoading}
@@ -1173,7 +1411,34 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     footerSpacer: {
         height: spacing.lg,
     },
+    swipeHintWrap: {
+        marginBottom: spacing.sm,
+    },
+    monthSummaryCard: {
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        marginTop: spacing.base,
+        marginBottom: spacing.xs,
+        paddingHorizontal: spacing.base,
+        paddingVertical: spacing.sm + 2,
+    },
+    monthSummaryTitle: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.bold,
+    },
+    monthSummaryValue: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.bold,
+        marginTop: spacing.xs,
+    },
+    monthSummaryMeta: {
+        color: colors.textMuted,
+        marginTop: spacing.xs,
+    },
     compactSubscriptionCard: {
+        marginBottom: spacing.sm,
+    },
+    compactIncomeCard: {
         marginBottom: spacing.sm,
     },
     incomeCard: {

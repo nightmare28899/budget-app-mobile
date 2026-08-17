@@ -15,7 +15,10 @@ import apiClient from '../api/client';
 import { authApi } from '../api/auth';
 import { reportsApi } from '../api/resources/reports';
 import { usersApi } from '../api/resources/users';
-import { extractApiMessage } from '../utils/platform/api';
+import {
+  extractApiMessage,
+  toMultipartFileValue,
+} from '../utils/platform/api';
 import { API_BASE_URL } from '../utils/core/constants';
 import { BudgetPeriod, User } from '../types/index';
 import { notificationsApi } from '../api/resources/notifications';
@@ -139,21 +142,6 @@ export function useSettings() {
     setAvatarLoadFailed(false);
   }, [avatarUri]);
 
-  const parseResponsePayload = async (response: Response) => {
-    const rawText = await response.text();
-    const trimmed = rawText.trim();
-
-    if (!trimmed) {
-      return null;
-    }
-
-    try {
-      return JSON.parse(trimmed);
-    } catch {
-      return trimmed;
-    }
-  };
-
   const patchProfileMultipart = async (
     payload: Record<string, string | number | boolean>,
     localAvatarUri: string,
@@ -165,36 +153,21 @@ export function useSettings() {
 
     const filename =
       localAvatarUri.split('/').pop() || `avatar-${Date.now()}.jpg`;
-    formData.append('avatar', {
-      uri: localAvatarUri,
-      name: filename,
-      type: inferImageMimeType(filename),
-    } as any);
+    formData.append(
+      'avatar',
+      toMultipartFileValue({
+        uri: localAvatarUri,
+        name: filename,
+        type: inferImageMimeType(filename),
+      }),
+    );
 
-    const accessToken = useAuthStore.getState().accessToken;
-    const response = await fetch(`${API_BASE_URL}/users/me`, {
-      method: 'PATCH',
-      headers: {
-        Accept: 'application/json',
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      },
-      body: formData,
-    });
+    const { data: responsePayload } = await apiClient.patch(
+      '/users/me',
+      formData,
+    );
 
-    const responsePayload = await parseResponsePayload(response);
-    if (!response.ok) {
-      const error: any = new Error(
-        extractApiMessage(responsePayload) ||
-          `Request failed with status ${response.status}`,
-      );
-      error.response = {
-        status: response.status,
-        data: responsePayload,
-      };
-      throw error;
-    }
-
-    return (responsePayload as any)?.user ?? responsePayload;
+    return responsePayload?.user ?? responsePayload;
   };
 
   const normalizeUpdatedUser = (data: any): User => {

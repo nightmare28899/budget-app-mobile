@@ -8,7 +8,6 @@ import {
     TouchableOpacity,
     TextInput,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
 import DateTimePicker, {
     DateTimePickerAndroid,
     DateTimePickerEvent,
@@ -41,7 +40,6 @@ import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
 import { isCreditCardPaymentMethod } from '../../utils/domain/paymentMethod';
 import { useAppAccess } from '../../hooks/useAppAccess';
 import { usePremiumAccess } from '../../hooks/usePremiumAccess';
-import { expensesApi } from '../../api/resources/expenses';
 
 type DateField = 'purchase' | 'firstPayment';
 
@@ -58,6 +56,7 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
     const { requirePremiumAccess } = usePremiumAccess();
     const locale = getCurrencyLocale(language);
     const [activeDateField, setActiveDateField] = useState<DateField>('purchase');
+    const [showOptionalDetails, setShowOptionalDetails] = useState(false);
     const { scrollRef, createScrollOnFocusHandler } = useScrollToFocusedInput(120);
 
     const {
@@ -69,8 +68,6 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         firstPaymentDate, setFirstPaymentDate,
         installmentBreakdown,
         note, setNote,
-        merchantName, setMerchantName,
-        locationLabel, setLocationLabel,
         paymentMethod, setPaymentMethod,
         selectedCreditCardId, setSelectedCreditCardId,
         selectedCategory, setSelectedCategory,
@@ -81,8 +78,6 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         isPending: isSavingExpense,
         resetForm,
     } = useExpenseForm();
-    const [debouncedLocationLabel, setDebouncedLocationLabel] = useState('');
-    const [suggestionSearch, setSuggestionSearch] = useState('');
     const currencySymbol = getCurrencySymbol(currency, locale);
     const parsedInstallmentCount = Number.parseInt(installmentCount, 10);
     const handleInstallmentMode = (nextValue: boolean) => {
@@ -120,40 +115,6 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         isPending: isCreatingCategory,
         onCreateCategory,
     } = useCategoryCreator((id) => setSelectedCategory(id));
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setDebouncedLocationLabel(locationLabel.trim());
-        }, 260);
-
-        return () => clearTimeout(timer);
-    }, [locationLabel]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setSuggestionSearch(title.trim());
-        }, 200);
-
-        return () => clearTimeout(timer);
-    }, [title]);
-
-    const {
-        data: locationSuggestions,
-        isFetching: isLoadingSuggestions,
-    } = useQuery({
-        queryKey: ['expenses', 'location-suggestions', debouncedLocationLabel, selectedCategory ?? 'all', suggestionSearch],
-        queryFn: () =>
-            expensesApi.getLocationSuggestions({
-                locationLabel: debouncedLocationLabel,
-                categoryId: selectedCategory,
-                q: suggestionSearch || undefined,
-                limit: 5,
-            }),
-        enabled: debouncedLocationLabel.length >= 2,
-        staleTime: 30_000,
-    });
-
-    const suggestions = locationSuggestions?.suggestions ?? [];
 
     useEffect(() => {
         if (!selectedCategory && categories.length > 0) {
@@ -208,6 +169,26 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
             amount: installmentAmountLabel,
         });
     }, [currency, installmentBreakdown, isInstallment, locale, t]);
+    const optionalDetailsCount = useMemo(
+        () =>
+            [
+                note.trim(),
+                paymentMethod,
+                isInstallment ? 'installment' : '',
+                isCreditCardPaymentMethod(paymentMethod)
+                    ? (selectedCreditCardId ?? 'credit-card')
+                    : '',
+            ].filter(Boolean).length,
+        [
+            isInstallment,
+            note,
+            paymentMethod,
+            selectedCreditCardId,
+        ],
+    );
+    const optionalDetailsSummary = optionalDetailsCount > 0
+        ? t('addExpense.optionalDetailsCount', { count: optionalDetailsCount })
+        : t('addExpense.optionalDetailsHint');
 
     const onSave = async () => {
         await saveExpense(() => {
@@ -231,28 +212,6 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
 
     const onChangeCost = (value: string) => {
         setCost(sanitizeMoneyInput(value));
-    };
-
-    const applyLocationSuggestion = (suggestion: {
-        title: string;
-        averageCost: number;
-        categoryId?: string | null;
-        locationLabel?: string | null;
-        merchantName?: string | null;
-    }) => {
-        setTitle(suggestion.title);
-        if (!cost || Number.parseFloat(cost) <= 0) {
-            setCost(String(suggestion.averageCost.toFixed(2)));
-        }
-        if (suggestion.categoryId) {
-            setSelectedCategory(suggestion.categoryId);
-        }
-        if (suggestion.locationLabel && !locationLabel.trim()) {
-            setLocationLabel(suggestion.locationLabel);
-        }
-        if (suggestion.merchantName && !merchantName.trim()) {
-            setMerchantName(suggestion.merchantName);
-        }
     };
 
     const applyDateValue = (field: DateField, value?: Date) => {
@@ -336,56 +295,6 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                         </Text>
                     </View>
                 </View>
-
-                <CurrencySelector
-                    label={t('common.currency')}
-                    value={currency}
-                    onChange={setCurrency}
-                />
-            </View>
-
-            <View style={styles.fieldContainer}>
-                <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
-                    {t('expense.paymentTimingLabel')}
-                </Text>
-                <View style={styles.planModeRow}>
-                    <TouchableOpacity
-                        activeOpacity={0.84}
-                        style={[
-                            styles.planModeButton,
-                            !isInstallment && styles.planModeButtonActive,
-                        ]}
-                        onPress={() => handleInstallmentMode(false)}
-                    >
-                        <Text
-                            style={[
-                                styles.planModeButtonText,
-                                !isInstallment && styles.planModeButtonTextActive,
-                                { fontSize: scaleFont(typography.fontSize.sm) },
-                            ]}
-                        >
-                            {t('expense.singlePayment')}
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        activeOpacity={0.84}
-                        style={[
-                            styles.planModeButton,
-                            isInstallment && styles.planModeButtonActive,
-                        ]}
-                        onPress={() => handleInstallmentMode(true)}
-                    >
-                        <Text
-                            style={[
-                                styles.planModeButtonText,
-                                isInstallment && styles.planModeButtonTextActive,
-                                { fontSize: scaleFont(typography.fontSize.sm) },
-                            ]}
-                        >
-                            {t('expense.installmentPayment')}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
             </View>
 
             <Input
@@ -396,226 +305,6 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                 onFocus={createScrollOnFocusHandler()}
                 containerStyle={styles.fieldContainer}
             />
-
-            <Input
-                label={t('addExpense.locationLabel')}
-                placeholder={t('addExpense.locationPlaceholder')}
-                value={locationLabel}
-                onChangeText={setLocationLabel}
-                onFocus={createScrollOnFocusHandler()}
-                containerStyle={styles.fieldContainer}
-            />
-
-            <Input
-                label={t('addExpense.merchantLabel')}
-                placeholder={t('addExpense.merchantPlaceholder')}
-                value={merchantName}
-                onChangeText={setMerchantName}
-                onFocus={createScrollOnFocusHandler()}
-                containerStyle={styles.fieldContainer}
-            />
-
-            {debouncedLocationLabel.length >= 2 ? (
-                <View style={styles.suggestionsCard}>
-                    <View style={styles.suggestionsHeader}>
-                        <Text
-                            style={[
-                                styles.suggestionsTitle,
-                                { fontSize: scaleFont(typography.fontSize.sm) },
-                            ]}
-                        >
-                            {t('addExpense.suggestionsTitle')}
-                        </Text>
-                        {isLoadingSuggestions ? (
-                            <Text
-                                style={[
-                                    styles.suggestionsMeta,
-                                    { fontSize: scaleFont(typography.fontSize.xs) },
-                                ]}
-                            >
-                                {t('common.loading')}
-                            </Text>
-                        ) : null}
-                    </View>
-                    {suggestions.length ? (
-                        <View style={styles.suggestionItems}>
-                            {suggestions.map((item) => (
-                                <TouchableOpacity
-                                    key={`${item.title}-${item.categoryId ?? 'none'}-${item.lastPurchasedAt}`}
-                                    style={styles.suggestionItem}
-                                    onPress={() => applyLocationSuggestion(item)}
-                                    activeOpacity={0.84}
-                                >
-                                    <View style={styles.suggestionItemLeft}>
-                                        <Text
-                                            style={[
-                                                styles.suggestionItemTitle,
-                                                { fontSize: scaleFont(typography.fontSize.sm) },
-                                            ]}
-                                            numberOfLines={1}
-                                        >
-                                            {item.title}
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.suggestionItemMeta,
-                                                { fontSize: scaleFont(typography.fontSize.xs) },
-                                            ]}
-                                            numberOfLines={1}
-                                        >
-                                            {t('addExpense.suggestionMeta', {
-                                                count: item.occurrenceCount,
-                                                amount: formatCurrency(item.averageCost, item.currency, locale),
-                                            })}
-                                        </Text>
-                                    </View>
-                                    <Icon name="arrow-forward-circle-outline" size={18} color={colors.primaryLight} />
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    ) : (
-                        <Text
-                            style={[
-                                styles.suggestionsEmpty,
-                                { fontSize: scaleFont(typography.fontSize.xs) },
-                            ]}
-                        >
-                            {t('addExpense.suggestionsEmpty')}
-                        </Text>
-                    )}
-                </View>
-            ) : null}
-
-            <View style={styles.fieldContainer}>
-                <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
-                    {isInstallment
-                        ? t('expense.purchaseDateLabel')
-                        : t('addExpense.dateLabel')}
-                </Text>
-                <TouchableOpacity
-                    activeOpacity={0.84}
-                    style={styles.dateButton}
-                    onPress={() => openDatePicker('purchase')}
-                >
-                    <View style={styles.dateButtonContent}>
-                        <Icon name="calendar-outline" size={18} color={colors.textSecondary} />
-                        <Text
-                            style={[
-                                styles.dateButtonText,
-                                { fontSize: scaleFont(typography.fontSize.base) },
-                            ]}
-                        >
-                            {dateLabel}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
-                {Platform.OS === 'ios' && activeDateField === 'purchase' ? (
-                    <View style={styles.iosDatePickerCard}>
-                        <DateTimePicker
-                            mode="date"
-                            display="spinner"
-                            value={parseDateOrToday(date)}
-                            themeVariant="dark"
-                            textColor={colors.textPrimary}
-                            onChange={createDateChangeHandler('purchase')}
-                        />
-                    </View>
-                ) : null}
-            </View>
-
-            {isInstallment ? (
-                <View style={styles.installmentCard}>
-                    <Input
-                        label={t('expense.installmentCountLabel')}
-                        placeholder={t('expense.installmentCountPlaceholder')}
-                        value={installmentCount}
-                        onChangeText={(value) =>
-                            setInstallmentCount(value.replace(/[^0-9]/g, '').slice(0, 3))
-                        }
-                        keyboardType="number-pad"
-                        maxLength={3}
-                        onFocus={createScrollOnFocusHandler(128)}
-                        containerStyle={styles.fieldContainer}
-                    />
-
-                    <View style={styles.fieldContainer}>
-                        <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
-                            {t('expense.firstPaymentDateLabel')}
-                        </Text>
-                        <TouchableOpacity
-                            activeOpacity={0.84}
-                            style={styles.dateButton}
-                            onPress={() => openDatePicker('firstPayment')}
-                        >
-                            <View style={styles.dateButtonContent}>
-                                <Icon name="calendar-clear-outline" size={18} color={colors.textSecondary} />
-                                <Text
-                                    style={[
-                                        styles.dateButtonText,
-                                        { fontSize: scaleFont(typography.fontSize.base) },
-                                    ]}
-                                >
-                                    {firstPaymentDateLabel}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                        {Platform.OS === 'ios' && activeDateField === 'firstPayment' ? (
-                            <View style={styles.iosDatePickerCard}>
-                                <DateTimePicker
-                                    mode="date"
-                                    display="spinner"
-                                    value={parseDateOrToday(firstPaymentDate)}
-                                    themeVariant="dark"
-                                    textColor={colors.textPrimary}
-                                    onChange={createDateChangeHandler('firstPayment')}
-                                />
-                            </View>
-                        ) : null}
-                    </View>
-
-                    <View style={styles.installmentPreviewCard}>
-                        <View style={styles.installmentPreviewHeader}>
-                            <Icon
-                                name="card-outline"
-                                size={18}
-                                color={colors.primaryLight}
-                            />
-                            <Text
-                                style={[
-                                    styles.installmentPreviewTitle,
-                                    { fontSize: scaleFont(typography.fontSize.sm) },
-                                ]}
-                            >
-                                {t('expense.installmentPreviewTitle')}
-                            </Text>
-                        </View>
-                        <Text
-                            style={[
-                                styles.installmentPreviewValue,
-                                { fontSize: scaleFont(typography.fontSize.base) },
-                            ]}
-                        >
-                            {installmentPreviewLabel ?? t('expense.installmentPreviewHint')}
-                        </Text>
-                        {Number.isFinite(parsedInstallmentCount) && parsedInstallmentCount > 1 ? (
-                            <Text
-                                style={[
-                                    styles.installmentPreviewMeta,
-                                    { fontSize: scaleFont(typography.fontSize.sm) },
-                                ]}
-                            >
-                                {t('expense.installmentFrequencyMonthly', {
-                                    total: formatCurrency(
-                                        Number.parseFloat(cost || '0') || 0,
-                                        currency,
-                                        locale,
-                                    ),
-                                })}
-                            </Text>
-                        ) : null}
-                    </View>
-                </View>
-            ) : null}
 
             <View style={[styles.fieldContainer, styles.categorySection]}>
                 <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
@@ -658,7 +347,7 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                             value={newCategoryName}
                             onChangeText={setNewCategoryName}
                             onFocus={createScrollOnFocusHandler(164)}
-                            containerStyle={{ marginBottom: 0 }}
+                            containerStyle={styles.creatorNameInput}
                         />
 
                         <Text style={[styles.creatorLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
@@ -676,10 +365,9 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                                         key={iconName}
                                         style={[
                                             styles.iconOption,
-                                            {
-                                                width: isSmallPhone ? 34 : 36,
-                                                height: isSmallPhone ? 34 : 36,
-                                            },
+                                            isSmallPhone
+                                                ? styles.iconOptionCompact
+                                                : styles.iconOptionRegular,
                                             selected && styles.iconOptionSelected,
                                         ]}
                                         onPress={() => setNewCategoryIcon(iconName)}
@@ -710,11 +398,10 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                                         key={optionColor}
                                         style={[
                                             styles.colorOption,
-                                            {
-                                                width: isSmallPhone ? 26 : 28,
-                                                height: isSmallPhone ? 26 : 28,
-                                                backgroundColor: optionColor,
-                                            },
+                                            isSmallPhone
+                                                ? styles.colorOptionCompact
+                                                : styles.colorOptionRegular,
+                                            { backgroundColor: optionColor },
                                             selected && styles.colorOptionSelected,
                                         ]}
                                         onPress={() => setNewCategoryColor(optionColor)}
@@ -747,31 +434,259 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                 )}
             </View>
 
-            <PaymentMethodSelector
-                value={paymentMethod}
-                onChange={handlePaymentMethodChange}
-            />
+            <View style={styles.fieldContainer}>
+                <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                    {isInstallment
+                        ? t('expense.purchaseDateLabel')
+                        : t('addExpense.dateLabel')}
+                </Text>
+                <TouchableOpacity
+                    activeOpacity={0.84}
+                    style={styles.dateButton}
+                    onPress={() => openDatePicker('purchase')}
+                >
+                    <View style={styles.dateButtonContent}>
+                        <Icon name="calendar-outline" size={18} color={colors.textSecondary} />
+                        <Text
+                            style={[
+                                styles.dateButtonText,
+                                { fontSize: scaleFont(typography.fontSize.base) },
+                            ]}
+                        >
+                            {dateLabel}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+                {Platform.OS === 'ios' && activeDateField === 'purchase' ? (
+                    <View style={styles.iosDatePickerCard}>
+                        <DateTimePicker
+                            mode="date"
+                            display="spinner"
+                            value={parseDateOrToday(date)}
+                            themeVariant="dark"
+                            textColor={colors.textPrimary}
+                            onChange={createDateChangeHandler('purchase')}
+                        />
+                    </View>
+                ) : null}
+            </View>
 
-            {isCreditCardPaymentMethod(paymentMethod) ? (
-                <CreditCardSelector
-                    value={selectedCreditCardId}
-                    cards={creditCards}
-                    isLoading={creditCardsLoading}
-                    onChange={setSelectedCreditCardId}
-                    onAddCard={handleAddCreditCard}
+            <TouchableOpacity
+                style={[
+                    styles.detailsToggle,
+                    showOptionalDetails && styles.detailsToggleActive,
+                ]}
+                onPress={() => setShowOptionalDetails((prev) => !prev)}
+                activeOpacity={0.84}
+            >
+                <View style={styles.detailsToggleCopy}>
+                    <View style={styles.detailsToggleTitleRow}>
+                        <Icon
+                            name="options-outline"
+                            size={18}
+                            color={showOptionalDetails ? colors.primaryLight : colors.textSecondary}
+                        />
+                        <Text
+                            style={[
+                                styles.detailsToggleTitle,
+                                { fontSize: scaleFont(typography.fontSize.base) },
+                                showOptionalDetails && styles.detailsToggleTitleActive,
+                            ]}
+                        >
+                            {showOptionalDetails
+                                ? t('addExpense.hideOptionalDetails')
+                                : t('addExpense.showOptionalDetails')}
+                        </Text>
+                    </View>
+                    <Text
+                        style={[
+                            styles.detailsToggleHint,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                    >
+                        {optionalDetailsSummary}
+                    </Text>
+                </View>
+                <Icon
+                    name={showOptionalDetails ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={showOptionalDetails ? colors.primaryLight : colors.textSecondary}
                 />
-            ) : null}
+            </TouchableOpacity>
 
-            <Input
-                label={t('addExpense.noteOptional')}
-                placeholder={t('addExpense.notePlaceholder')}
-                multiline
-                value={note}
-                onChangeText={setNote}
-                onFocus={createScrollOnFocusHandler(184)}
-                inputStyle={styles.noteInput}
-                containerStyle={styles.fieldContainer}
-            />
+            {showOptionalDetails ? (
+                <View style={styles.detailsCard}>
+                    <PaymentMethodSelector
+                        value={paymentMethod}
+                        onChange={handlePaymentMethodChange}
+                    />
+
+                    {isCreditCardPaymentMethod(paymentMethod) ? (
+                        <CreditCardSelector
+                            value={selectedCreditCardId}
+                            cards={creditCards}
+                            isLoading={creditCardsLoading}
+                            onChange={setSelectedCreditCardId}
+                            onAddCard={handleAddCreditCard}
+                        />
+                    ) : null}
+
+                    <View style={styles.fieldContainer}>
+                        <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                            {t('expense.paymentTimingLabel')}
+                        </Text>
+                        <View style={styles.planModeRow}>
+                            <TouchableOpacity
+                                activeOpacity={0.84}
+                                style={[
+                                    styles.planModeButton,
+                                    !isInstallment && styles.planModeButtonActive,
+                                ]}
+                                onPress={() => handleInstallmentMode(false)}
+                            >
+                                <Text
+                                    style={[
+                                        styles.planModeButtonText,
+                                        !isInstallment && styles.planModeButtonTextActive,
+                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                    ]}
+                                >
+                                    {t('expense.singlePayment')}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                activeOpacity={0.84}
+                                style={[
+                                    styles.planModeButton,
+                                    isInstallment && styles.planModeButtonActive,
+                                ]}
+                                onPress={() => handleInstallmentMode(true)}
+                            >
+                                <Text
+                                    style={[
+                                        styles.planModeButtonText,
+                                        isInstallment && styles.planModeButtonTextActive,
+                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                    ]}
+                                >
+                                    {t('expense.installmentPayment')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {isInstallment ? (
+                        <View style={styles.installmentCard}>
+                            <Input
+                                label={t('expense.installmentCountLabel')}
+                                placeholder={t('expense.installmentCountPlaceholder')}
+                                value={installmentCount}
+                                onChangeText={(value) =>
+                                    setInstallmentCount(value.replace(/[^0-9]/g, '').slice(0, 3))
+                                }
+                                keyboardType="number-pad"
+                                maxLength={3}
+                                onFocus={createScrollOnFocusHandler(128)}
+                                containerStyle={styles.fieldContainer}
+                            />
+
+                            <View style={styles.fieldContainer}>
+                                <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                                    {t('expense.firstPaymentDateLabel')}
+                                </Text>
+                                <TouchableOpacity
+                                    activeOpacity={0.84}
+                                    style={styles.dateButton}
+                                    onPress={() => openDatePicker('firstPayment')}
+                                >
+                                    <View style={styles.dateButtonContent}>
+                                        <Icon name="calendar-clear-outline" size={18} color={colors.textSecondary} />
+                                        <Text
+                                            style={[
+                                                styles.dateButtonText,
+                                                { fontSize: scaleFont(typography.fontSize.base) },
+                                            ]}
+                                        >
+                                            {firstPaymentDateLabel}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                                {Platform.OS === 'ios' && activeDateField === 'firstPayment' ? (
+                                    <View style={styles.iosDatePickerCard}>
+                                        <DateTimePicker
+                                            mode="date"
+                                            display="spinner"
+                                            value={parseDateOrToday(firstPaymentDate)}
+                                            themeVariant="dark"
+                                            textColor={colors.textPrimary}
+                                            onChange={createDateChangeHandler('firstPayment')}
+                                        />
+                                    </View>
+                                ) : null}
+                            </View>
+
+                            <View style={styles.installmentPreviewCard}>
+                                <View style={styles.installmentPreviewHeader}>
+                                    <Icon
+                                        name="card-outline"
+                                        size={18}
+                                        color={colors.primaryLight}
+                                    />
+                                    <Text
+                                        style={[
+                                            styles.installmentPreviewTitle,
+                                            { fontSize: scaleFont(typography.fontSize.sm) },
+                                        ]}
+                                    >
+                                        {t('expense.installmentPreviewTitle')}
+                                    </Text>
+                                </View>
+                                <Text
+                                    style={[
+                                        styles.installmentPreviewValue,
+                                        { fontSize: scaleFont(typography.fontSize.base) },
+                                    ]}
+                                >
+                                    {installmentPreviewLabel ?? t('expense.installmentPreviewHint')}
+                                </Text>
+                                {Number.isFinite(parsedInstallmentCount) && parsedInstallmentCount > 1 ? (
+                                    <Text
+                                        style={[
+                                            styles.installmentPreviewMeta,
+                                            { fontSize: scaleFont(typography.fontSize.sm) },
+                                        ]}
+                                    >
+                                        {t('expense.installmentFrequencyMonthly', {
+                                            total: formatCurrency(
+                                                Number.parseFloat(cost || '0') || 0,
+                                                currency,
+                                                locale,
+                                            ),
+                                        })}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        </View>
+                    ) : null}
+
+                    <CurrencySelector
+                        label={t('common.currency')}
+                        value={currency}
+                        onChange={setCurrency}
+                    />
+
+                    <Input
+                        label={t('addExpense.noteOptional')}
+                        placeholder={t('addExpense.notePlaceholder')}
+                        multiline
+                        value={note}
+                        onChangeText={setNote}
+                        onFocus={createScrollOnFocusHandler(184)}
+                        inputStyle={styles.noteInput}
+                        containerStyle={styles.fieldContainer}
+                    />
+                </View>
+            ) : null}
 
             <Button
                 title={t('addExpense.saveExpense')}
@@ -873,6 +788,50 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     categorySection: {
         marginBottom: spacing.lg,
+    },
+    detailsToggle: {
+        marginBottom: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.lg,
+        backgroundColor: colors.surfaceCard,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: spacing.md,
+    },
+    detailsToggleActive: {
+        borderColor: colors.primaryLight,
+        backgroundColor: colors.primary + '10',
+    },
+    detailsToggleCopy: {
+        flex: 1,
+        gap: spacing.xs,
+    },
+    detailsToggleTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+    },
+    detailsToggleTitle: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    detailsToggleTitleActive: {
+        color: colors.primaryLight,
+    },
+    detailsToggleHint: {
+        color: colors.textSecondary,
+    },
+    detailsCard: {
+        marginBottom: spacing.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        borderRadius: borderRadius.xl,
+        backgroundColor: colors.surfaceCard,
+        padding: spacing.md,
     },
     suggestionsCard: {
         marginBottom: spacing.lg,
@@ -1046,18 +1005,27 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         color: colors.textSecondary,
         fontWeight: typography.fontWeight.medium,
     },
+    creatorNameInput: {
+        marginBottom: 0,
+    },
     iconOptions: {
         gap: spacing.sm,
     },
     iconOption: {
-        width: 36,
-        height: 36,
         borderRadius: borderRadius.md,
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.surfaceElevated,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    iconOptionCompact: {
+        width: 34,
+        height: 34,
+    },
+    iconOptionRegular: {
+        width: 36,
+        height: 36,
     },
     iconOptionSelected: {
         borderColor: colors.primary,
@@ -1069,11 +1037,17 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         gap: spacing.sm,
     },
     colorOption: {
-        width: 28,
-        height: 28,
         borderRadius: borderRadius.full,
         borderWidth: 1,
         borderColor: colors.surface,
+    },
+    colorOptionCompact: {
+        width: 26,
+        height: 26,
+    },
+    colorOptionRegular: {
+        width: 28,
+        height: 28,
     },
     colorOptionSelected: {
         borderColor: colors.textPrimary,

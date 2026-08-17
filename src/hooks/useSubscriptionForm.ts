@@ -6,6 +6,7 @@ import { useSubscriptionManager } from '../modules/subscriptions/useSubscription
 import { useAuthStore } from '../store/authStore';
 import { useAppAlert } from '../components/alerts/AlertProvider';
 import { creditCardsApi } from '../api/resources/creditCards';
+import { categoriesApi } from '../api/resources/categories';
 import {
     formatDateISO,
     getPresetByName,
@@ -74,6 +75,9 @@ export function useSubscriptionForm({
     const [selectedCreditCardId, setSelectedCreditCardId] = useState<string | undefined>(
         editingSubscription?.creditCardId ?? editingSubscription?.creditCard?.id ?? undefined,
     );
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(
+        editingSubscription?.categoryId ?? editingSubscription?.category?.id ?? undefined,
+    );
     const [chargeDate, setChargeDate] = useState(
         editingSubscription?.chargeDate ?? formatDateISO(new Date()),
     );
@@ -100,6 +104,10 @@ export function useSubscriptionForm({
         queryKey: ['creditCards', includeInactiveCards ? 'all' : 'active'],
         queryFn: () => creditCardsApi.getAll({ includeInactive: includeInactiveCards }),
         enabled: shouldLoadCreditCards,
+    });
+    const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+        queryKey: ['categories'],
+        queryFn: categoriesApi.getAll,
     });
 
     const selectableCreditCards = useMemo(
@@ -231,6 +239,7 @@ export function useSubscriptionForm({
             reminderDays: editingSubscription?.reminderDays ?? 3,
             isActive: true,
             hexColor: serviceColor,
+            categoryId: selectedCategoryId ?? null,
         };
 
         const action = isEditMode && editingSubscription
@@ -289,6 +298,7 @@ export function useSubscriptionForm({
         currency,
         serviceColor,
         selectedCreditCardId,
+        selectedCategoryId,
         effectiveCreditCardId,
         t,
         updateSubscription,
@@ -355,6 +365,10 @@ export function useSubscriptionForm({
         isRemoving,
         creditCards: selectableCreditCards,
         creditCardsLoading,
+        categories,
+        categoriesLoading,
+        selectedCategoryId,
+        setSelectedCategoryId,
         onChangeDate,
         openDatePicker,
         onPickPreset,

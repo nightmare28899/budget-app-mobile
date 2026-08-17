@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { historyApi } from '../api/resources/history';
+import {
+    historyApi,
+    isPartialHistoryError,
+} from '../api/resources/history';
+import { useAppAlert } from '../components/alerts/AlertProvider';
 import { dateOnly, isValidDateFilter } from '../utils/core/filters';
 import { Expense, Subscription } from '../types/index';
 import {
@@ -121,15 +125,35 @@ type UseHistoryParams = {
 
 export function useHistory({ successMessage, onSuccessHandled, currency }: UseHistoryParams) {
     const { t, language } = useI18n();
+    const { alert } = useAppAlert();
     const locale = getCurrencyLocale(language);
 
     const [selectedCategoryId, setSelectedCategoryId] = useState('all');
     const [dateFilter, setDateFilter] = useState('');
 
-    const { data, isLoading, refetch, isRefetching } = useQuery({
+    const {
+        data,
+        error,
+        isLoading,
+        refetch,
+        isRefetching,
+    } = useQuery({
         queryKey: ['history', 'all'],
         queryFn: historyApi.getAll,
     });
+
+    const partialData = isPartialHistoryError(error)
+        ? error.partialData
+        : null;
+    const historyData = data ?? partialData;
+
+    useEffect(() => {
+        if (!isPartialHistoryError(error)) {
+            return;
+        }
+
+        alert(t('common.error'), t('dashboard.loadError'));
+    }, [alert, error, t]);
 
     useEffect(() => {
         if (!successMessage) {
@@ -153,14 +177,14 @@ export function useHistory({ successMessage, onSuccessHandled, currency }: UseHi
     const selectedSubscription = useMemo(
         () =>
             selectedSubscriptionFilter
-                ? (data?.subscriptions ?? []).find((item) => item.id === selectedSubscriptionFilter) ?? null
+                ? (historyData?.subscriptions ?? []).find((item) => item.id === selectedSubscriptionFilter) ?? null
                 : null,
-        [data?.subscriptions, selectedSubscriptionFilter],
+        [historyData?.subscriptions, selectedSubscriptionFilter],
     );
 
     const categoryOptions = useMemo<CategoryOption[]>(() => {
         const categoryMap = new Map<string, string>();
-        for (const expense of data?.expenses ?? []) {
+        for (const expense of historyData?.expenses ?? []) {
             const id = expense.categoryId ?? expense.category?.id;
             if (!id || categoryMap.has(id)) {
                 continue;
@@ -169,7 +193,7 @@ export function useHistory({ successMessage, onSuccessHandled, currency }: UseHi
         }
 
         const subscriptionMap = new Map<string, string>();
-        for (const subscription of data?.subscriptions ?? []) {
+        for (const subscription of historyData?.subscriptions ?? []) {
             if (!subscription.id || subscriptionMap.has(subscription.id)) {
                 continue;
             }
@@ -204,10 +228,10 @@ export function useHistory({ successMessage, onSuccessHandled, currency }: UseHi
                     : `${option.name} • ${t('filters.category')}`,
             };
         });
-    }, [data?.expenses, data?.subscriptions, t]);
+    }, [historyData?.expenses, historyData?.subscriptions, t]);
 
     const filteredExpenses = useMemo(() => {
-        const source = data?.expenses ?? [];
+        const source = historyData?.expenses ?? [];
         return source
             .filter((expense) => {
                 const categoryId = expense.categoryId ?? expense.category?.id;
@@ -235,7 +259,7 @@ export function useHistory({ successMessage, onSuccessHandled, currency }: UseHi
                     new Date(b.date).getTime() - new Date(a.date).getTime(),
             );
     }, [
-        data?.expenses,
+        historyData?.expenses,
         selectedCategoryFilter,
         selectedCategoryId,
         selectedSubscription,
@@ -249,7 +273,7 @@ export function useHistory({ successMessage, onSuccessHandled, currency }: UseHi
         }
 
         const subscriptionExpenses = filteredExpenses.filter((expense) => expense.isSubscription);
-        const source = data?.subscriptions ?? [];
+        const source = historyData?.subscriptions ?? [];
         return source
             .filter((subscription) => {
                 const rawDate =
@@ -269,7 +293,7 @@ export function useHistory({ successMessage, onSuccessHandled, currency }: UseHi
                     new Date(a.nextPaymentDate).getTime(),
             );
     }, [
-        data?.subscriptions,
+        historyData?.subscriptions,
         filteredExpenses,
         selectedCategoryFilter,
         selectedSubscriptionFilter,
@@ -367,7 +391,7 @@ export function useHistory({ successMessage, onSuccessHandled, currency }: UseHi
             emptyCurrency: currency,
         }),
     });
-    const showSkeleton = (isLoading || isRefetching) && !data;
+    const showSkeleton = (isLoading || isRefetching) && !historyData;
 
     return {
         selectedCategoryId,
@@ -380,6 +404,7 @@ export function useHistory({ successMessage, onSuccessHandled, currency }: UseHi
         records,
         isLoading,
         isRefetching,
+        hasError: !!error,
         refetch,
         summaryText,
         showSkeleton,

@@ -96,11 +96,19 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
                 visible={alertState !== null}
                 onRequestClose={onRequestClose}
                 statusBarTranslucent
+                accessibilityViewIsModal
             >
                 <View style={styles.overlay}>
                     <Pressable style={styles.backdropPressable} onPress={onRequestClose} />
                     {alertState && (
-                        <View style={styles.card}>
+                        <View
+                            style={styles.card}
+                            accessible
+                            accessibilityRole="alert"
+                            accessibilityLabel={[alertState.title, alertState.message]
+                                .filter(Boolean)
+                                .join('. ')}
+                        >
                             <View style={styles.accent} />
                             <Text style={styles.title}>{alertState.title}</Text>
                             {!!alertState.message && (
@@ -129,6 +137,8 @@ export function AlertProvider({ children }: { children: React.ReactNode }) {
                                         ]}
                                         onPress={() => onPressButton(button)}
                                         activeOpacity={0.85}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={button.text}
                                     >
                                         <Text
                                             style={[
@@ -241,7 +251,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         fontWeight: typography.fontWeight.semibold,
     },
     buttonTextSolid: {
-        color: '#FFFFFF',
+        color: colors.textOnAction,
     },
     buttonTextCancel: {
         color: colors.textSecondary,

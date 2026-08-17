@@ -105,23 +105,25 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
     const constrainedContentStyle = contentMaxWidth
         ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
         : null;
-    const primaryCardPadding = isSmallPhone
-        ? scaleSize(spacing.xl, 0.46)
-        : isTablet
-            ? scaleSize(spacing['2xl'], 0.58)
-            : scaleSize(spacing['2xl'], 0.5);
+    const primaryCardHorizontalPadding = isSmallPhone
+        ? scaleSize(spacing.lg, 0.46)
+        : scaleSize(spacing.xl, 0.5);
+    const primaryCardVerticalPadding = isSmallPhone
+        ? scaleSize(spacing.base, 0.4)
+        : scaleSize(spacing.lg, 0.42);
     const secondaryCardPadding = scaleSize(spacing.base, 0.5);
     const budgetAmountFontSize = isTablet
-        ? scaleFont(typography.fontSize['5xl'], 0.52)
+        ? scaleFont(typography.fontSize['3xl'], 0.52)
         : isSmallPhone
-            ? scaleFont(typography.fontSize['4xl'])
-            : scaleFont(typography.fontSize['5xl'], 0.42);
-    const budgetCardMinHeight = isTablet
-        ? scaleSize(252, 0.32)
-        : isSmallPhone
-            ? undefined
-            : scaleSize(226, 0.2);
+            ? scaleFont(typography.fontSize['3xl'])
+            : scaleFont(typography.fontSize['3xl'], 0.42);
     const cashflowTone = netCashflow >= 0 ? colors.success : colors.error;
+    const shouldShowCashflow = !hasCashflowError && (
+        totalIncome !== 0
+        || totalExpenses !== 0
+        || netCashflow !== 0
+        || savingsRate !== null
+    );
     const resolveActionTone = (tone: 'info' | 'warning' | 'success' | 'danger') => {
         if (tone === 'success') {
             return { color: colors.success, background: withAlpha(colors.success, 0.12) };
@@ -270,7 +272,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                         })}
                     </Text>
 
-                    {upcomingSubscriptions.map((item, index) => {
+                    {upcomingSubscriptions.slice(0, 2).map((item, index) => {
                         const paymentMethodOption = getPaymentMethodOption(
                             item.paymentMethod,
                         );
@@ -373,19 +375,10 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                     description={t('history.noRecordsDesc')}
                 />
             ) : (
-                recentUnifiedHistory.map((item) => {
+                recentUnifiedHistory.slice(0, 3).map((item) => {
                     const isSubscriptionRecord =
                         item.type === 'subscription' ||
                         (item.type === 'expense' && item.expense?.isSubscription);
-                    const paymentMethod = item.type === 'expense'
-                        ? item.expense?.paymentMethod
-                        : item.subscription?.paymentMethod;
-                    const paymentMethodOption = getPaymentMethodOption(
-                        paymentMethod,
-                    );
-                    const paymentMethodIcon =
-                        paymentMethodOption?.icon
-                        ?? PAYMENT_METHOD_FALLBACK_ICON;
                     const creditCardLabel = formatCreditCardLabel(
                         item.type === 'expense'
                             ? item.expense?.creditCard
@@ -479,24 +472,6 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                 </Text>
                             </View>
                             <View style={styles.recentTrailing}>
-                                <View
-                                    style={[
-                                        styles.recentPaymentMethodChip,
-                                        paymentMethodOption
-                                            ? styles.methodChipActive
-                                            : null,
-                                    ]}
-                                >
-                                    <Icon
-                                        name={paymentMethodIcon}
-                                        size={14}
-                                        color={
-                                            paymentMethodOption
-                                                ? colors.success
-                                                : colors.textMuted
-                                        }
-                                    />
-                                </View>
                                 <Text
                                     style={[
                                         styles.recentAmount,
@@ -535,6 +510,8 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                         style={styles.menuButton}
                         onPress={onOpenMenu}
                         activeOpacity={0.84}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('navigation.openMenu')}
                     >
                         <Icon name="menu-outline" size={22} color={colors.textPrimary} />
                     </TouchableOpacity>
@@ -547,17 +524,14 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                 ? t('dashboard.hello', { name: greetingName })
                                 : t('dashboard.helloGeneric')}
                         </Text>
-                        <Text
-                            style={[styles.greetingSubtext, { fontSize: scaleFont(typography.fontSize.sm) }]}
-                        >
-                            {t('dashboard.subtitle')}
-                        </Text>
                     </View>
                     <View style={styles.headerActions}>
                         <TouchableOpacity
                             style={styles.notificationButton}
                             onPress={onOpenNotifications}
                             activeOpacity={0.84}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('navigation.openNotifications')}
                         >
                             <Icon name="notifications-outline" size={20} color={colors.textPrimary} />
                         </TouchableOpacity>
@@ -572,6 +546,8 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                             ]}
                             onPress={() => navigation.navigate('Settings')}
                             activeOpacity={0.84}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('navigation.openSettings')}
                         >
                             {avatarUri && !avatarLoadFailed ? (
                                 <Image
@@ -658,8 +634,8 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                     style={[
                                         styles.budgetCard,
                                         {
-                                            padding: primaryCardPadding,
-                                            minHeight: budgetCardMinHeight,
+                                            paddingHorizontal: primaryCardHorizontalPadding,
+                                            paddingVertical: primaryCardVerticalPadding,
                                         },
                                     ]}
                                 >
@@ -690,72 +666,81 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                         />
                                     </View>
 
-                                    <View style={styles.budgetFooter}>
-                                        <View style={styles.budgetStat}>
+                                    <View style={styles.budgetSummaryRow}>
+                                        <View style={styles.availableStat}>
                                             <Text
                                                 style={[
                                                     styles.budgetStatLabel,
                                                     { fontSize: scaleFont(typography.fontSize.xs) },
                                                 ]}
                                             >
-                                                Budget
+                                                {t('dashboard.safeToSpend')}
                                             </Text>
                                             <Text
                                                 style={[
-                                                    styles.budgetStatValue,
-                                                    { fontSize: scaleFont(typography.fontSize.base) },
-                                                ]}
-                                            >
-                                                {formatCurrency(budget, user?.currency)}
-                                            </Text>
-                                        </View>
-                                        <View style={styles.budgetStatDivider} />
-                                        <View style={styles.budgetStat}>
-                                            <Text
-                                                style={[
-                                                    styles.budgetStatLabel,
-                                                    { fontSize: scaleFont(typography.fontSize.xs) },
-                                                ]}
-                                            >
-                                                Available
-                                            </Text>
-                                            <Text
-                                                style={[
-                                                    styles.budgetStatValue,
+                                                    styles.availableStatValue,
                                                     {
-                                                        fontSize: scaleFont(typography.fontSize.base),
+                                                        fontSize: scaleFont(typography.fontSize.xl),
                                                         color: safeToSpend >= 0
                                                             ? colors.budgetSafe
                                                             : colors.budgetDanger,
                                                     },
                                                 ]}
+                                                numberOfLines={1}
+                                                adjustsFontSizeToFit
+                                                minimumFontScale={0.75}
                                             >
                                                 {formatCurrency(safeToSpend, user?.currency)}
                                             </Text>
                                         </View>
-                                        <View style={styles.budgetStatDivider} />
-                                        <View style={styles.budgetStat}>
-                                            <Text
-                                                style={[
-                                                    styles.budgetStatLabel,
-                                                    { fontSize: scaleFont(typography.fontSize.xs) },
-                                                ]}
-                                            >
-                                                Reserved
-                                            </Text>
-                                            <Text
-                                                style={[
-                                                    styles.budgetStatValue,
-                                                    { fontSize: scaleFont(typography.fontSize.base) },
-                                                ]}
-                                            >
-                                                {formatCurrency(reservedSubscriptions, user?.currency)}
-                                            </Text>
+                                        <View style={styles.budgetMeta}>
+                                            <View style={styles.budgetMetaRow}>
+                                                <Text
+                                                    style={[
+                                                        styles.budgetMetaLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                >
+                                                    {t('dashboard.budget')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.budgetMetaValue,
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    ]}
+                                                    numberOfLines={1}
+                                                >
+                                                    {formatCurrency(budget, user?.currency)}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.budgetMetaRow}>
+                                                <Text
+                                                    style={[
+                                                        styles.budgetMetaLabel,
+                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    ]}
+                                                    numberOfLines={1}
+                                                >
+                                                    {t('dashboard.reservedFunds')}
+                                                </Text>
+                                                <Text
+                                                    style={[
+                                                        styles.budgetMetaValue,
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    ]}
+                                                    numberOfLines={1}
+                                                >
+                                                    {formatCurrency(
+                                                        reservedSubscriptions,
+                                                        user?.currency,
+                                                    )}
+                                                </Text>
+                                            </View>
                                         </View>
                                     </View>
                                 </View>
 
-                                {!hasCashflowError ? (
+                                {shouldShowCashflow ? (
                                     <View
                                         style={[
                                             styles.cashflowCard,
@@ -774,18 +759,18 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                             >
                                                 {t('dashboard.cashflowTitle')}
                                             </Text>
-                                            <Text
-                                                style={[
-                                                    styles.cashflowSubtitle,
-                                                    { fontSize: scaleFont(typography.fontSize.sm) },
-                                                ]}
-                                            >
-                                                {savingsRate !== null
-                                                    ? t('dashboard.savingsRate', {
+                                            {savingsRate !== null ? (
+                                                <Text
+                                                    style={[
+                                                        styles.cashflowSubtitle,
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
+                                                    ]}
+                                                >
+                                                    {t('dashboard.savingsRate', {
                                                         percent: Math.round(savingsRate),
-                                                    })
-                                                    : t('dashboard.cashflowEmptyHint')}
-                                            </Text>
+                                                    })}
+                                                </Text>
+                                            ) : null}
                                         </View>
                                         <View style={styles.cashflowGrid}>
                                             <View style={styles.cashflowMetric}>
@@ -803,11 +788,19 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                         styles.cashflowMetricValueIncome,
                                                         { fontSize: scaleFont(typography.fontSize.base) },
                                                     ]}
+                                                    numberOfLines={1}
+                                                    adjustsFontSizeToFit
+                                                    minimumFontScale={0.72}
                                                 >
                                                     {formatCurrency(totalIncome, user?.currency, locale)}
                                                 </Text>
                                             </View>
-                                            <View style={styles.cashflowMetric}>
+                                            <View
+                                                style={[
+                                                    styles.cashflowMetric,
+                                                    styles.cashflowMetricSeparated,
+                                                ]}
+                                            >
                                                 <Text
                                                     style={[
                                                         styles.cashflowMetricLabel,
@@ -822,11 +815,19 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                         styles.cashflowMetricValueExpense,
                                                         { fontSize: scaleFont(typography.fontSize.base) },
                                                     ]}
+                                                    numberOfLines={1}
+                                                    adjustsFontSizeToFit
+                                                    minimumFontScale={0.72}
                                                 >
                                                     {formatCurrency(totalExpenses, user?.currency, locale)}
                                                 </Text>
                                             </View>
-                                            <View style={styles.cashflowMetric}>
+                                            <View
+                                                style={[
+                                                    styles.cashflowMetric,
+                                                    styles.cashflowMetricSeparated,
+                                                ]}
+                                            >
                                                 <Text
                                                     style={[
                                                         styles.cashflowMetricLabel,
@@ -840,6 +841,9 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                         styles.cashflowMetricValue,
                                                         { fontSize: scaleFont(typography.fontSize.base), color: cashflowTone },
                                                     ]}
+                                                    numberOfLines={1}
+                                                    adjustsFontSizeToFit
+                                                    minimumFontScale={0.72}
                                                 >
                                                     {formatCurrency(netCashflow, user?.currency, locale)}
                                                 </Text>
@@ -860,7 +864,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                 {t('dashboard.actionsTitle')}
                                             </Text>
                                         </View>
-                                        {actionItems.map((item) => {
+                                        {actionItems.slice(0, 1).map((item) => {
                                             const tone = resolveActionTone(item.tone);
 
                                             return (
@@ -896,19 +900,9 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                                 styles.actionDescription,
                                                                 { fontSize: scaleFont(typography.fontSize.sm) },
                                                             ]}
+                                                            numberOfLines={1}
                                                         >
                                                             {item.description}
-                                                        </Text>
-                                                        <Text
-                                                            style={[
-                                                                styles.actionCta,
-                                                                {
-                                                                    fontSize: scaleFont(typography.fontSize.sm),
-                                                                    color: tone.color,
-                                                                },
-                                                            ]}
-                                                        >
-                                                            {item.ctaLabel}
                                                         </Text>
                                                     </View>
                                                     <Icon
@@ -921,41 +915,6 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                         })}
                                     </View>
                                 ) : null}
-
-                                <TouchableOpacity
-                                    style={[
-                                        styles.savingsShortcutCard,
-                                        {
-                                            paddingHorizontal: secondaryCardPadding,
-                                            paddingVertical: secondaryCardPadding,
-                                        },
-                                    ]}
-                                    activeOpacity={0.86}
-                                    onPress={onOpenSavings}
-                                >
-                                    <View style={styles.savingsShortcutIconWrap}>
-                                        <Icon name="cash-outline" size={20} color={colors.success} />
-                                    </View>
-                                    <View style={styles.savingsShortcutCopy}>
-                                        <Text
-                                            style={[
-                                                styles.savingsShortcutTitle,
-                                                { fontSize: scaleFont(typography.fontSize.base) },
-                                            ]}
-                                        >
-                                            {t('dashboard.savingsTitle')}
-                                        </Text>
-                                        <Text
-                                            style={[
-                                                styles.savingsShortcutSubtitle,
-                                                { fontSize: scaleFont(typography.fontSize.sm) },
-                                            ]}
-                                        >
-                                            {t('dashboard.savingsDescription')}
-                                        </Text>
-                                    </View>
-                                    <Icon name="chevron-forward" size={18} color={colors.textPrimary} />
-                                </TouchableOpacity>
 
                                 {upcomingSectionContent ? (
                                     <View style={[styles.section, styles.upcomingSection, styles.sectionNoHorizontalPadding]}>
@@ -988,7 +947,7 @@ const createStyles = (colors: SemanticColors) =>
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            paddingBottom: spacing.lg,
+            paddingBottom: spacing.base,
         },
         greetingContainer: {
             flex: 1,
@@ -1025,11 +984,6 @@ const createStyles = (colors: SemanticColors) =>
             fontWeight: typography.fontWeight.bold,
             letterSpacing: 0.2,
         },
-        greetingSubtext: {
-            color: colors.textMuted,
-            marginTop: spacing.xs,
-            fontWeight: typography.fontWeight.medium,
-        },
         profileBadge: {
             backgroundColor: withAlpha(colors.surfaceCard, 0.9),
             borderWidth: 1,
@@ -1055,15 +1009,10 @@ const createStyles = (colors: SemanticColors) =>
         budgetCard: {
             backgroundColor: withAlpha(colors.surfaceCard, 0.94),
             borderRadius: borderRadius.xl,
-            marginBottom: spacing.lg,
+            marginBottom: spacing.base,
             borderWidth: 1,
             borderColor: colors.border,
             overflow: 'hidden',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.16,
-            shadowRadius: 14,
-            elevation: 4,
         },
         budgetGlow: {
             position: 'absolute',
@@ -1084,83 +1033,65 @@ const createStyles = (colors: SemanticColors) =>
         budgetAmount: {
             color: colors.textPrimary,
             fontWeight: typography.fontWeight.extrabold,
-            marginBottom: spacing.base,
+            marginBottom: spacing.sm,
             letterSpacing: -0.6,
         },
         progressTrack: {
-            height: 14,
+            height: 9,
             borderRadius: borderRadius.full,
             backgroundColor: withAlpha(colors.primaryAction, 0.12),
             overflow: 'hidden',
-            marginBottom: spacing.lg,
-            borderWidth: 1,
-            borderColor: withAlpha(colors.primaryAction, 0.18),
+            marginBottom: spacing.base,
         },
         progressFill: {
             height: '100%',
             borderRadius: borderRadius.full,
             backgroundColor: colors.success,
         },
-        budgetFooter: {
+        budgetSummaryRow: {
             flexDirection: 'row',
             alignItems: 'center',
-            backgroundColor: withAlpha(colors.surfaceElevated, 0.9),
-            borderRadius: borderRadius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            paddingVertical: spacing.base,
-            paddingHorizontal: spacing.sm,
+            gap: spacing.base,
         },
-        budgetStat: {
+        availableStat: {
             flex: 1,
-            alignItems: 'center',
-            paddingHorizontal: spacing.xs,
+            gap: spacing.xs,
         },
-        budgetStatDivider: {
-            width: 1,
-            height: 34,
-            backgroundColor: colors.border,
+        availableStatValue: {
+            color: colors.textPrimary,
+            fontWeight: typography.fontWeight.bold,
         },
         budgetStatLabel: {
             color: colors.textMuted,
-            marginBottom: spacing.xs,
             fontWeight: typography.fontWeight.medium,
             textTransform: 'uppercase',
             letterSpacing: 0.5,
         },
-        budgetStatValue: {
-            color: colors.textPrimary,
-            fontWeight: typography.fontWeight.bold,
-            textAlign: 'center',
+        budgetMeta: {
+            flex: 1.15,
+            gap: spacing.sm,
+            borderLeftWidth: 1,
+            borderLeftColor: colors.border,
+            paddingLeft: spacing.base,
         },
-        savingsShortcutCard: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: withAlpha(colors.surfaceElevated, 0.92),
-            borderRadius: borderRadius.xl,
-            borderWidth: 1,
-            borderColor: colors.border,
-            paddingHorizontal: spacing.base,
-            paddingVertical: spacing.base,
-            marginBottom: spacing.base,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.14,
-            shadowRadius: 10,
-            elevation: 3,
+        budgetMetaRow: {
+            gap: 2,
+        },
+        budgetMetaLabel: {
+            color: colors.textMuted,
+            fontWeight: typography.fontWeight.medium,
+        },
+        budgetMetaValue: {
+            color: colors.textPrimary,
+            fontWeight: typography.fontWeight.semibold,
         },
         cashflowCard: {
-            backgroundColor: withAlpha(colors.surfaceElevated, 0.94),
+            backgroundColor: withAlpha(colors.surfaceCard, 0.76),
             borderRadius: borderRadius.xl,
             borderWidth: 1,
             borderColor: colors.border,
             marginBottom: spacing.base,
-            gap: spacing.sm,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.14,
-            shadowRadius: 10,
-            elevation: 3,
+            gap: spacing.base,
         },
         cashflowHeader: {
             gap: 4,
@@ -1179,15 +1110,13 @@ const createStyles = (colors: SemanticColors) =>
         },
         cashflowMetric: {
             flex: 1,
-            borderRadius: borderRadius.lg,
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: withAlpha(colors.surfaceCard, 0.95),
             paddingHorizontal: spacing.sm,
-            paddingVertical: spacing.sm,
             gap: spacing.xs,
-            minHeight: 66,
             justifyContent: 'center',
+        },
+        cashflowMetricSeparated: {
+            borderLeftWidth: 1,
+            borderLeftColor: colors.border,
         },
         cashflowMetricLabel: {
             color: colors.textMuted,
@@ -1218,12 +1147,12 @@ const createStyles = (colors: SemanticColors) =>
             borderColor: colors.border,
             backgroundColor: withAlpha(colors.surfaceElevated, 0.93),
             paddingHorizontal: spacing.base,
-            paddingVertical: spacing.base,
+            paddingVertical: spacing.md,
         },
         actionIconWrap: {
-            width: 44,
-            height: 44,
-            borderRadius: 22,
+            width: 40,
+            height: 40,
+            borderRadius: 20,
             alignItems: 'center',
             justifyContent: 'center',
         },
@@ -1238,32 +1167,6 @@ const createStyles = (colors: SemanticColors) =>
         actionDescription: {
             color: colors.textMuted,
             lineHeight: 20,
-        },
-        actionCta: {
-            fontWeight: typography.fontWeight.semibold,
-            marginTop: spacing.xs,
-        },
-        savingsShortcutIconWrap: {
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: withAlpha(colors.success, 0.14),
-            borderWidth: 1,
-            borderColor: withAlpha(colors.success, 0.25),
-        },
-        savingsShortcutCopy: {
-            flex: 1,
-            marginHorizontal: spacing.base,
-        },
-        savingsShortcutTitle: {
-            color: colors.textPrimary,
-            fontWeight: typography.fontWeight.semibold,
-        },
-        savingsShortcutSubtitle: {
-            color: colors.textMuted,
-            marginTop: spacing.xs,
         },
         errorCard: {
             borderWidth: 1,
@@ -1305,10 +1208,10 @@ const createStyles = (colors: SemanticColors) =>
             paddingHorizontal: 0,
         },
         upcomingSection: {
-            marginTop: spacing.lg,
+            marginTop: spacing.base,
         },
         recentSection: {
-            marginTop: spacing.lg,
+            marginTop: spacing.base,
         },
         sectionHeader: {
             flexDirection: 'row',
@@ -1364,13 +1267,10 @@ const createStyles = (colors: SemanticColors) =>
             fontWeight: typography.fontWeight.semibold,
         },
         upcomingRow: {
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: withAlpha(colors.surfaceCard, 0.95),
-            borderRadius: borderRadius.xl,
-            paddingHorizontal: spacing.base,
-            paddingVertical: spacing.base,
-            marginBottom: spacing.sm,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+            paddingHorizontal: spacing.xs,
+            paddingVertical: spacing.md,
             flexDirection: 'row',
             alignItems: 'center',
         },
@@ -1395,13 +1295,10 @@ const createStyles = (colors: SemanticColors) =>
             fontWeight: typography.fontWeight.semibold,
         },
         recentRow: {
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: withAlpha(colors.surfaceCard, 0.96),
-            borderRadius: borderRadius.xl,
-            paddingHorizontal: spacing.base,
-            paddingVertical: spacing.base,
-            marginBottom: spacing.sm,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border,
+            paddingHorizontal: spacing.xs,
+            paddingVertical: spacing.md,
             flexDirection: 'row',
             alignItems: 'center',
         },
@@ -1439,19 +1336,7 @@ const createStyles = (colors: SemanticColors) =>
             letterSpacing: 0.2,
         },
         recentTrailing: {
-            flexDirection: 'row',
             alignItems: 'center',
             marginLeft: spacing.sm,
-        },
-        recentPaymentMethodChip: {
-            width: 30,
-            height: 30,
-            borderRadius: borderRadius.full,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: colors.border,
-            backgroundColor: colors.surfaceElevated,
-            marginRight: spacing.sm,
         },
     });
