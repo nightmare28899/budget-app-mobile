@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AddSavingsFundsPayload } from '../../types/index';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { formatCurrency } from '../../utils/core/format';
 import {
     borderRadius,

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import {
+    ActivityIndicator,
     ScrollView,
     StyleSheet,
     Text,
@@ -9,14 +10,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MainDrawerScreenProps } from '../../navigation/types';
-import { useCreditCardsCatalog } from '../../hooks/useCreditCardsCatalog';
-import { useCreditCardsOverview } from '../../hooks/useCreditCardsOverview';
+import { useCreditCardsCatalog } from '../../hooks/creditCards/useCreditCardsCatalog';
+import { useCreditCardsOverview } from '../../hooks/creditCards/useCreditCardsOverview';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { Button } from '../../components/ui/primitives/Button';
 import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { PremiumFeatureGate } from '../../components/premium/PremiumFeatureGate';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { useAuthStore } from '../../store/authStore';
 import { formatCurrency } from '../../utils/core/format';
@@ -32,7 +33,7 @@ import {
     SemanticColors,
 } from '../../theme/index';
 import { withAlpha } from '../../utils/domain/subscriptions';
-import { usePremiumAccess } from '../../hooks/usePremiumAccess';
+import { usePremiumAccess } from '../../hooks/access/usePremiumAccess';
 import { CreditCardOverviewCard } from '../../types/index';
 
 type SignalTone = 'warning' | 'danger' | 'muted';
@@ -68,6 +69,9 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
     const user = useAuthStore((s) => s.user);
     const { hasPremium } = usePremiumAccess();
     const { horizontalPadding, contentMaxWidth, scaleFont } = useResponsive();
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
     const locale = getCurrencyLocale(language);
     const {
         cards,
@@ -225,9 +229,7 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                             paddingTop: insets.top + spacing.base,
                             paddingHorizontal: horizontalPadding,
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                 >
                     <View style={styles.headerRow}>
@@ -270,13 +272,16 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                             paddingHorizontal: horizontalPadding,
                             paddingBottom: insets.bottom + spacing['4xl'],
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                     showsVerticalScrollIndicator={false}
                 >
-                    {cards.length === 0 ? (
+                    {isLoading && cards.length === 0 ? (
+                        <View style={styles.loadingState}>
+                            <ActivityIndicator color={colors.primary} />
+                            <Text style={styles.emptyText}>{t('common.loading')}</Text>
+                        </View>
+                    ) : cards.length === 0 ? (
                         <View style={styles.emptyState}>
                             <View style={styles.emptyIconWrap}>
                                 <Icon name="card-outline" size={26} color={colors.primaryLight} />
@@ -790,6 +795,16 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         paddingBottom: spacing['4xl'],
     },
     emptyState: {
+        alignItems: 'center',
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.xl,
+        gap: spacing.sm,
+        marginTop: spacing.base,
+    },
+    loadingState: {
         alignItems: 'center',
         backgroundColor: colors.surface,
         borderRadius: borderRadius.xl,

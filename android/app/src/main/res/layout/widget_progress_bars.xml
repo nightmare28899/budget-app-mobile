@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  RemoteViews can only tint a ProgressBar from Android 12, so every tone ships its own
+  drawable and the provider toggles the matching bar. Only one is ever visible.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="8dp"
+    android:importantForAccessibility="no">
+
+    <ProgressBar
+        android:id="@+id/widget_progress_neutral"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/budget_widget_progress_neutral"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/widget_progress_safe"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:max="100"
+        android:progress="38"
+        android:progressDrawable="@drawable/budget_widget_progress_safe" />
+
+    <ProgressBar
+        android:id="@+id/widget_progress_warning"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/budget_widget_progress_warning"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/widget_progress_danger"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/budget_widget_progress_danger"
+        android:visibility="gone" />
+</FrameLayout>

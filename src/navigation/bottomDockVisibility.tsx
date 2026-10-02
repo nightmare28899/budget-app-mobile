@@ -2,6 +2,7 @@ import React from 'react';
 import {
     Animated,
     Easing,
+    Keyboard,
     LayoutChangeEvent,
     NativeScrollEvent,
     NativeSyntheticEvent,
@@ -46,6 +47,7 @@ export function BottomDockVisibilityProvider({
     const progress = React.useRef(new Animated.Value(1)).current;
     const [isVisible, setIsVisible] = React.useState(true);
     const isVisibleRef = React.useRef(true);
+    const keyboardVisibleRef = React.useRef(false);
 
     const animateTo = React.useCallback((nextVisible: boolean) => {
         progress.stopAnimation();
@@ -59,6 +61,10 @@ export function BottomDockVisibilityProvider({
     }, [progress]);
 
     const showDock = React.useCallback(() => {
+        if (keyboardVisibleRef.current) {
+            return;
+        }
+
         if (isVisibleRef.current) {
             return;
         }
@@ -75,6 +81,22 @@ export function BottomDockVisibilityProvider({
         isVisibleRef.current = false;
         animateTo(false);
     }, [animateTo]);
+
+    React.useEffect(() => {
+        const keyboardDidShowSubscription = Keyboard.addListener('keyboardDidShow', () => {
+            keyboardVisibleRef.current = true;
+            hideDock();
+        });
+        const keyboardDidHideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+            keyboardVisibleRef.current = false;
+            showDock();
+        });
+
+        return () => {
+            keyboardDidShowSubscription.remove();
+            keyboardDidHideSubscription.remove();
+        };
+    }, [hideDock, showDock]);
 
     const value = React.useMemo(
         () => ({

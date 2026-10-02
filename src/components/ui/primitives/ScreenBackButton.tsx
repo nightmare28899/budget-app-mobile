@@ -26,16 +26,16 @@ export function ScreenBackButton({
             accessibilityRole="button"
             accessibilityLabel={accessibilityLabel}
         >
-            <Icon name="arrow-back" size={20} color={colors.textPrimary} />
+            <Icon name="arrow-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
     );
 }
 
 const createStyles = (colors: SemanticColors) => StyleSheet.create({
     button: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: colors.surfaceCard,

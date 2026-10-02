@@ -17,7 +17,7 @@ import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
 import { Input } from '../../components/ui/primitives/Input';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { RootScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { usePreferencesStore } from '../../store/preferencesStore';
@@ -63,6 +63,9 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
         scaleFont,
         scaleSize,
     } = useResponsive();
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
 
     const [currentStep, setCurrentStep] = useState(0);
     const [budgetAmount, setBudgetAmount] = useState(
@@ -83,6 +86,8 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const openPrivacyPolicy = () => navigation.navigate('PrivacyPolicy');
 
     const finishOnboarding = async (skipSetup: boolean) => {
         if (!user) {
@@ -240,9 +245,7 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
                             paddingTop: insets.top + spacing.base,
                             paddingHorizontal: horizontalPadding,
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                 >
                     <View style={styles.stepMetaRow}>
@@ -330,9 +333,7 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
                             paddingHorizontal: horizontalPadding,
                             paddingBottom: insets.bottom + spacing['3xl'],
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                     keyboardShouldPersistTaps="handled"
                 >
@@ -632,9 +633,7 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
                             paddingBottom: insets.bottom + spacing.base,
                             paddingHorizontal: horizontalPadding,
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                 >
                     {isSetupStep ? (
@@ -685,6 +684,16 @@ export function OnboardingScreen({ navigation }: RootScreenProps<'Onboarding'>) 
                         </>
                     )}
                 </View>
+                <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={openPrivacyPolicy}
+                    disabled={isSubmitting}
+                    style={styles.privacyLinkButton}
+                >
+                    <Text style={styles.privacyLinkText}>
+                        {t('legal.readPrivacy')}
+                    </Text>
+                </TouchableOpacity>
             </AnimatedScreen>
         </KeyboardAvoidingView>
     );
@@ -1018,6 +1027,14 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     setupSkipText: {
         color: colors.textSecondary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    privacyLinkButton: {
+        alignItems: 'center',
+        paddingVertical: spacing.sm,
+    },
+    privacyLinkText: {
+        color: colors.primaryLight,
         fontWeight: typography.fontWeight.semibold,
     },
 });

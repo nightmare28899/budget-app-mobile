@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { PlanAccessSection } from '../../components/profile/PlanAccessSection';
+import { DeleteAccountConfirmationModal } from '../../components/profile/DeleteAccountConfirmationModal';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { Button } from '../../components/ui/primitives/Button';
 import { HeroHeader } from '../../components/ui/layout/HeroHeader';
@@ -20,8 +21,8 @@ import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { Input } from '../../components/ui/primitives/Input';
 import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { ThemeLivePreviewCard } from '../../components/ui/domain/ThemeLivePreviewCard';
-import { useSettings } from '../../hooks/useSettings';
-import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
+import { useSettings } from '../../hooks/settings/useSettings';
+import { useScrollToFocusedInput } from '../../hooks/shared/useScrollToFocusedInput';
 import { RootScreenProps } from '../../navigation/types';
 import {
   borderRadius,
@@ -37,7 +38,7 @@ import { ThemeMode } from '../../theme/themes';
 import { getCurrencyLocale } from '../../utils/domain/currency';
 import { formatCurrency } from '../../utils/core/format';
 import { budgetLabel } from '../../utils/domain/budget';
-import { useAppAccess } from '../../hooks/useAppAccess';
+import { useAppAccess } from '../../hooks/access/useAppAccess';
 
 type ProfileSectionTab = 'profile' | 'settings' | 'plan';
 
@@ -78,6 +79,8 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
     getThemeModeLabel,
     onSaveProfile,
     onLogout,
+    onDeleteAccount,
+    isDeletingAccount,
     onSeedCategories,
     onSendWeeklyReport,
     onToggleWeeklyAutomaticReport,
@@ -88,8 +91,39 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
     onRemovePhoto,
   } = useSettings();
 
+  const zeroHorizontalMarginStyle = { marginHorizontal: 0 };
+  const tabBarLayoutStyle = {
+    marginHorizontal: 0,
+    padding: isSmallPhone
+      ? scaleSize(spacing.sm, 0.5)
+      : scaleSize(spacing.base, 0.5),
+  };
+  const cardContentStyle = {
+    marginHorizontal: 0,
+    padding: isSmallPhone
+      ? scaleSize(spacing.lg, 0.5)
+      : scaleSize(spacing.xl, 0.5),
+  };
+  const avatarButtonSizeStyle = {
+    width: isSmallPhone ? 84 : 92,
+    height: isSmallPhone ? 84 : 92,
+    borderRadius: isSmallPhone ? 42 : 46,
+  };
+  const avatarImageRadiusStyle = {
+    borderRadius: isSmallPhone ? 42 : 46,
+  };
+  const contentMaxWidthStyle = contentMaxWidth
+    ? {
+        maxWidth: contentMaxWidth,
+        alignSelf: 'center' as const,
+        width: '100%' as const,
+      }
+    : null;
+
   const [activeTab, setActiveTab] =
     React.useState<ProfileSectionTab>('profile');
+  const [deleteAccountModalVisible, setDeleteAccountModalVisible] =
+    React.useState(false);
   const locale = getCurrencyLocale(language);
   const quickThemeModes: ThemeMode[] = [
     'system',
@@ -157,18 +191,14 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
   const openCreditCards = () =>
     navigation.navigate('Main', { screen: 'CreditCards' });
   const openTerms = () => navigation.navigate('TermsAndConditions');
+  const openPrivacyPolicy = () => navigation.navigate('PrivacyPolicy');
   const openPlanOverview = () => navigation.navigate('PlanOverview');
 
   const renderSectionTabs = () => (
     <View
       style={[
         styles.tabBar,
-        {
-          marginHorizontal: 0,
-          padding: isSmallPhone
-            ? scaleSize(spacing.sm, 0.5)
-            : scaleSize(spacing.base, 0.5),
-        },
+        tabBarLayoutStyle,
       ]}
     >
       {sectionTabs.map(tab => {
@@ -209,23 +239,14 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
       <View
         style={[
           styles.card,
-          {
-            marginHorizontal: 0,
-            padding: isSmallPhone
-              ? scaleSize(spacing.lg, 0.5)
-              : scaleSize(spacing.xl, 0.5),
-          },
+          cardContentStyle,
         ]}
       >
         <View style={styles.avatarContainer}>
           <TouchableOpacity
             style={[
               styles.avatarButton,
-              {
-                width: isSmallPhone ? 84 : 92,
-                height: isSmallPhone ? 84 : 92,
-                borderRadius: isSmallPhone ? 42 : 46,
-              },
+              avatarButtonSizeStyle,
             ]}
             onPress={onPickProfileImage}
             activeOpacity={0.8}
@@ -235,7 +256,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
                 source={{ uri: avatarUri }}
                 style={[
                   styles.avatarImage,
-                  { borderRadius: isSmallPhone ? 42 : 46 },
+                  avatarImageRadiusStyle,
                 ]}
                 resizeMode="cover"
                 onError={() => setAvatarLoadFailed(true)}
@@ -340,18 +361,13 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
         title={t('settings.saveProfile')}
         onPress={onSaveProfile}
         loading={isSavingSettings}
-        containerStyle={[styles.saveButton, { marginHorizontal: 0 }]}
+        containerStyle={[styles.saveButton, zeroHorizontalMarginStyle]}
       />
 
       <View
         style={[
           styles.card,
-          {
-            marginHorizontal: 0,
-            padding: isSmallPhone
-              ? scaleSize(spacing.lg, 0.5)
-              : scaleSize(spacing.xl, 0.5),
-          },
+          cardContentStyle,
         ]}
       >
         <Text
@@ -440,12 +456,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
       <View
         style={[
           styles.card,
-          {
-            marginHorizontal: 0,
-            padding: isSmallPhone
-              ? scaleSize(spacing.lg, 0.5)
-              : scaleSize(spacing.xl, 0.5),
-          },
+          cardContentStyle,
         ]}
       >
         <Text
@@ -515,12 +526,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
       <View
         style={[
           styles.card,
-          {
-            marginHorizontal: 0,
-            padding: isSmallPhone
-              ? scaleSize(spacing.lg, 0.5)
-              : scaleSize(spacing.xl, 0.5),
-          },
+          cardContentStyle,
         ]}
       >
         <Text
@@ -560,12 +566,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
       <View
         style={[
           styles.card,
-          {
-            marginHorizontal: 0,
-            padding: isSmallPhone
-              ? scaleSize(spacing.lg, 0.5)
-              : scaleSize(spacing.xl, 0.5),
-          },
+          cardContentStyle,
         ]}
       >
         <Text
@@ -753,6 +754,23 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
           <Icon name="chevron-forward" size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.actionRow}
+          onPress={openPrivacyPolicy}
+          activeOpacity={0.7}
+        >
+          <Icon name="shield-checkmark-outline" size={22} color={colors.primaryLight} />
+          <View style={styles.actionInfo}>
+            <Text style={[styles.actionText, { fontSize: scaleFont(typography.fontSize.base) }]}>
+              {t('settings.privacyTitle')}
+            </Text>
+            <Text style={[styles.actionSubtext, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+              {t('settings.privacyDesc')}
+            </Text>
+          </View>
+          <Icon name="chevron-forward" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
+
         {isAuthenticated ? (
           <TouchableOpacity
             style={styles.actionRow}
@@ -779,6 +797,25 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
               </Text>
             </View>
             <Icon name="chevron-forward" size={20} color={colors.textMuted} />
+          </TouchableOpacity>
+        ) : null}
+
+        {isAuthenticated ? (
+          <TouchableOpacity
+            style={[styles.actionRow, styles.actionRowDanger]}
+            onPress={() => setDeleteAccountModalVisible(true)}
+            activeOpacity={0.78}
+          >
+            <Icon name="trash-outline" size={22} color={colors.error} />
+            <View style={styles.actionInfo}>
+              <Text style={[styles.actionText, styles.actionTextDanger, { fontSize: scaleFont(typography.fontSize.base) }]}>
+                {t('settings.deleteAccount')}
+              </Text>
+              <Text style={[styles.actionSubtext, styles.actionSubtextDanger, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                {t('settings.deleteAccountDesc')}
+              </Text>
+            </View>
+            <Icon name="chevron-forward" size={20} color={colors.error} />
           </TouchableOpacity>
         ) : null}
 
@@ -953,13 +990,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
               paddingBottom: insets.bottom + spacing['5xl'],
               paddingHorizontal: horizontalPadding,
             },
-            contentMaxWidth
-              ? {
-                  maxWidth: contentMaxWidth,
-                  alignSelf: 'center',
-                  width: '100%',
-                }
-              : null,
+            contentMaxWidthStyle,
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -971,6 +1002,17 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
           {activeTab === 'plan' ? renderPlanTab() : null}
         </ScrollView>
       </AnimatedScreen>
+      <DeleteAccountConfirmationModal
+        visible={deleteAccountModalVisible}
+        isDeleting={isDeletingAccount}
+        onCancel={() => setDeleteAccountModalVisible(false)}
+        onConfirm={async () => {
+          const deleted = await onDeleteAccount();
+          if (deleted) {
+            setDeleteAccountModalVisible(false);
+          }
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }

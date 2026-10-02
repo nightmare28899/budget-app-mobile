@@ -30,8 +30,8 @@ import { CategoryIcon } from '../../components/CategoryIcon';
 import { EmptyState } from '../../components/ui/primitives/EmptyState';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { AnalyticsSkeleton } from '../../components/ui/primitives/Skeleton';
-import { useI18n } from '../../hooks/useI18n';
-import { useAnalytics } from '../../hooks/useAnalytics';
+import { useI18n } from '../../hooks/shared/useI18n';
+import { useAnalytics } from '../../hooks/analytics/useAnalytics';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
@@ -226,13 +226,13 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
 
         return (
             <View style={styles.insightMetricCard}>
-                <Text style={[styles.insightMetricLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                <Text style={[styles.insightMetricLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                     {params.title}
                 </Text>
                 <Text style={[styles.insightMetricAmount, { fontSize: scaleFont(typography.fontSize.xl) }]}>
                     {formatCurrency(params.total, user?.currency)}
                 </Text>
-                <Text style={[styles.insightMetricRange, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                <Text style={[styles.insightMetricRange, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                     {rangeLabel}
                 </Text>
                 <View style={[styles.insightChangePill, { backgroundColor: changeSummary.backgroundColor }]}>
@@ -275,7 +275,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                 <Text
                     style={[
                         styles.periodMeta,
-                        { fontSize: scaleFont(typography.fontSize.xs) },
+                        { fontSize: scaleFont(typography.fontSize.sm) },
                     ]}
                 >
                     {weeklyPeriodLabel}
@@ -283,10 +283,10 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                 </Text>
             )}
             <View style={styles.progressLabels}>
-                <Text style={[styles.progressText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                <Text style={[styles.progressText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                     {`${t('analytics.budget')} (${formatCurrency(weeklyBudgetAmount, user?.currency)})`}
                 </Text>
-                <Text style={[styles.progressText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                <Text style={[styles.progressText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                     {`${t('analytics.expenses')} (${formatCurrency(weeklyTotal, user?.currency)})`}
                 </Text>
             </View>
@@ -298,7 +298,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                     ]}
                 />
             </View>
-            <Text style={[styles.miniText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+            <Text style={[styles.miniText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                 {t('analytics.dailyAvg')}: {formatCurrency(weeklyAverage, user?.currency)}
             </Text>
         </View>
@@ -317,7 +317,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
             </Text>
             <View style={styles.cashflowGrid}>
                 <View style={styles.cashflowMetric}>
-                    <Text style={[styles.cashflowMetricLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                    <Text style={[styles.cashflowMetricLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                         {t('dashboard.incomeLabel')}
                     </Text>
                     <Text
@@ -331,7 +331,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                     </Text>
                 </View>
                 <View style={styles.cashflowMetric}>
-                    <Text style={[styles.cashflowMetricLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                    <Text style={[styles.cashflowMetricLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                         {t('dashboard.expensesLabel')}
                     </Text>
                     <Text
@@ -345,7 +345,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                     </Text>
                 </View>
                 <View style={styles.cashflowMetric}>
-                    <Text style={[styles.cashflowMetricLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                    <Text style={[styles.cashflowMetricLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                         {t('dashboard.netLabel')}
                     </Text>
                     <Text
@@ -697,7 +697,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                                     <Text
                                         style={[
                                             styles.categoryAmount,
-                                            { fontSize: scaleFont(typography.fontSize.xs) },
+                                            { fontSize: scaleFont(typography.fontSize.sm) },
                                         ]}
                                     >
                                         {formatCurrency(cat.total, user?.currency)}
@@ -744,7 +744,7 @@ export function AnalyticsScreen(_props: MainTabScreenProps<'Analytics'>) {
                         onPress={onOpenDatePicker}
                     >
                         <Icon name="calendar-outline" size={14} color={colors.textMuted} />
-                        <Text style={[styles.dateText, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                        <Text style={[styles.dateText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                             {dateLabel}
                         </Text>
                     </TouchableOpacity>

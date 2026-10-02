@@ -12,7 +12,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthScreenProps, RootStackParamList } from '../../navigation/types';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/auth/useAuth';
 import { HeroHeader } from '../../components/ui/layout/HeroHeader';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { Input } from '../../components/ui/primitives/Input';
@@ -27,8 +27,8 @@ import {
     useThemedStyles,
     SemanticColors,
 } from '../../theme/index';
-import { useI18n } from '../../hooks/useI18n';
-import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
+import { useI18n } from '../../hooks/shared/useI18n';
+import { useScrollToFocusedInput } from '../../hooks/shared/useScrollToFocusedInput';
 
 export function LoginScreen({ navigation }: AuthScreenProps<'Login'>) {
     const styles = useThemedStyles(createStyles);

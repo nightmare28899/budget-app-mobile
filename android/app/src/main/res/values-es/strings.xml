@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Resumen de presupuesto -->
+    <string name="budget_widget_name">Resumen de presupuesto</string>
+    <string name="budget_widget_description">Tu último resumen de presupuesto disponible para gastar</string>
+    <string name="budget_widget_setup_title">Abre BudgetApp</string>
+    <string name="budget_widget_setup_meta">Abre la app para sincronizar tu resumen.</string>
+    <string name="budget_widget_open_description">Abrir el panel de BudgetApp</string>
+    <string name="budget_widget_refresh_description">Actualizar el resumen de presupuesto</string>
+    <string name="budget_widget_updated_now">Actualizado ahora</string>
+    <string name="budget_widget_updated_minutes">Actualizado hace %1$d min</string>
+    <string name="budget_widget_updated_hours">Actualizado hace %1$d h</string>
+    <string name="budget_widget_updated_days">Actualizado hace %1$d d</string>
+    <string name="budget_widget_syncing">Sincronizando…</string>
+    <string name="budget_widget_offline">Sin conexión · datos guardados</string>
+
+    <!-- Vista previa del selector de widgets -->
+    <string name="budget_widget_preview_period">Mensual</string>
+    <string name="budget_widget_preview_status">38% usado</string>
+    <string name="budget_widget_preview_title">Disponible para gastar</string>
+    <string name="budget_widget_preview_value">$1,240.00</string>
+    <string name="budget_widget_preview_spent_label">Gastado</string>
+    <string name="budget_widget_preview_spent_value">$760.00</string>
+    <string name="budget_widget_preview_budget_label">Presupuesto</string>
+    <string name="budget_widget_preview_budget_value">$2,000.00</string>
+
+    <!-- Agregar registro -->
+    <string name="quick_add_widget_name">Agregar registro</string>
+    <string name="quick_add_widget_description">Accesos directos para agregar un registro en BudgetApp</string>
+    <string name="quick_add_widget_title">Nuevo registro</string>
+    <string name="quick_add_widget_expense">Gasto</string>
+    <string name="quick_add_widget_income">Ingreso</string>
+    <string name="quick_add_widget_subscription">Suscripción</string>
+    <string name="quick_add_widget_compact_expense">Agregar gasto</string>
+    <string name="quick_add_widget_expense_description">Agregar un gasto en BudgetApp</string>
+    <string name="quick_add_widget_income_description">Agregar un ingreso en BudgetApp</string>
+    <string name="quick_add_widget_subscription_description">Agregar una suscripción en BudgetApp</string>
+
+    <!-- Próximos pagos -->
+    <string name="upcoming_widget_name">Próximos pagos</string>
+    <string name="upcoming_widget_description">Tus próximos cobros de suscripciones durante los siguientes 7 días</string>
+    <string name="upcoming_widget_open_description">Abrir próximos pagos de suscripciones en BudgetApp</string>
+    <string name="upcoming_widget_setup_title">Abre BudgetApp</string>
+    <string name="upcoming_widget_setup_meta">Abre la app para sincronizar tus próximos pagos.</string>
+    <string name="upcoming_widget_preview_title">Próximos pagos</string>
+    <string name="upcoming_widget_preview_name">Almacenamiento</string>
+    <string name="upcoming_widget_preview_amount">$249.00</string>
+    <string name="upcoming_widget_preview_timing">Vence mañana</string>
+    <string name="upcoming_widget_preview_count">2 pagos · 7 días</string>
+    <string name="upcoming_widget_preview_total_label">Total de 7 días</string>
+    <string name="upcoming_widget_preview_total_value">$399.00</string>
+</resources>

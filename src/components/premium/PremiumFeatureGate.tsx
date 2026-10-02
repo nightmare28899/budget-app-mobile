@@ -11,8 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnimatedScreen } from '../ui/primitives/AnimatedScreen';
 import { Button } from '../ui/primitives/Button';
 import { HomeBackground } from '../ui/layout/HomeBackground';
-import { usePremiumAccess } from '../../hooks/usePremiumAccess';
-import { useI18n } from '../../hooks/useI18n';
+import { usePremiumAccess } from '../../hooks/access/usePremiumAccess';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { PremiumFeature } from '../../types/premium';
 import {
     borderRadius,
@@ -88,6 +88,9 @@ export function PremiumFeatureGate({
         ? t('premium.acquiredSubtitle')
         : t('premium.subtitle');
     const badgeText = hasPremium ? t('premium.activeBadge') : t('premium.lockedBadge');
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
 
     return (
         <View style={styles.container}>
@@ -101,9 +104,7 @@ export function PremiumFeatureGate({
                             paddingBottom: insets.bottom + spacing['4xl'],
                             paddingHorizontal: horizontalPadding,
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                     showsVerticalScrollIndicator={false}
                 >

@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { termsDocuments } from '../../legal/termsAndConditions';
 import {
     borderRadius,
@@ -21,6 +21,9 @@ export function TermsAndConditionsScreen() {
     const insets = useSafeAreaInsets();
     const { t, language } = useI18n();
     const { horizontalPadding, contentMaxWidth, scaleFont } = useResponsive();
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
     const document = termsDocuments[language];
 
     return (
@@ -34,9 +37,7 @@ export function TermsAndConditionsScreen() {
                         paddingBottom: insets.bottom + spacing['4xl'],
                         paddingHorizontal: horizontalPadding,
                     },
-                    contentMaxWidth
-                        ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                        : null,
+                    contentMaxWidthStyle,
                 ]}
                 showsVerticalScrollIndicator={false}
             >

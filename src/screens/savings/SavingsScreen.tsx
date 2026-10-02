@@ -16,7 +16,7 @@ import { Skeleton } from '../../components/ui/primitives/Skeleton';
 import { SavingsFundsModal } from '../../components/savings/SavingsFundsModal';
 import { SavingsGoalCard } from '../../components/savings/SavingsGoalCard';
 import { SavingsGoalFormModal } from '../../components/savings/SavingsGoalFormModal';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { useSavingsStore } from '../../store/savingsStore';
 import {

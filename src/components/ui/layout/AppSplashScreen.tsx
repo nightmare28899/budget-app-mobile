@@ -17,7 +17,7 @@ import {
     SemanticColors,
 } from '../../../theme/index';
 import { withAlpha } from '../../../utils/domain/subscriptions';
-import { useI18n } from '../../../hooks/useI18n';
+import { useI18n } from '../../../hooks/shared/useI18n';
 import { usePreferencesStore } from '../../../store/preferencesStore';
 
 const DOT_COUNT = 3;

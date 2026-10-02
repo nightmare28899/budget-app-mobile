@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Narrow budget summary layout (< 220dp wide): same hierarchy, fewer supporting details. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/budget_widget_card"
+    android:clickable="true"
+    android:contentDescription="@string/budget_widget_open_description"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:padding="@dimen/widget_padding_compact">
+
+    <TextView
+        android:id="@+id/widget_period"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:importantForAccessibility="no"
+        android:letterSpacing="0.06"
+        android:maxLines="1"
+        android:text="@string/budget_widget_preview_period"
+        android:textAllCaps="true"
+        android:textColor="@color/widget_accent_soft"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:importantForAccessibility="no"
+        android:maxLines="1"
+        android:text="@string/budget_widget_preview_title"
+        android:textColor="@color/widget_text_muted"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/widget_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:importantForAccessibility="no"
+        android:maxLines="1"
+        android:text="@string/budget_widget_preview_value"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <include
+        android:id="@+id/widget_progress_group"
+        layout="@layout/widget_progress_bars"
+        android:layout_width="match_parent"
+        android:layout_height="7dp"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/widget_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/budget_widget_badge_safe"
+        android:importantForAccessibility="no"
+        android:maxLines="1"
+        android:paddingLeft="8dp"
+        android:paddingTop="2dp"
+        android:paddingRight="8dp"
+        android:paddingBottom="2dp"
+        android:text="@string/budget_widget_preview_status"
+        android:textColor="@color/widget_safe"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_meta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:importantForAccessibility="no"
+        android:maxLines="2"
+        android:textColor="@color/widget_text_muted"
+        android:textSize="11sp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/widget_actions"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="8dp"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/widget_action_add"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/widget_button_primary"
+            android:clickable="true"
+            android:contentDescription="@string/quick_add_widget_expense_description"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_widget_add"
+                android:tint="@color/widget_text_on_action" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_action_refresh"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_button_neutral"
+            android:clickable="true"
+            android:contentDescription="@string/budget_widget_refresh_description"
+            android:focusable="true"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_widget_refresh"
+                android:tint="@color/widget_text_secondary" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_footnote_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:importantForAccessibility="no"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/widget_footnote_icon"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
+            android:layout_marginRight="4dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_offline"
+            android:tint="@color/widget_warning"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_footnote"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/budget_widget_updated_now"
+            android:textColor="@color/widget_text_muted"
+            android:textSize="10sp" />
+    </LinearLayout>
+</LinearLayout>

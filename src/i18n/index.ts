@@ -60,6 +60,7 @@ const en = {
   'auth.orContinueWith': 'or continue with',
   'auth.continueWithGoogle': 'Continue with Google',
   'legal.readTerms': 'Read Terms and Conditions',
+  'legal.readPrivacy': 'Read Privacy Policy',
   'legal.registerNotice':
     'By creating your account, you accept the Terms and Conditions.',
   'legal.googleNotice':
@@ -67,6 +68,9 @@ const en = {
   'legal.termsTitle': 'Terms and Conditions',
   'legal.termsSubtitle':
     'Review the rules, responsibilities, and service limits that apply when you use BudgetApp.',
+  'legal.privacyTitle': 'Privacy Policy',
+  'legal.privacySubtitle':
+    'Learn what information BudgetApp handles, why it is used, and how you can control it.',
   'legal.effectiveDate': 'Effective date',
   'auth.googleSignInFailed': 'Google Sign-In Failed',
   'auth.googleConfigMissing':
@@ -317,6 +321,13 @@ const en = {
     'Create goals and add money with a couple of taps.',
   'dashboard.loadError':
     'Some home data could not be loaded. Pull to refresh or retry.',
+  'dashboard.categoryBudgetEmptyTitle': 'No category limits yet',
+  'dashboard.categoryBudgetEmptyDescription':
+    'Set limits to see where your spending needs attention.',
+  'dashboard.categoryBudgetErrorTitle': 'Category limits unavailable',
+  'dashboard.categoryBudgetErrorDescription':
+    'We could not load this category summary.',
+  'dashboard.categoryBudgetAccessibilityHint': 'Opens category budgets',
   'dashboard.cashflowTitle': 'Cashflow',
   'dashboard.savingsRate': 'Savings rate: {percent}%',
   'dashboard.cashflowEmptyHint':
@@ -879,6 +890,7 @@ const en = {
   'addSubscription.androidPickerHint': 'Uses native Android date picker',
   'addSubscription.brandColor': 'Brand color',
   'addSubscription.save': 'Save Subscription',
+  'addSubscription.amountPreview': 'Recurring amount: {amount}',
   'addSubscription.update': 'Update Subscription',
   'addSubscription.saved': 'Subscription saved',
   'addSubscription.updated': 'Subscription updated',
@@ -893,6 +905,7 @@ const en = {
   'addExpense.title': 'Add Expense',
   'addExpense.subtitle': 'Log your purchase',
   'addExpense.amountPlaceholder': '0.00',
+  'addExpense.amountPreview': 'Purchase total: {amount}',
   'addExpense.titleLabel': 'Title',
   'addExpense.titlePlaceholder': 'What did you buy?',
   'addExpense.locationLabel': 'Location',
@@ -1111,6 +1124,16 @@ const en = {
   'settings.languageDialogMessage': 'Select your preferred language',
   'settings.termsTitle': 'Terms and Conditions',
   'settings.termsDesc': 'Review the current rules for using BudgetApp',
+  'settings.privacyTitle': 'Privacy Policy',
+  'settings.privacyDesc': 'Review how BudgetApp handles your information',
+  'settings.deleteAccount': 'Delete account',
+  'settings.deleteAccountDesc': 'Permanently remove your account and financial records',
+  'settings.deleteAccountTitle': 'Permanently delete account?',
+  'settings.deleteAccountMessage':
+    'This action cannot be undone. All account data and financial records will be permanently deleted. Type ELIMINAR to continue.',
+  'settings.deleteAccountConfirmationLabel': 'Type ELIMINAR to confirm',
+  'settings.deleteAccountButton': 'Delete permanently',
+  'settings.deleteAccountFailed': 'The account could not be deleted. Please try again.',
   'settings.themeTitle': 'Theme',
   'settings.themeDesc': 'Choose the app appearance',
   'settings.themeDialogTitle': 'Theme mode',
@@ -1200,6 +1223,7 @@ const es: Record<TranslationKeyInternal, string> = {
   'auth.orContinueWith': 'o continuar con',
   'auth.continueWithGoogle': 'Continuar con Google',
   'legal.readTerms': 'Leer Términos y Condiciones',
+  'legal.readPrivacy': 'Leer Aviso de Privacidad',
   'legal.registerNotice':
     'Al crear tu cuenta, aceptas los Términos y Condiciones.',
   'legal.googleNotice':
@@ -1207,6 +1231,9 @@ const es: Record<TranslationKeyInternal, string> = {
   'legal.termsTitle': 'Términos y Condiciones',
   'legal.termsSubtitle':
     'Revisa las reglas, responsabilidades y límites del servicio que aplican cuando usas BudgetApp.',
+  'legal.privacyTitle': 'Aviso de Privacidad',
+  'legal.privacySubtitle':
+    'Conoce qué información trata BudgetApp, para qué se utiliza y cómo puedes controlarla.',
   'legal.effectiveDate': 'Fecha de vigencia',
   'auth.googleSignInFailed': 'Error con Google',
   'auth.googleConfigMissing':
@@ -1457,6 +1484,13 @@ const es: Record<TranslationKeyInternal, string> = {
   'dashboard.upcomingNone': 'No hay cobros en los próximos 3 días',
   'dashboard.loadError':
     'No se pudieron cargar algunos datos del inicio. Desliza para refrescar o reintentar.',
+  'dashboard.categoryBudgetEmptyTitle': 'Aún no tienes límites por categoría',
+  'dashboard.categoryBudgetEmptyDescription':
+    'Define límites para saber dónde necesita atención tu gasto.',
+  'dashboard.categoryBudgetErrorTitle': 'Límites por categoría no disponibles',
+  'dashboard.categoryBudgetErrorDescription':
+    'No pudimos cargar este resumen de categorías.',
+  'dashboard.categoryBudgetAccessibilityHint': 'Abre los presupuestos por categoría',
   'dashboard.openSubscriptions': 'Abrir Mis Suscripciones',
   'dashboard.savingsTitle': 'Caja de ahorro',
   'dashboard.savingsDescription':
@@ -2037,6 +2071,7 @@ const es: Record<TranslationKeyInternal, string> = {
     'Usa el selector nativo de fecha de Android',
   'addSubscription.brandColor': 'Color de marca',
   'addSubscription.save': 'Guardar suscripción',
+  'addSubscription.amountPreview': 'Monto recurrente: {amount}',
   'addSubscription.update': 'Actualizar suscripción',
   'addSubscription.saved': 'Suscripción guardada',
   'addSubscription.updated': 'Suscripción actualizada',
@@ -2052,6 +2087,7 @@ const es: Record<TranslationKeyInternal, string> = {
   'addExpense.title': 'Agregar gasto',
   'addExpense.subtitle': 'Registra tu compra',
   'addExpense.amountPlaceholder': '0.00',
+  'addExpense.amountPreview': 'Total de la compra: {amount}',
   'addExpense.titleLabel': 'Título',
   'addExpense.titlePlaceholder': '¿Qué compraste?',
   'addExpense.locationLabel': 'Ubicación',
@@ -2272,6 +2308,16 @@ const es: Record<TranslationKeyInternal, string> = {
   'settings.languageDialogMessage': 'Selecciona tu idioma preferido',
   'settings.termsTitle': 'Términos y Condiciones',
   'settings.termsDesc': 'Revisa las reglas vigentes para usar BudgetApp',
+  'settings.privacyTitle': 'Aviso de Privacidad',
+  'settings.privacyDesc': 'Revisa cómo BudgetApp trata tu información',
+  'settings.deleteAccount': 'Eliminar cuenta',
+  'settings.deleteAccountDesc': 'Borra permanentemente tu cuenta y registros financieros',
+  'settings.deleteAccountTitle': '¿Eliminar cuenta permanentemente?',
+  'settings.deleteAccountMessage':
+    'Esta acción no se puede deshacer. Todos los datos de la cuenta y registros financieros se eliminarán permanentemente. Escribe ELIMINAR para continuar.',
+  'settings.deleteAccountConfirmationLabel': 'Escribe ELIMINAR para confirmar',
+  'settings.deleteAccountButton': 'Eliminar permanentemente',
+  'settings.deleteAccountFailed': 'No se pudo eliminar la cuenta. Inténtalo de nuevo.',
   'settings.themeTitle': 'Tema',
   'settings.themeDesc': 'Elige la apariencia de la app',
   'settings.themeDialogTitle': 'Modo de tema',

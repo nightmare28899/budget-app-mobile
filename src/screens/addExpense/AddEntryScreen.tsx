@@ -25,7 +25,7 @@ import {
     SemanticColors,
 } from '../../theme/index';
 import { withAlpha } from '../../utils/domain/subscriptions';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 
 type AddEntryTab = 'expense' | 'income' | 'subscription';
 
@@ -128,18 +128,19 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
         name: 'AddSubscription',
         params: { embedded: true },
     };
+    const dragStyle = {
+        opacity: enableVisualDragFx ? dragOpacity : 1,
+        transform: [
+            { translateY },
+            ...(enableVisualDragFx ? [{ scale: dragScale }] : []),
+        ],
+    };
 
     return (
         <Animated.View
             style={[
                 styles.container,
-                {
-                    opacity: enableVisualDragFx ? dragOpacity : 1,
-                    transform: [
-                        { translateY },
-                        ...(enableVisualDragFx ? [{ scale: dragScale }] : []),
-                    ],
-                },
+                dragStyle,
             ]}
         >
             <View style={styles.sheetSurface}>
@@ -170,11 +171,13 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                                     activeTab === 'expense' ? styles.segmentButtonActive : null,
                                 ]}
                                 onPress={() => setActiveTab('expense')}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected: activeTab === 'expense' }}
                             >
                                 <Icon
                                     name="wallet-outline"
-                                    size={16}
-                                    color={activeTab === 'expense' ? colors.textPrimary : colors.textMuted}
+                                    size={20}
+                                    color={activeTab === 'expense' ? colors.textPrimary : colors.textSecondary}
                                 />
                                 <Text
                                     style={[
@@ -192,11 +195,13 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                                     activeTab === 'income' ? styles.segmentButtonActive : null,
                                 ]}
                                 onPress={() => setActiveTab('income')}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected: activeTab === 'income' }}
                             >
                                 <Icon
                                     name="trending-up-outline"
-                                    size={16}
-                                    color={activeTab === 'income' ? colors.textPrimary : colors.textMuted}
+                                    size={20}
+                                    color={activeTab === 'income' ? colors.textPrimary : colors.textSecondary}
                                 />
                                 <Text
                                     style={[
@@ -214,14 +219,16 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                                     activeTab === 'subscription' ? styles.segmentButtonActive : null,
                                 ]}
                                 onPress={() => setActiveTab('subscription')}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected: activeTab === 'subscription' }}
                             >
                                 <Icon
                                     name="card-outline"
-                                    size={16}
+                                    size={20}
                                     color={
                                         activeTab === 'subscription'
                                             ? colors.textPrimary
-                                            : colors.textMuted
+                                            : colors.textSecondary
                                     }
                                 />
                                 <Text
@@ -270,7 +277,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         backgroundColor: colors.background,
     },
     tabHeader: {
-        paddingBottom: 0,
+        paddingBottom: spacing.md,
     },
     sheetHandleWrap: {
         alignItems: 'center',
@@ -287,6 +294,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         alignItems: 'center',
     },
     segmentedControl: {
+        minHeight: 56,
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
@@ -297,12 +305,13 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         padding: 4,
     },
     segmentButton: {
+        minHeight: 48,
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: borderRadius.full,
-        paddingVertical: spacing.xs,
+        paddingVertical: spacing.sm,
     },
     segmentButtonActive: {
         backgroundColor: withAlpha(colors.primary, 0.26),
@@ -311,8 +320,8 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     segmentLabel: {
         marginLeft: spacing.xs,
-        color: colors.textMuted,
-        fontSize: typography.fontSize.sm,
+        color: colors.textSecondary,
+        fontSize: typography.fontSize.md,
         fontWeight: typography.fontWeight.semibold,
     },
     segmentLabelActive: {
@@ -320,6 +329,6 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     formContainer: {
         flex: 1,
-        paddingTop: spacing.xs,
+        paddingTop: 0,
     },
 });

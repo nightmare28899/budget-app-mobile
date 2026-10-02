@@ -2,4 +2,54 @@
     <string name="app_name">BudgetApp</string>
     <string name="default_notification_channel_id">budgetapp_default_channel</string>
     <string name="default_notification_channel_name">BudgetApp Notifications</string>
+
+    <!-- Budget summary widget -->
+    <string name="budget_widget_name">Budget summary</string>
+    <string name="budget_widget_description">Your latest safe-to-spend budget summary</string>
+    <string name="budget_widget_setup_title">Open BudgetApp</string>
+    <string name="budget_widget_setup_meta">Open the app to sync your budget summary.</string>
+    <string name="budget_widget_open_description">Open the BudgetApp dashboard</string>
+    <string name="budget_widget_refresh_description">Refresh the budget summary</string>
+    <string name="budget_widget_updated_now">Updated just now</string>
+    <string name="budget_widget_updated_minutes">Updated %1$d min ago</string>
+    <string name="budget_widget_updated_hours">Updated %1$d h ago</string>
+    <string name="budget_widget_updated_days">Updated %1$d d ago</string>
+    <string name="budget_widget_syncing">Syncing…</string>
+    <string name="budget_widget_offline">Offline · saved data</string>
+
+    <!-- Budget summary widget picker preview -->
+    <string name="budget_widget_preview_period">Monthly</string>
+    <string name="budget_widget_preview_status">38% used</string>
+    <string name="budget_widget_preview_title">Safe to spend</string>
+    <string name="budget_widget_preview_value">$1,240.00</string>
+    <string name="budget_widget_preview_spent_label">Spent</string>
+    <string name="budget_widget_preview_spent_value">$760.00</string>
+    <string name="budget_widget_preview_budget_label">Budget</string>
+    <string name="budget_widget_preview_budget_value">$2,000.00</string>
+
+    <!-- Quick add widget -->
+    <string name="quick_add_widget_name">Quick add</string>
+    <string name="quick_add_widget_description">Shortcuts to add a new BudgetApp record</string>
+    <string name="quick_add_widget_title">New record</string>
+    <string name="quick_add_widget_expense">Expense</string>
+    <string name="quick_add_widget_income">Income</string>
+    <string name="quick_add_widget_subscription">Subscription</string>
+    <string name="quick_add_widget_compact_expense">Add expense</string>
+    <string name="quick_add_widget_expense_description">Add an expense in BudgetApp</string>
+    <string name="quick_add_widget_income_description">Add income in BudgetApp</string>
+    <string name="quick_add_widget_subscription_description">Add a subscription in BudgetApp</string>
+
+    <!-- Upcoming payments widget -->
+    <string name="upcoming_widget_name">Upcoming payments</string>
+    <string name="upcoming_widget_description">Your next subscription charges for the coming 7 days</string>
+    <string name="upcoming_widget_open_description">Open upcoming subscription payments in BudgetApp</string>
+    <string name="upcoming_widget_setup_title">Open BudgetApp</string>
+    <string name="upcoming_widget_setup_meta">Open the app to sync upcoming subscription payments.</string>
+    <string name="upcoming_widget_preview_title">Upcoming payments</string>
+    <string name="upcoming_widget_preview_name">Cloud storage</string>
+    <string name="upcoming_widget_preview_amount">$12.99</string>
+    <string name="upcoming_widget_preview_timing">Due tomorrow</string>
+    <string name="upcoming_widget_preview_count">2 payments · 7 days</string>
+    <string name="upcoming_widget_preview_total_label">7-day total</string>
+    <string name="upcoming_widget_preview_total_value">$27.98</string>
 </resources>

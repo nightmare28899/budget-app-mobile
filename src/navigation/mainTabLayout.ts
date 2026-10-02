@@ -2,6 +2,7 @@ import { spacing } from '../theme/index';
 
 type MainTabLayoutParams = {
     insetsBottom?: number;
+    fabSize?: number;
     isSmallPhone: boolean;
     isTablet?: boolean;
 };
@@ -11,20 +12,22 @@ type MainTabListPaddingParams = MainTabLayoutParams & {
     extraSpacing?: number;
 };
 
+export const MAIN_TAB_DOCK_SIDE_MARGIN = spacing.base;
+
 export function getMainTabBarHeight({
-    insetsBottom = 0,
     isSmallPhone,
     isTablet = false,
 }: MainTabLayoutParams) {
-    return (isSmallPhone ? 72 : isTablet ? 84 : 80) + insetsBottom;
+    return isSmallPhone ? 62 : isTablet ? 74 : 68;
 }
 
-export function getMainTabFabBottomOffset({
+export function getMainTabDockBottomOffset({
     insetsBottom = 0,
-    isSmallPhone,
     isTablet = false,
-}: MainTabLayoutParams) {
-    return insetsBottom + (isSmallPhone ? 34 : isTablet ? 42 : 40);
+}: Pick<MainTabLayoutParams, 'insetsBottom' | 'isTablet'>) {
+    const floatingGap = isTablet ? spacing.md : spacing.sm;
+
+    return Math.max(insetsBottom, spacing.xs) + floatingGap;
 }
 
 export function getMainTabFabSize({
@@ -32,19 +35,23 @@ export function getMainTabFabSize({
     isTablet = false,
     scaleSize,
 }: Pick<MainTabListPaddingParams, 'isSmallPhone' | 'scaleSize' | 'isTablet'>) {
-    return isSmallPhone ? scaleSize(56, 0.62) : isTablet ? scaleSize(64, 0.58) : scaleSize(62, 0.62);
+    return isSmallPhone ? scaleSize(46, 0.55) : isTablet ? scaleSize(54, 0.5) : scaleSize(50, 0.55);
+}
+
+export function getMainTabDockTotalHeight({
+    insetsBottom = 0,
+    isSmallPhone,
+    isTablet = false,
+}: MainTabLayoutParams) {
+    return getMainTabDockBottomOffset({ insetsBottom, isTablet })
+        + getMainTabBarHeight({ isSmallPhone, isTablet });
 }
 
 export function getMainTabListBottomPadding({
-    insetsBottom,
+    insetsBottom = 0,
     isSmallPhone,
     isTablet = false,
-    scaleSize,
     extraSpacing = isTablet ? spacing.xl : spacing.base,
 }: MainTabListPaddingParams) {
-    const tabBarClearance = spacing.xs + getMainTabBarHeight({ insetsBottom, isSmallPhone, isTablet });
-    const fabClearance = getMainTabFabBottomOffset({ insetsBottom, isSmallPhone, isTablet })
-        + getMainTabFabSize({ isSmallPhone, isTablet, scaleSize });
-
-    return Math.max(tabBarClearance, fabClearance) + extraSpacing;
+    return getMainTabDockTotalHeight({ insetsBottom, isSmallPhone, isTablet }) + extraSpacing;
 }

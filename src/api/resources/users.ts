@@ -69,4 +69,12 @@ export const usersApi = {
     const response = toApiRecord(data);
     return normalizeUser(response.user ?? response);
   },
+
+  deleteMe: async (): Promise<void> => {
+    if (isLocalMode()) {
+      return;
+    }
+
+    await apiClient.delete('/users/me');
+  },
 };

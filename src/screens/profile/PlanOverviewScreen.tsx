@@ -16,8 +16,8 @@ import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { Input } from '../../components/ui/primitives/Input';
 import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { PlanAccessSection } from '../../components/profile/PlanAccessSection';
-import { useI18n } from '../../hooks/useI18n';
-import { useSettings } from '../../hooks/useSettings';
+import { useI18n } from '../../hooks/shared/useI18n';
+import { useSettings } from '../../hooks/settings/useSettings';
 import { RootScreenProps } from '../../navigation/types';
 import {
     borderRadius,
@@ -45,6 +45,9 @@ export function PlanOverviewScreen({ navigation }: RootScreenProps<'PlanOverview
         scaleFont,
         scaleSize,
     } = useResponsive();
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
     const {
         user,
         budgetAmount,
@@ -90,9 +93,7 @@ export function PlanOverviewScreen({ navigation }: RootScreenProps<'PlanOverview
                             paddingTop: insets.top + spacing.base,
                             paddingHorizontal: horizontalPadding,
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                 >
                     <ScreenBackButton onPress={() => navigation.goBack()} />
@@ -123,9 +124,7 @@ export function PlanOverviewScreen({ navigation }: RootScreenProps<'PlanOverview
                             paddingBottom: insets.bottom + spacing['4xl'],
                             paddingHorizontal: horizontalPadding,
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode="on-drag"

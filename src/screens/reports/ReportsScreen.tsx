@@ -24,8 +24,8 @@ import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { reportsApi } from '../../api/resources/reports';
-import { useAppAccess } from '../../hooks/useAppAccess';
-import { useI18n } from '../../hooks/useI18n';
+import { useAppAccess } from '../../hooks/access/useAppAccess';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import {
   borderRadius,
@@ -140,7 +140,7 @@ function MetricCard({ label, value, meta }: MetricCardProps) {
       <Text
         style={[
           styles.metricLabel,
-          { fontSize: scaleFont(typography.fontSize.xs) },
+          { fontSize: scaleFont(typography.fontSize.sm) },
         ]}
       >
         {label}
@@ -157,7 +157,7 @@ function MetricCard({ label, value, meta }: MetricCardProps) {
         <Text
           style={[
             styles.metricMeta,
-            { fontSize: scaleFont(typography.fontSize.xs) },
+            { fontSize: scaleFont(typography.fontSize.sm) },
           ]}
         >
           {meta}
@@ -495,7 +495,7 @@ export function ReportsScreen({
             <Text
               style={[
                 styles.rangeLabel,
-                { fontSize: scaleFont(typography.fontSize.xs) },
+                { fontSize: scaleFont(typography.fontSize.sm) },
               ]}
             >
               {report
@@ -544,7 +544,7 @@ export function ReportsScreen({
             </TouchableOpacity>
           ) : null}
 
-          {reportQuery.isLoading && !report ? (
+          {reportQuery.error && !report ? null : reportQuery.isLoading && !report ? (
             <AnalyticsSkeleton
               horizontalPadding={0}
               contentMaxWidth={contentMaxWidth}
@@ -624,7 +624,7 @@ export function ReportsScreen({
                     <Text
                       style={[
                         styles.highlightLabel,
-                        { fontSize: scaleFont(typography.fontSize.xs) },
+                        { fontSize: scaleFont(typography.fontSize.sm) },
                       ]}
                     >
                       {t('reports.safeMoveTitle')}
@@ -645,7 +645,7 @@ export function ReportsScreen({
                     <Text
                       style={[
                         styles.highlightLabel,
-                        { fontSize: scaleFont(typography.fontSize.xs) },
+                        { fontSize: scaleFont(typography.fontSize.sm) },
                       ]}
                     >
                       {t('reports.topCategoryTitle')}
@@ -663,7 +663,7 @@ export function ReportsScreen({
                     <Text
                       style={[
                         styles.highlightLabel,
-                        { fontSize: scaleFont(typography.fontSize.xs) },
+                        { fontSize: scaleFont(typography.fontSize.sm) },
                       ]}
                     >
                       {t('reports.subscriptionProjectedSavings')}
@@ -696,7 +696,7 @@ export function ReportsScreen({
                   <Text
                     style={[
                       styles.planLabel,
-                      { fontSize: scaleFont(typography.fontSize.sm) },
+                      { fontSize: scaleFont(typography.fontSize.md) },
                     ]}
                   >
                     {t('reports.planBudget')}
@@ -704,7 +704,7 @@ export function ReportsScreen({
                   <Text
                     style={[
                       styles.planValue,
-                      { fontSize: scaleFont(typography.fontSize.sm) },
+                      { fontSize: scaleFont(typography.fontSize.md) },
                     ]}
                   >
                     {formatCurrency(report.plan.budgetAmount, user?.currency)}
@@ -714,7 +714,7 @@ export function ReportsScreen({
                   <Text
                     style={[
                       styles.planLabel,
-                      { fontSize: scaleFont(typography.fontSize.sm) },
+                      { fontSize: scaleFont(typography.fontSize.md) },
                     ]}
                   >
                     {t('reports.planRemaining')}
@@ -722,7 +722,7 @@ export function ReportsScreen({
                   <Text
                     style={[
                       styles.planValue,
-                      { fontSize: scaleFont(typography.fontSize.sm) },
+                      { fontSize: scaleFont(typography.fontSize.md) },
                     ]}
                   >
                     {formatCurrency(report.plan.remaining, user?.currency)}
@@ -732,7 +732,7 @@ export function ReportsScreen({
                   <Text
                     style={[
                       styles.planLabel,
-                      { fontSize: scaleFont(typography.fontSize.sm) },
+                      { fontSize: scaleFont(typography.fontSize.md) },
                     ]}
                   >
                     {t('reports.planSafeToSpend')}
@@ -740,7 +740,7 @@ export function ReportsScreen({
                   <Text
                     style={[
                       styles.planValue,
-                      { fontSize: scaleFont(typography.fontSize.sm) },
+                      { fontSize: scaleFont(typography.fontSize.md) },
                     ]}
                   >
                     {formatCurrency(
@@ -761,7 +761,7 @@ export function ReportsScreen({
                         styles.statusPillText,
                         {
                           color: colors.error,
-                          fontSize: scaleFont(typography.fontSize.xs),
+                          fontSize: scaleFont(typography.fontSize.sm),
                         },
                       ]}
                     >
@@ -781,7 +781,7 @@ export function ReportsScreen({
                         styles.statusPillText,
                         {
                           color: colors.warning,
-                          fontSize: scaleFont(typography.fontSize.xs),
+                          fontSize: scaleFont(typography.fontSize.sm),
                         },
                       ]}
                     >
@@ -831,7 +831,7 @@ export function ReportsScreen({
                           <Text
                             style={[
                               styles.categoryName,
-                              { fontSize: scaleFont(typography.fontSize.sm) },
+                              { fontSize: scaleFont(typography.fontSize.base) },
                             ]}
                           >
                             {category.name}
@@ -839,7 +839,7 @@ export function ReportsScreen({
                           <Text
                             style={[
                               styles.categoryMeta,
-                              { fontSize: scaleFont(typography.fontSize.xs) },
+                              { fontSize: scaleFont(typography.fontSize.sm) },
                             ]}
                           >
                             {t('reports.categoryMeta', {
@@ -852,7 +852,7 @@ export function ReportsScreen({
                       <Text
                         style={[
                           styles.categoryAmount,
-                          { fontSize: scaleFont(typography.fontSize.sm) },
+                          { fontSize: scaleFont(typography.fontSize.base) },
                         ]}
                       >
                         {formatCurrency(category.total, user?.currency)}

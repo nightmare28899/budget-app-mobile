@@ -6,7 +6,6 @@ import {
     ScrollView,
     Platform,
     TouchableOpacity,
-    TextInput,
 } from 'react-native';
 import DateTimePicker, {
     DateTimePickerAndroid,
@@ -14,14 +13,16 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RootScreenProps } from '../../navigation/types';
-import { useExpenseForm } from '../../hooks/useExpenseForm';
-import { useCategoryCreator, CATEGORY_ICON_OPTIONS, CATEGORY_COLOR_OPTIONS } from '../../hooks/useCategoryCreator';
+import { useExpenseForm } from '../../hooks/expenses/useExpenseForm';
+import { useCategoryCreator, CATEGORY_ICON_OPTIONS, CATEGORY_COLOR_OPTIONS } from '../../hooks/categories/useCategoryCreator';
 import { CategorySelector } from '../../components/ui/domain/CategorySelector';
 import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
 import { CreditCardSelector } from '../../components/ui/domain/CreditCardSelector';
+import { AmountEntryCard } from '../../components/ui/domain/AmountEntryCard';
 import { PaymentMethodSelector } from '../../components/ui/domain/PaymentMethodSelector';
 import { Input } from '../../components/ui/primitives/Input';
 import { Button } from '../../components/ui/primitives/Button';
+import { FieldError } from '../../components/ui/primitives/FieldError';
 import {
     spacing,
     typography,
@@ -32,14 +33,14 @@ import {
     SemanticColors,
 } from '../../theme/index';
 import { EntryScreenScaffold } from '../../components/ui/layout/EntryScreenScaffold';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { sanitizeMoneyInput } from '../../utils/platform/moneyInput';
 import { getCurrencyLocale, getCurrencySymbol } from '../../utils/domain/currency';
 import { formatCurrency, formatDate, parseDateOrToday } from '../../utils/core/format';
-import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
+import { useScrollToFocusedInput } from '../../hooks/shared/useScrollToFocusedInput';
 import { isCreditCardPaymentMethod } from '../../utils/domain/paymentMethod';
-import { useAppAccess } from '../../hooks/useAppAccess';
-import { usePremiumAccess } from '../../hooks/usePremiumAccess';
+import { useAppAccess } from '../../hooks/access/useAppAccess';
+import { usePremiumAccess } from '../../hooks/access/usePremiumAccess';
 
 type DateField = 'purchase' | 'firstPayment';
 
@@ -75,10 +76,22 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         categories, categoriesLoading,
         creditCards, creditCardsLoading,
         saveExpense,
+        validationErrors,
+        clearValidationError,
         isPending: isSavingExpense,
         resetForm,
     } = useExpenseForm();
     const currencySymbol = getCurrencySymbol(currency, locale);
+    const amountPreviewValue = Number.parseFloat(cost);
+    const amountPreviewLabel = t('addExpense.amountPreview', {
+        amount: formatCurrency(
+            Number.isFinite(amountPreviewValue) && amountPreviewValue > 0
+                ? amountPreviewValue
+                : 0,
+            currency,
+            locale,
+        ),
+    });
     const parsedInstallmentCount = Number.parseInt(installmentCount, 10);
     const handleInstallmentMode = (nextValue: boolean) => {
         if (nextValue && !hasPremium && !requirePremiumAccess('installments')) {
@@ -86,6 +99,10 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         }
 
         setIsInstallment(nextValue);
+        if (!nextValue) {
+            clearValidationError('installmentCount');
+            clearValidationError('firstPaymentDate');
+        }
     };
     const handlePaymentMethodChange = (nextValue: string | undefined) => {
         if (
@@ -114,13 +131,17 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         newCategoryColor, setNewCategoryColor,
         isPending: isCreatingCategory,
         onCreateCategory,
-    } = useCategoryCreator((id) => setSelectedCategory(id));
+    } = useCategoryCreator((id) => {
+        setSelectedCategory(id);
+        clearValidationError('category');
+    });
 
     useEffect(() => {
         if (!selectedCategory && categories.length > 0) {
             setSelectedCategory(categories[0].id);
+            clearValidationError('category');
         }
-    }, [categories, selectedCategory, setSelectedCategory]);
+    }, [categories, clearValidationError, selectedCategory, setSelectedCategory]);
 
     const dateLabel = useMemo(
         () =>
@@ -191,7 +212,7 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         : t('addExpense.optionalDetailsHint');
 
     const onSave = async () => {
-        await saveExpense(() => {
+        const result = await saveExpense(() => {
             resetForm();
             if (isEmbedded) {
                 navigation.goBack();
@@ -208,10 +229,39 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                 },
             });
         });
+
+        if (result?.valid === false) {
+            const optionalFields = [
+                'currency',
+                'installmentCount',
+                'firstPaymentDate',
+                'creditCard',
+            ];
+            if (optionalFields.includes(result.firstInvalidField)) {
+                setShowOptionalDetails(true);
+            }
+
+            const fieldOffsets: Record<string, number> = {
+                cost: 0,
+                title: 180,
+                category: 340,
+                currency: 680,
+                installmentCount: 720,
+                firstPaymentDate: 840,
+                creditCard: 620,
+            };
+            requestAnimationFrame(() => {
+                scrollRef.current?.scrollTo({
+                    y: fieldOffsets[result.firstInvalidField] ?? 0,
+                    animated: true,
+                });
+            });
+        }
     };
 
     const onChangeCost = (value: string) => {
         setCost(sanitizeMoneyInput(value));
+        clearValidationError('cost');
     };
 
     const applyDateValue = (field: DateField, value?: Date) => {
@@ -222,6 +272,7 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
         const nextDate = formatDate(value, 'YYYY-MM-DD');
         if (field === 'firstPayment') {
             setFirstPaymentDate(nextDate);
+            clearValidationError('firstPaymentDate');
         } else {
             setDate(nextDate);
         }
@@ -263,47 +314,31 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
             scrollContentContainerStyle={styles.scrollContent}
             scrollBottomSpacing={spacing['4xl']}
         >
-            <View style={styles.amountBlock}>
-                <View style={styles.amountContainer}>
-                    <Text style={[styles.currencySign, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>
-                        {currencySymbol}
-                    </Text>
-                    <TextInput
-                        style={[
-                            styles.amountInput,
-                            {
-                                fontSize: scaleFont(typography.fontSize['5xl']),
-                                lineHeight: scaleFont(typography.fontSize['5xl'] * 1.08),
-                                height: scaleFont(typography.fontSize['5xl'] + 18),
-                            },
-                        ]}
-                        placeholder={t('addExpense.amountPlaceholder')}
-                        placeholderTextColor={colors.textMuted}
-                        keyboardType="decimal-pad"
-                        value={cost}
-                        onChangeText={onChangeCost}
-                        onFocus={createScrollOnFocusHandler(64)}
-                    />
-                    <View style={styles.amountCurrencyBadge}>
-                        <Text
-                            style={[
-                                styles.amountCurrencyText,
-                                { fontSize: scaleFont(typography.fontSize.sm) },
-                            ]}
-                        >
-                            {currency}
-                        </Text>
-                    </View>
-                </View>
-            </View>
+            <AmountEntryCard
+                value={cost}
+                onChangeText={onChangeCost}
+                currencySymbol={currencySymbol}
+                currency={currency}
+                previewLabel={amountPreviewLabel}
+                accessibilityLabel={t('addExpense.amountPlaceholder')}
+                placeholder={t('addExpense.amountPlaceholder')}
+                accentColor={colors.primaryAction}
+                error={validationErrors.cost}
+                onFocus={createScrollOnFocusHandler(64)}
+                containerStyle={styles.amountSection}
+            />
 
             <Input
                 label={t('addExpense.titleLabel')}
                 placeholder={t('addExpense.titlePlaceholder')}
                 value={title}
-                onChangeText={setTitle}
+                onChangeText={(value) => {
+                    setTitle(value);
+                    clearValidationError('title');
+                }}
                 onFocus={createScrollOnFocusHandler()}
                 containerStyle={styles.fieldContainer}
+                error={validationErrors.title}
             />
 
             <View style={[styles.fieldContainer, styles.categorySection]}>
@@ -315,8 +350,12 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                     categories={categories}
                     isLoading={categoriesLoading}
                     selectedCategory={selectedCategory}
-                    onSelectCategory={setSelectedCategory}
+                    onSelectCategory={(categoryId) => {
+                        setSelectedCategory(categoryId);
+                        clearValidationError('category');
+                    }}
                 />
+                <FieldError message={validationErrors.category} />
 
                 <TouchableOpacity
                     style={styles.newCategoryToggle}
@@ -526,10 +565,14 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                             value={selectedCreditCardId}
                             cards={creditCards}
                             isLoading={creditCardsLoading}
-                            onChange={setSelectedCreditCardId}
+                            onChange={(cardId) => {
+                                setSelectedCreditCardId(cardId);
+                                clearValidationError('creditCard');
+                            }}
                             onAddCard={handleAddCreditCard}
                         />
                     ) : null}
+                    <FieldError message={validationErrors.creditCard} />
 
                     <View style={styles.fieldContainer}>
                         <Text style={[styles.label, { fontSize: scaleFont(typography.fontSize.sm) }]}>
@@ -581,13 +624,15 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                                 label={t('expense.installmentCountLabel')}
                                 placeholder={t('expense.installmentCountPlaceholder')}
                                 value={installmentCount}
-                                onChangeText={(value) =>
-                                    setInstallmentCount(value.replace(/[^0-9]/g, '').slice(0, 3))
-                                }
+                                onChangeText={(value) => {
+                                    setInstallmentCount(value.replace(/[^0-9]/g, '').slice(0, 3));
+                                    clearValidationError('installmentCount');
+                                }}
                                 keyboardType="number-pad"
                                 maxLength={3}
                                 onFocus={createScrollOnFocusHandler(128)}
                                 containerStyle={styles.fieldContainer}
+                                error={validationErrors.installmentCount}
                             />
 
                             <View style={styles.fieldContainer}>
@@ -596,7 +641,10 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                                 </Text>
                                 <TouchableOpacity
                                     activeOpacity={0.84}
-                                    style={styles.dateButton}
+                                    style={[
+                                        styles.dateButton,
+                                        validationErrors.firstPaymentDate ? styles.dateButtonError : null,
+                                    ]}
                                     onPress={() => openDatePicker('firstPayment')}
                                 >
                                     <View style={styles.dateButtonContent}>
@@ -611,6 +659,7 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                                         </Text>
                                     </View>
                                 </TouchableOpacity>
+                                <FieldError message={validationErrors.firstPaymentDate} />
                                 {Platform.OS === 'ios' && activeDateField === 'firstPayment' ? (
                                     <View style={styles.iosDatePickerCard}>
                                         <DateTimePicker
@@ -672,8 +721,12 @@ export function AddExpenseScreen({ navigation, route }: RootScreenProps<'AddExpe
                     <CurrencySelector
                         label={t('common.currency')}
                         value={currency}
-                        onChange={setCurrency}
+                        onChange={(nextCurrency) => {
+                            setCurrency(nextCurrency);
+                            clearValidationError('currency');
+                        }}
                     />
+                    <FieldError message={validationErrors.currency} />
 
                     <Input
                         label={t('addExpense.noteOptional')}
@@ -735,56 +788,15 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         color: colors.textSecondary,
         marginTop: spacing.xs,
     },
-    // Amount
-    amountBlock: {
-        marginBottom: spacing['2xl'],
-        gap: spacing.base,
-    },
-    amountContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: spacing.xl,
-        width: '100%',
-        maxWidth: 360,
-        alignSelf: 'center',
-    },
-    currencySign: {
-        fontSize: typography.fontSize['3xl'],
-        fontWeight: typography.fontWeight.bold,
-        color: colors.textMuted,
-        marginRight: spacing.sm,
-    },
-    amountInput: {
-        fontSize: typography.fontSize['5xl'],
-        fontWeight: typography.fontWeight.extrabold,
-        color: colors.textPrimary,
-        flexGrow: 1,
-        flexShrink: 1,
-        minWidth: Platform.OS === 'android' ? 150 : 130,
-        maxWidth: Platform.OS === 'android' ? 240 : 250,
-        textAlign: 'center',
-        textAlignVertical: 'center',
-        includeFontPadding: Platform.OS === 'android',
-        paddingVertical: Platform.OS === 'android' ? spacing.xs : 0,
-        paddingHorizontal: spacing.xs,
-    },
-    amountCurrencyBadge: {
-        marginLeft: spacing.sm,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surfaceElevated,
-    },
-    amountCurrencyText: {
-        color: colors.textSecondary,
-        fontWeight: typography.fontWeight.semibold,
-    },
     // Fields
     fieldContainer: {
         marginBottom: spacing.lg,
+    },
+    amountSection: {
+        marginBottom: spacing.xl,
+    },
+    dateButtonError: {
+        borderColor: colors.error,
     },
     categorySection: {
         marginBottom: spacing.lg,

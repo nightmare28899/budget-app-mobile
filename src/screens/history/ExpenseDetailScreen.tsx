@@ -24,8 +24,8 @@ import {
 import { CategoryIcon } from '../../components/CategoryIcon';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { Skeleton } from '../../components/ui/primitives/Skeleton';
-import { useI18n } from '../../hooks/useI18n';
-import { useExpenseDetail } from '../../hooks/useExpenseDetail';
+import { useI18n } from '../../hooks/shared/useI18n';
+import { useExpenseDetail } from '../../hooks/expenses/useExpenseDetail';
 import { formatCreditCardLabel } from '../../utils/domain/creditCards';
 import {
     getPaymentMethodOption,
@@ -49,6 +49,15 @@ export function ExpenseDetailScreen({
     } = useResponsive();
     const { t, language } = useI18n();
     const locale = getCurrencyLocale(language);
+    const loadingSkeletonWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, width: '100%' as const }
+        : null;
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
+    const zeroHorizontalMarginStyle = { marginHorizontal: 0 };
+    const imageMarginsStyle = { margin: 0, marginBottom: spacing.xl };
+    const receiptImageHeightStyle = { height: isSmallPhone ? 210 : 250 };
 
     const onDeleted = useCallback(() => {
         navigation.goBack();
@@ -71,7 +80,7 @@ export function ExpenseDetailScreen({
                     style={[
                         styles.loadingSkeleton,
                         { paddingHorizontal: horizontalPadding },
-                        contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%' } : null,
+                        loadingSkeletonWidthStyle,
                     ]}
                 >
                     <Skeleton width="100%" height={220} radius={borderRadius.lg} />
@@ -94,17 +103,17 @@ export function ExpenseDetailScreen({
                         paddingBottom: insets.bottom + spacing['4xl'],
                         paddingHorizontal: horizontalPadding,
                     },
-                    contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : null,
+                    contentMaxWidthStyle,
                 ]}
             >
                 {/* Receipt image */}
                 {expense.imagePresignedUrl && (
-                    <View style={[styles.imageContainer, { margin: 0, marginBottom: spacing.xl }]}>
+                    <View style={[styles.imageContainer, imageMarginsStyle]}>
                         <Image
                             source={{ uri: expense.imagePresignedUrl }}
                             style={[
                                 styles.receiptImage,
-                                { height: isSmallPhone ? 210 : 250 },
+                                receiptImageHeightStyle,
                             ]}
                             resizeMode="cover"
                         />
@@ -112,7 +121,7 @@ export function ExpenseDetailScreen({
                 )}
 
                 {/* Details card */}
-                <View style={[styles.detailCard, { marginHorizontal: 0 }]}>
+                <View style={[styles.detailCard, zeroHorizontalMarginStyle]}>
                     <View style={styles.detailRow}>
                         <View style={styles.categoryBadge}>
                             <CategoryIcon
@@ -234,7 +243,7 @@ export function ExpenseDetailScreen({
 
                 {/* Action buttons */}
                 <TouchableOpacity
-                    style={[styles.editButton, { marginHorizontal: 0 }]}
+                    style={[styles.editButton, zeroHorizontalMarginStyle]}
                     onPress={() => navigation.navigate('EditExpense', { id })}
                     activeOpacity={0.7}
                 >
@@ -245,7 +254,7 @@ export function ExpenseDetailScreen({
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={[styles.deleteButton, { marginHorizontal: 0 }]}
+                    style={[styles.deleteButton, zeroHorizontalMarginStyle]}
                     onPress={onDelete}
                     activeOpacity={0.7}
                 >

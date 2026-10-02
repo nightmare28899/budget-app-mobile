@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+    ActivityIndicator,
     RefreshControl,
     ScrollView,
     StyleSheet,
@@ -19,7 +20,7 @@ import { creditCardsApi } from '../../api/resources/creditCards';
 import { expensesApi } from '../../api/resources/expenses';
 import { incomesApi } from '../../api/resources/incomes';
 import { subscriptionsApi } from '../../api/resources/subscriptions';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import {
@@ -491,6 +492,7 @@ export function PlannerScreen({ navigation }: MainDrawerScreenProps<'Planner'>) 
 
                     {isLoading ? (
                         <View style={styles.emptyBlock}>
+                            <ActivityIndicator color={colors.primary} />
                             <Text style={[styles.loadingText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                                 {t('common.loading')}
                             </Text>

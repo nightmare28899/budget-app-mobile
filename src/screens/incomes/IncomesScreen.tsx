@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import {
+    ActivityIndicator,
     RefreshControl,
     ScrollView,
     StyleSheet,
@@ -15,12 +16,12 @@ import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { EmptyState } from '../../components/ui/primitives/EmptyState';
 import { Button } from '../../components/ui/primitives/Button';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
-import { useIncomesScreen } from '../../hooks/useIncomesScreen';
+import { useIncomesScreen } from '../../hooks/incomes/useIncomesScreen';
 import { IncomeItem } from '../../components/ui/domain/IncomeItem';
 import { SwipeHintCard } from '../../components/ui/primitives/SwipeHintCard';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { useAuthStore } from '../../store/authStore';
-import { useSwipeHint } from '../../hooks/useSwipeHint';
+import { useSwipeHint } from '../../hooks/shared/useSwipeHint';
 import { formatCurrencyBreakdown, getCurrencyLocale } from '../../utils/domain/currency';
 import { withAlpha } from '../../utils/domain/subscriptions';
 import {
@@ -174,7 +175,12 @@ export function IncomesScreen({ route, navigation }: MainDrawerScreenProps<'Inco
                         />
                     ) : null}
 
-                    {error && incomes.length === 0 ? (
+                    {isLoading && incomes.length === 0 ? (
+                        <View style={styles.loadingBlock}>
+                            <ActivityIndicator color={colors.primary} />
+                            <Text style={styles.loadingText}>{t('common.loading')}</Text>
+                        </View>
+                    ) : error && incomes.length === 0 ? (
                         <View style={styles.emptyBlock}>
                             <EmptyState
                                 icon="alert-circle-outline"
@@ -318,6 +324,15 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     emptyBlock: {
         paddingVertical: spacing['3xl'],
         gap: spacing.base,
+    },
+    loadingBlock: {
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing['3xl'],
+    },
+    loadingText: {
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.medium,
     },
     emptyButton: {
         marginTop: spacing.sm,

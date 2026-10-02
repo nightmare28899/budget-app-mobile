@@ -75,3 +75,7 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# local-only AI agent instructions (not shared in repo)
+.AGENTS/
+.SKILLS/

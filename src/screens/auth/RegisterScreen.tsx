@@ -13,8 +13,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { AuthScreenProps, RootStackParamList } from '../../navigation/types';
-import { useAuth } from '../../hooks/useAuth';
-import { useImagePicker } from '../../hooks/useImagePicker';
+import { useAuth } from '../../hooks/auth/useAuth';
+import { useImagePicker } from '../../hooks/shared/useImagePicker';
 import { HeroHeader } from '../../components/ui/layout/HeroHeader';
 import { Input } from '../../components/ui/primitives/Input';
 import { Button } from '../../components/ui/primitives/Button';
@@ -28,8 +28,10 @@ import {
     useThemedStyles,
     SemanticColors,
 } from '../../theme/index';
-import { useI18n } from '../../hooks/useI18n';
-import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
+import { useI18n } from '../../hooks/shared/useI18n';
+import { useScrollToFocusedInput } from '../../hooks/shared/useScrollToFocusedInput';
+
+const noBottomMarginStyle = { marginBottom: 0 };
 
 export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
     const { colors } = useTheme();
@@ -56,10 +58,23 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
         scaleFont,
         scaleSize,
     } = useResponsive();
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
+    const avatarSizeStyle = {
+        width: isSmallPhone ? scaleSize(88, 0.7) : 96,
+        height: isSmallPhone ? scaleSize(88, 0.7) : 96,
+        borderRadius: isSmallPhone ? scaleSize(44, 0.7) : 48,
+    };
     const openTerms = () => {
         navigation
             .getParent<NativeStackNavigationProp<RootStackParamList>>()
             ?.navigate('TermsAndConditions');
+    };
+    const openPrivacyPolicy = () => {
+        navigation
+            .getParent<NativeStackNavigationProp<RootStackParamList>>()
+            ?.navigate('PrivacyPolicy');
     };
 
     const onRegister = async () => {
@@ -93,7 +108,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                         icon="person-add-outline"
                         title={t('auth.createAccount')}
                         subtitle={t('auth.createAccountSubtitle')}
-                        containerStyle={{ marginBottom: 0 }}
+                         containerStyle={noBottomMarginStyle}
                     />
                 </View>
 
@@ -105,9 +120,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                             paddingBottom: insets.bottom + spacing['3xl'],
                             paddingHorizontal: horizontalPadding,
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode="on-drag"
@@ -118,11 +131,7 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                             <TouchableOpacity
                                 style={[
                                     styles.avatarButton,
-                                    {
-                                        width: isSmallPhone ? scaleSize(88, 0.7) : 96,
-                                        height: isSmallPhone ? scaleSize(88, 0.7) : 96,
-                                        borderRadius: isSmallPhone ? scaleSize(44, 0.7) : 48,
-                                    },
+                                    avatarSizeStyle,
                                 ]}
                                 onPress={promptPickImage}
                                 activeOpacity={0.8}
@@ -287,6 +296,9 @@ export function RegisterScreen({ navigation }: AuthScreenProps<'Register'>) {
                                 {t('legal.registerNotice')}{' '}
                                 <Text style={styles.legalNoticeLink} onPress={openTerms}>
                                     {t('legal.readTerms')}
+                                </Text>
+                                <Text style={styles.legalNoticeLink} onPress={openPrivacyPolicy}>
+                                    {t('legal.readPrivacy')}
                                 </Text>
                             </Text>
                         </View>

@@ -21,7 +21,7 @@ import { SubscriptionsScreen } from '../screens/subscriptions/SubscriptionsScree
 import { SavingsScreen } from '../screens/savings/SavingsScreen';
 import { CreditCardsScreen } from '../screens/creditCards/CreditCardsScreen';
 import { spacing, typography, useTheme } from '../theme/index';
-import { useI18n } from '../hooks/useI18n';
+import { useI18n } from '../hooks/shared/useI18n';
 import { useAuthStore } from '../store/authStore';
 import { withAlpha } from '../utils/domain/subscriptions';
 
@@ -39,6 +39,25 @@ const DRAWER_ICONS: Record<keyof MainDrawerParamList, string> = {
   Savings: 'cash-outline',
   UpcomingSubscriptions: 'albums-outline',
 };
+
+type DrawerIconProps = {
+  color: string;
+  focused: boolean;
+  size: number;
+};
+
+function createDrawerIconRenderer(name: string) {
+  return function DrawerIconRenderer({ color, size }: DrawerIconProps) {
+    return <Icon name={name} size={size} color={color} />;
+  };
+}
+
+const DRAWER_ICON_RENDERERS = Object.fromEntries(
+  Object.entries(DRAWER_ICONS).map(([route, icon]) => [
+    route,
+    createDrawerIconRenderer(icon),
+  ]),
+) as Record<keyof MainDrawerParamList, (props: DrawerIconProps) => React.ReactNode>;
 
 type AppDrawerContentProps = DrawerContentComponentProps & {
   versionLabel: string;
@@ -152,11 +171,14 @@ function AppDrawerContent({
                   navigation.navigate(item.route);
                   navigation.closeDrawer();
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={item.label}
+                accessibilityState={{ selected: isFocused }}
               >
                 <View style={[styles.menuIconWrap, isFocused ? styles.menuIconWrapActive : null]}>
                   <Icon
                     name={item.icon}
-                    size={18}
+                    size={20}
                     color={isFocused ? colors.primaryAction : colors.textSecondary}
                   />
                 </View>
@@ -165,7 +187,7 @@ function AppDrawerContent({
                 </Text>
                 {isFocused ? (
                   <View style={styles.focusBadge}>
-                    <Icon name="chevron-forward" size={14} color={colors.primaryAction} />
+                    <Icon name="chevron-forward" size={16} color={colors.primaryAction} />
                   </View>
                 ) : null}
               </TouchableOpacity>
@@ -189,7 +211,7 @@ function AppDrawerContent({
           accessibilityRole="button"
           accessibilityLabel={settingsLabel}
         >
-          <Icon name="settings-outline" size={18} color={colors.textSecondary} />
+          <Icon name="settings-outline" size={20} color={colors.textSecondary} />
           <Text style={styles.settingsActionText}>{settingsLabel}</Text>
           <Icon name="chevron-forward" size={16} color={colors.textMuted} />
         </TouchableOpacity>
@@ -203,32 +225,34 @@ export function MainDrawerNavigator() {
   const { t } = useI18n();
   const { colors } = useTheme();
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const onOpenSettings = React.useCallback(() => {
+    rootNavigation.navigate('Settings');
+  }, [rootNavigation]);
+  const renderDrawerContent = React.useCallback((props: DrawerContentComponentProps) => (
+    <AppDrawerContent
+      {...props}
+      versionLabel={t('settings.version')}
+      reportsLabel={t('reports.title')}
+      plannerLabel={t('planner.title')}
+      categoryBudgetsLabel={t('categoryBudgets.title')}
+      creditCardsLabel={t('creditCards.title')}
+      savingsLabel={t('savings.title')}
+      homeLabel={t('tab.home')}
+      planLabel={t('settings.planLabel')}
+      premiumActiveLabel={t('premium.activeStatus')}
+      premiumInactiveLabel={t('premium.inactiveStatus')}
+      accountLabel={t('guest.statusAccount')}
+      guestLabel={t('guest.statusGuest')}
+      settingsLabel={t('tab.settings')}
+      onOpenSettings={onOpenSettings}
+      colors={colors as Record<string, string>}
+    />
+  ), [colors, onOpenSettings, t]);
 
   return (
     <Drawer.Navigator
       initialRouteName="Tabs"
-      drawerContent={props => (
-        <AppDrawerContent
-          {...props}
-          versionLabel={t('settings.version')}
-          reportsLabel={t('reports.title')}
-          plannerLabel={t('planner.title')}
-          categoryBudgetsLabel={t('categoryBudgets.title')}
-          creditCardsLabel={t('creditCards.title')}
-          savingsLabel={t('savings.title')}
-          homeLabel={t('tab.home')}
-          planLabel={t('settings.planLabel')}
-          premiumActiveLabel={t('premium.activeStatus')}
-          premiumInactiveLabel={t('premium.inactiveStatus')}
-          accountLabel={t('guest.statusAccount')}
-          guestLabel={t('guest.statusGuest')}
-          settingsLabel={t('tab.settings')}
-          onOpenSettings={() => {
-            rootNavigation.navigate('Settings');
-          }}
-          colors={colors as Record<string, string>}
-        />
-      )}
+      drawerContent={renderDrawerContent}
       screenOptions={({ route }) => ({
         headerShown: false,
         drawerType: 'front',
@@ -236,7 +260,7 @@ export function MainDrawerNavigator() {
         swipeEdgeWidth: 64,
         drawerStyle: {
           backgroundColor: colors.surface,
-          width: 286,
+          width: 300,
           borderRightWidth: 1,
           borderRightColor: colors.border,
         },
@@ -249,12 +273,10 @@ export function MainDrawerNavigator() {
           marginVertical: 2,
         },
         drawerLabelStyle: {
-          fontSize: typography.fontSize.sm,
+          fontSize: typography.fontSize.md,
           fontWeight: typography.fontWeight.semibold,
         },
-        drawerIcon: ({ color, size }) => {
-          return <Icon name={DRAWER_ICONS[route.name]} size={size} color={color} />;
-        },
+        drawerIcon: DRAWER_ICON_RENDERERS[route.name],
       })}
     >
       <Drawer.Screen
@@ -366,16 +388,16 @@ const createStyles = (colors: Record<string, string>) =>
       gap: spacing.sm,
     },
     avatarImage: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 52,
+      height: 52,
+      borderRadius: 26,
       borderWidth: 1,
       borderColor: withAlpha(colors.primaryAction, 0.35),
     },
     avatarFallback: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+      width: 52,
+      height: 52,
+      borderRadius: 26,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: withAlpha(colors.primaryAction, 0.18),
@@ -392,13 +414,13 @@ const createStyles = (colors: Record<string, string>) =>
     },
     userName: {
       color: colors.textPrimary,
-      fontSize: typography.fontSize.base,
+      fontSize: typography.fontSize.lg,
       fontWeight: typography.fontWeight.bold,
     },
     userEmail: {
       marginTop: 2,
       color: colors.textMuted,
-      fontSize: typography.fontSize.xs,
+      fontSize: typography.fontSize.sm,
       fontWeight: typography.fontWeight.medium,
     },
     accountPill: {
@@ -427,7 +449,7 @@ const createStyles = (colors: Record<string, string>) =>
     },
     accountPillText: {
       color: colors.textPrimary,
-      fontSize: typography.fontSize.xs,
+      fontSize: typography.fontSize.sm,
       fontWeight: typography.fontWeight.semibold,
     },
     planPill: {
@@ -440,14 +462,14 @@ const createStyles = (colors: Record<string, string>) =>
     },
     planPillText: {
       color: colors.textSecondary,
-      fontSize: typography.fontSize.xs,
+      fontSize: typography.fontSize.sm,
       fontWeight: typography.fontWeight.semibold,
     },
     menuGroup: {
       gap: spacing.xs,
     },
     menuItem: {
-      minHeight: 54,
+      minHeight: 58,
       borderRadius: 14,
       flexDirection: 'row',
       alignItems: 'center',
@@ -461,9 +483,9 @@ const createStyles = (colors: Record<string, string>) =>
       borderColor: withAlpha(colors.primaryAction, 0.34),
     },
     menuIconWrap: {
-      width: 30,
-      height: 30,
-      borderRadius: 9,
+      width: 40,
+      height: 40,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: withAlpha(colors.surfaceCard, 0.72),
@@ -478,16 +500,16 @@ const createStyles = (colors: Record<string, string>) =>
       flex: 1,
       marginLeft: spacing.sm,
       color: colors.textSecondary,
-      fontSize: typography.fontSize.sm,
+      fontSize: typography.fontSize.md,
       fontWeight: typography.fontWeight.semibold,
     },
     menuLabelActive: {
       color: colors.textPrimary,
     },
     focusBadge: {
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: withAlpha(colors.primaryAction, 0.18),
@@ -499,7 +521,7 @@ const createStyles = (colors: Record<string, string>) =>
       paddingVertical: spacing.base,
     },
     settingsAction: {
-      minHeight: 46,
+      minHeight: 52,
       borderRadius: 12,
       flexDirection: 'row',
       alignItems: 'center',
@@ -513,7 +535,7 @@ const createStyles = (colors: Record<string, string>) =>
     settingsActionText: {
       flex: 1,
       color: colors.textSecondary,
-      fontSize: typography.fontSize.sm,
+      fontSize: typography.fontSize.md,
       fontWeight: typography.fontWeight.semibold,
     },
     drawerFooterText: {

@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+    ActivityIndicator,
     Modal,
     RefreshControl,
     ScrollView,
@@ -21,7 +22,7 @@ import { Button } from '../../components/ui/primitives/Button';
 import { EmptyState } from '../../components/ui/primitives/EmptyState';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { Input } from '../../components/ui/primitives/Input';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import {
@@ -247,13 +248,13 @@ export function CategoryBudgetsScreen({
                         <Text style={[styles.summaryTitle, { fontSize: scaleFont(typography.fontSize.xl) }]}>
                             {periodLabel}
                         </Text>
-                        <Text style={[styles.summarySubtitle, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                        <Text style={[styles.summarySubtitle, { fontSize: scaleFont(typography.fontSize.md) }]}>
                             {t('categoryBudgets.periodHint', { range: rangeLabel || t('common.notAvailable') })}
                         </Text>
                         <View style={styles.summaryMetaRow}>
                             {summaryCards.map((item) => (
                                 <View key={item.key} style={styles.summaryMetaItem}>
-                                    <Text style={[styles.summaryMetaLabel, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                                    <Text style={[styles.summaryMetaLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
                                         {item.label}
                                     </Text>
                                     <Text style={[styles.summaryMetaValue, { fontSize: scaleFont(typography.fontSize.base) }]}>
@@ -262,7 +263,7 @@ export function CategoryBudgetsScreen({
                                 </View>
                             ))}
                         </View>
-                        <Text style={[styles.summaryTotals, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                        <Text style={[styles.summaryTotals, { fontSize: scaleFont(typography.fontSize.md) }]}>
                             {t('categoryBudgets.summaryTotals', {
                                 planned: formatCurrency(overview?.totalBudgeted ?? 0, user?.currency, locale),
                                 spent: formatCurrency(overview?.totalSpentBudgeted ?? 0, user?.currency, locale),
@@ -270,7 +271,12 @@ export function CategoryBudgetsScreen({
                         </Text>
                     </View>
 
-                    {error && !(overview?.items?.length) ? (
+                    {isLoading && !overview ? (
+                        <View style={styles.loadingBlock}>
+                            <ActivityIndicator color={colors.primary} />
+                            <Text style={styles.loadingText}>{t('common.loading')}</Text>
+                        </View>
+                    ) : error && !(overview?.items?.length) ? (
                         <View style={styles.emptyBlock}>
                             <EmptyState
                                 icon="alert-circle-outline"
@@ -350,7 +356,7 @@ export function CategoryBudgetsScreen({
                                                         {item.name}
                                                     </Text>
                                                     <Text
-                                                        style={[styles.categoryMeta, { fontSize: scaleFont(typography.fontSize.sm) }]}
+                                                        style={[styles.categoryMeta, { fontSize: scaleFont(typography.fontSize.md) }]}
                                                         numberOfLines={2}
                                                     >
                                                         {item.budgetAmount > 0
@@ -372,7 +378,7 @@ export function CategoryBudgetsScreen({
                                                 style={styles.editButton}
                                                 onPress={() => onEditBudget(item)}
                                             >
-                                                <Text style={[styles.editButtonText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                                                <Text style={[styles.editButtonText, { fontSize: scaleFont(typography.fontSize.md) }]}>
                                                     {item.budgetAmount > 0 ? t('common.edit') : t('categoryBudgets.setBudget')}
                                                 </Text>
                                             </TouchableOpacity>
@@ -402,7 +408,7 @@ export function CategoryBudgetsScreen({
                                                         styles.statusChipText,
                                                         {
                                                             color: chipColor,
-                                                            fontSize: scaleFont(typography.fontSize.xs),
+                                                            fontSize: scaleFont(typography.fontSize.sm),
                                                         },
                                                     ]}
                                                 >
@@ -419,7 +425,7 @@ export function CategoryBudgetsScreen({
                                             <Text
                                                 style={[
                                                     styles.categoryFooterText,
-                                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    { fontSize: scaleFont(typography.fontSize.sm) },
                                                 ]}
                                             >
                                                 {item.budgetAmount > 0
@@ -597,6 +603,15 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     emptyBlock: {
         paddingVertical: spacing['3xl'],
+    },
+    loadingBlock: {
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing['3xl'],
+    },
+    loadingText: {
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.medium,
     },
     emptyButton: {
         marginTop: spacing.lg,

@@ -6,17 +6,18 @@ import {
     ScrollView,
     Platform,
     TouchableOpacity,
-    TextInput,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RootScreenProps } from '../../navigation/types';
 import { EntryScreenScaffold } from '../../components/ui/layout/EntryScreenScaffold';
 import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
+import { AmountEntryCard } from '../../components/ui/domain/AmountEntryCard';
 import { CreditCardSelector } from '../../components/ui/domain/CreditCardSelector';
 import { CategorySelector } from '../../components/ui/domain/CategorySelector';
 import { Input } from '../../components/ui/primitives/Input';
 import { Button } from '../../components/ui/primitives/Button';
+import { SearchField } from '../../components/ui/primitives/SearchField';
 import { PaymentMethodSelector } from '../../components/ui/domain/PaymentMethodSelector';
 import {
     type QuickSubscriptionPresetGroup,
@@ -36,19 +37,19 @@ import {
     useThemedStyles,
     SemanticColors,
 } from '../../theme/index';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import {
     useSubscriptionForm,
     QUICK_SUBSCRIPTION_PRESETS,
     QUICK_SUBSCRIPTION_PRESET_GROUPS,
     BILLING_CYCLE_OPTIONS,
-} from '../../hooks/useSubscriptionForm';
+} from '../../hooks/subscriptions/useSubscriptionForm';
 import { getCurrencyLocale, getCurrencySymbol } from '../../utils/domain/currency';
-import { parseDateOrToday } from '../../utils/core/format';
-import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
+import { formatCurrency, parseDateOrToday } from '../../utils/core/format';
+import { useScrollToFocusedInput } from '../../hooks/shared/useScrollToFocusedInput';
 import { formatCreditCardLabel } from '../../utils/domain/creditCards';
-import { useAppAccess } from '../../hooks/useAppAccess';
-import { usePremiumAccess } from '../../hooks/usePremiumAccess';
+import { useAppAccess } from '../../hooks/access/useAppAccess';
+import { usePremiumAccess } from '../../hooks/access/usePremiumAccess';
 
 const SUBSCRIPTION_GROUP_LABEL_KEYS: Record<
     QuickSubscriptionPresetGroup,
@@ -124,6 +125,16 @@ export function AddSubscriptionScreen({
         embedded: isEmbedded,
     });
     const currencySymbol = getCurrencySymbol(currency, locale);
+    const amountPreviewValue = Number.parseFloat(cost);
+    const amountPreviewLabel = t('addSubscription.amountPreview', {
+        amount: formatCurrency(
+            Number.isFinite(amountPreviewValue) && amountPreviewValue > 0
+                ? amountPreviewValue
+                : 0,
+            currency,
+            locale,
+        ),
+    });
     const [presetQuery, setPresetQuery] = useState('');
     const normalizedQuery = presetQuery.trim().toLowerCase();
     const initialPresetGroup = selectedPresetId
@@ -223,50 +234,23 @@ export function AddSubscriptionScreen({
             animationDuration={240}
             animationTravelY={8}
         >
-            <View style={styles.amountBlock}>
-                        <View style={styles.amountContainer}>
-                            <Text
-                                style={[
-                                    styles.currencySign,
-                                    { fontSize: scaleFont(typography.fontSize['3xl']) },
-                                ]}
-                            >
-                                {currencySymbol}
-                            </Text>
-                            <TextInput
-                                style={[
-                                    styles.amountInput,
-                                    {
-                                        fontSize: scaleFont(typography.fontSize['5xl']),
-                                        lineHeight: scaleFont(typography.fontSize['5xl'] * 1.08),
-                                        height: scaleFont(typography.fontSize['5xl'] + 18),
-                                    },
-                                ]}
-                                placeholder="0.00"
-                                placeholderTextColor={colors.textMuted}
-                                keyboardType="decimal-pad"
-                                value={cost}
-                                onChangeText={onChangeCost}
-                                onFocus={createScrollOnFocusHandler(64)}
-                            />
-                            <View style={styles.amountCurrencyBadge}>
-                                <Text
-                                    style={[
-                                        styles.amountCurrencyText,
-                                        { fontSize: scaleFont(typography.fontSize.sm) },
-                                    ]}
-                                >
-                                    {currency}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <CurrencySelector
-                            label={t('common.currency')}
-                            value={currency}
-                            onChange={setCurrency}
-                        />
-                    </View>
+            <View style={styles.amountSection}>
+                <AmountEntryCard
+                    value={cost}
+                    onChangeText={onChangeCost}
+                    currencySymbol={currencySymbol}
+                    currency={currency}
+                    previewLabel={amountPreviewLabel}
+                    accessibilityLabel={t('addSubscription.amountPreview', { amount: '' })}
+                    accentColor={colors.primaryAction}
+                    onFocus={createScrollOnFocusHandler(64)}
+                />
+                <CurrencySelector
+                    label={t('common.currency')}
+                    value={currency}
+                    onChange={setCurrency}
+                />
+            </View>
 
                     <Input
                         label={t('addSubscription.namePlaceholder')}
@@ -311,17 +295,14 @@ export function AddSubscriptionScreen({
                         >
                             {t('addSubscription.quickPickHint')}
                         </Text>
-                        <View style={styles.quickPickSearchWrap}>
-                            <Icon name="search-outline" size={20} color={colors.textMuted} style={styles.quickPickSearchIcon} />
-                            <Input
-                                value={presetQuery}
-                                onChangeText={setPresetQuery}
-                                placeholder={t('subscriptions.searchPlaceholder')}
-                                onFocus={createScrollOnFocusHandler(148)}
-                                containerStyle={styles.quickPickSearch}
-                                inputStyle={styles.quickPickSearchInput}
-                            />
-                        </View>
+                        <SearchField
+                            value={presetQuery}
+                            onChangeText={setPresetQuery}
+                            placeholder={t('subscriptions.searchPlaceholder')}
+                            onFocus={createScrollOnFocusHandler(148)}
+                            clearAccessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'}
+                            containerStyle={styles.quickPickSearch}
+                        />
                         {presetSections.length === 0 ? (
                             <Text
                                 style={[
@@ -721,21 +702,8 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         marginTop: -2,
         marginBottom: spacing.sm,
     },
-    quickPickSearchWrap: {
-        position: 'relative',
-        marginBottom: spacing.sm,
-    },
-    quickPickSearchIcon: {
-        position: 'absolute',
-        left: 12,
-        top: 15,
-        zIndex: 1,
-    },
-    quickPickSearchInput: {
-        paddingLeft: 40,
-    },
     quickPickSearch: {
-        marginBottom: 0,
+        marginBottom: spacing.sm,
     },
     quickPickBrowser: {
         gap: spacing.base,
@@ -889,51 +857,9 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         color: colors.textMuted,
         marginTop: spacing.sm,
     },
-    amountBlock: {
-        marginBottom: spacing['2xl'],
+    amountSection: {
+        marginBottom: spacing.xl,
         gap: spacing.base,
-    },
-    amountContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: spacing.xl,
-        width: '100%',
-        maxWidth: 360,
-        alignSelf: 'center',
-    },
-    currencySign: {
-        fontSize: typography.fontSize['3xl'],
-        fontWeight: typography.fontWeight.bold,
-        color: colors.textMuted,
-        marginRight: spacing.sm,
-    },
-    amountInput: {
-        fontSize: typography.fontSize['5xl'],
-        fontWeight: typography.fontWeight.extrabold,
-        color: colors.textPrimary,
-        flexGrow: 1,
-        flexShrink: 1,
-        minWidth: Platform.OS === 'android' ? 150 : 130,
-        maxWidth: Platform.OS === 'android' ? 240 : 250,
-        textAlign: 'center',
-        textAlignVertical: 'center',
-        includeFontPadding: Platform.OS === 'android',
-        paddingVertical: Platform.OS === 'android' ? spacing.xs : 0,
-        paddingHorizontal: spacing.xs,
-    },
-    amountCurrencyBadge: {
-        marginLeft: spacing.sm,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        borderRadius: borderRadius.full,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surfaceElevated,
-    },
-    amountCurrencyText: {
-        color: colors.textSecondary,
-        fontWeight: typography.fontWeight.semibold,
     },
     fieldContainer: {
         marginBottom: spacing.lg,

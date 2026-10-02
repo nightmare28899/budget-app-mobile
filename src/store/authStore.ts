@@ -6,6 +6,7 @@ import { normalizeImageUri } from '../utils/platform/media';
 import { isLikelyInternalRemoteUri, isRemoteHttpUri } from '../utils/platform/media';
 import { DEFAULT_CURRENCY } from '../utils/domain/currency';
 import { normalizeUserRecord } from '../utils/domain/user';
+import { clearAndroidBudgetWidget } from '../utils/platform/androidBudgetWidget';
 
 const STORAGE_ID = 'auth-storage';
 const storage = createSecureStorage(STORAGE_ID);
@@ -167,6 +168,7 @@ interface AuthState {
   setUser: (user: User) => void;
   setAvatarSuppressed: (suppressed: boolean) => void;
   logout: () => void;
+  clearAll: () => void;
   hydrate: () => void;
 }
 
@@ -274,6 +276,7 @@ export const useAuthStore = create<AuthState>(set => ({
   },
 
   logout: () => {
+    clearAndroidBudgetWidget();
     storage.remove(AUTH_USER_KEY);
     storage.remove(ACCESS_TOKEN_KEY);
     storage.remove(REFRESH_TOKEN_KEY);
@@ -281,6 +284,25 @@ export const useAuthStore = create<AuthState>(set => ({
     const guestUser = readStoredUser(GUEST_USER_KEY) ?? buildDefaultGuestUser();
     persistAvatar(guestUser);
     persistActiveUser('guest', guestUser);
+
+    set({
+      user: guestUser,
+      guestUser,
+      accessToken: null,
+      refreshToken: null,
+      sessionMode: 'guest',
+      isAuthenticated: false,
+      isGuest: true,
+      isLoading: false,
+    });
+
+    resetToMainDashboard();
+  },
+
+  clearAll: () => {
+    clearAndroidBudgetWidget();
+    storage.getAllKeys().forEach(key => storage.remove(key));
+    const guestUser = buildDefaultGuestUser();
 
     set({
       user: guestUser,

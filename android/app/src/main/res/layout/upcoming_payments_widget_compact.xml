@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Compact upcoming-payments widget: next charge first, aggregate detail omitted. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/upcoming_widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/budget_widget_card"
+    android:clickable="true"
+    android:contentDescription="@string/upcoming_widget_open_description"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:padding="@dimen/widget_padding_compact">
+
+    <TextView
+        android:id="@+id/upcoming_widget_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:importantForAccessibility="no"
+        android:letterSpacing="0.04"
+        android:maxLines="1"
+        android:text="@string/upcoming_widget_preview_title"
+        android:textAllCaps="true"
+        android:textColor="@color/widget_accent_soft"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/upcoming_widget_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:ellipsize="end"
+        android:importantForAccessibility="no"
+        android:maxLines="1"
+        android:text="@string/upcoming_widget_preview_name"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/upcoming_widget_amount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:importantForAccessibility="no"
+        android:maxLines="1"
+        android:text="@string/upcoming_widget_preview_amount"
+        android:textColor="@color/widget_text_primary"
+        android:textSize="21sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/upcoming_widget_timing"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:ellipsize="end"
+        android:importantForAccessibility="no"
+        android:maxLines="1"
+        android:text="@string/upcoming_widget_preview_timing"
+        android:textColor="@color/widget_warning"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/upcoming_widget_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:background="@drawable/budget_widget_badge_neutral"
+        android:importantForAccessibility="no"
+        android:maxLines="1"
+        android:paddingLeft="8dp"
+        android:paddingTop="2dp"
+        android:paddingRight="8dp"
+        android:paddingBottom="2dp"
+        android:text="@string/upcoming_widget_preview_count"
+        android:textColor="@color/widget_accent_soft"
+        android:textSize="9sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/upcoming_widget_total_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/upcoming_widget_total_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/upcoming_widget_total_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/upcoming_widget_footnote_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="7dp"
+        android:gravity="center_vertical"
+        android:importantForAccessibility="no"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/upcoming_widget_footnote_icon"
+            android:layout_width="11dp"
+            android:layout_height="11dp"
+            android:layout_marginRight="4dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_widget_offline"
+            android:tint="@color/widget_warning"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/upcoming_widget_footnote"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/budget_widget_updated_now"
+            android:textColor="@color/widget_text_muted"
+            android:textSize="9sp" />
+    </LinearLayout>
+</LinearLayout>

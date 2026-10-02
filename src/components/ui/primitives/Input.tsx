@@ -7,9 +7,11 @@ import {
     TextInput,
     TextInputProps,
     StyleSheet,
+    TextStyle,
     TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { FieldError } from './FieldError';
 import {
     spacing,
     typography,
@@ -25,7 +27,7 @@ interface InputProps extends TextInputProps {
     error?: string;
     isPassword?: boolean;
     containerStyle?: StyleProp<ViewStyle>;
-    inputStyle?: StyleProp<ViewStyle>;
+    inputStyle?: StyleProp<TextStyle>;
     leftContent?: React.ReactNode;
 }
 
@@ -53,7 +55,6 @@ export function Input({
     const inputHorizontalPadding = scaleSize(spacing.base, 0.35);
     const inputFontSize = scaleFont(typography.fontSize.base);
     const labelFontSize = scaleFont(typography.fontSize.sm);
-    const errorFontSize = scaleFont(typography.fontSize.xs);
 
     return (
         <View style={[styles.container, containerStyle]}>
@@ -64,7 +65,6 @@ export function Input({
                     isFocused && styles.inputContainerFocused,
                     error && styles.inputContainerError,
                     multiline && styles.multilineContainer,
-                    inputStyle,
                 ]}
             >
                 {leftContent && <View style={styles.leftContent}>{leftContent}</View>}
@@ -78,6 +78,7 @@ export function Input({
                         },
                         isPassword && styles.passwordInput,
                         multiline && styles.multilineInput,
+                        inputStyle,
                     ]}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry={isPassword && !showPassword}
@@ -91,6 +92,7 @@ export function Input({
                     }}
                     {...props}
                     accessibilityLabel={props.accessibilityLabel ?? label}
+                    accessibilityHint={error ?? props.accessibilityHint}
                     accessibilityState={{
                         ...props.accessibilityState,
                         disabled: props.editable === false || props.accessibilityState?.disabled,
@@ -114,14 +116,7 @@ export function Input({
                     </TouchableOpacity>
                 )}
             </View>
-            {error && (
-                <Text
-                    style={[styles.errorText, { fontSize: errorFontSize }]}
-                    accessibilityLiveRegion="polite"
-                >
-                    {error}
-                </Text>
-            )}
+            <FieldError message={error} />
         </View>
     );
 }
@@ -169,12 +164,6 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         paddingHorizontal: spacing.base,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    errorText: {
-        fontSize: typography.fontSize.xs,
-        color: colors.error,
-        marginLeft: spacing.xs,
-        marginTop: 2,
     },
     leftContent: {
         paddingLeft: spacing.base,

@@ -60,30 +60,83 @@ interface BlockProps {
     contentMaxWidth?: number;
 }
 
+function getContentMaxWidthStyle(contentMaxWidth?: number) {
+    return contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
+}
+
 export function DashboardSkeleton({ horizontalPadding, contentMaxWidth }: BlockProps) {
     const styles = useThemedStyles(createStyles);
+    const contentMaxWidthStyle = getContentMaxWidthStyle(contentMaxWidth);
     return (
         <View style={{ paddingHorizontal: horizontalPadding }}>
-            <View
-                style={[
-                    styles.card,
-                    contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : null,
-                ]}
-            >
+            {/* Budget card */}
+            <View style={[styles.card, contentMaxWidthStyle]}>
                 <Skeleton width="45%" height={16} />
-                <Skeleton width="60%" height={44} style={{ marginTop: spacing.sm }} />
-                <Skeleton width="100%" height={8} radius={borderRadius.full} style={{ marginTop: spacing.base }} />
+                <Skeleton width="70%" height={44} style={{ marginTop: spacing.sm }} />
+                <Skeleton width="100%" height={9} radius={borderRadius.full} style={{ marginTop: spacing.base }} />
                 <View style={styles.row}>
                     <Skeleton width="44%" height={38} />
                     <Skeleton width="44%" height={38} />
                 </View>
             </View>
 
+            {/* Category budget pulse */}
+            <View style={[styles.card, contentMaxWidthStyle, { marginTop: spacing.base }]}>
+                <View style={styles.rowCompact}>
+                    <Skeleton width="48%" height={16} />
+                    <Skeleton width={54} height={14} />
+                </View>
+                <View style={styles.row}>
+                    <Skeleton width={40} height={40} radius={borderRadius.full} />
+                    <View style={styles.flex1}>
+                        <Skeleton width="52%" height={14} />
+                        <Skeleton width="74%" height={12} style={{ marginTop: spacing.xs }} />
+                    </View>
+                </View>
+                <Skeleton width="100%" height={8} radius={borderRadius.full} style={{ marginTop: spacing.md }} />
+            </View>
+
+            {/* Cashflow card */}
+            <View style={[styles.card, contentMaxWidthStyle, { marginTop: spacing.base }]}>
+                <Skeleton width="40%" height={16} />
+                <View style={styles.row}>
+                    <Skeleton width="30%" height={32} />
+                    <Skeleton width="30%" height={32} />
+                    <Skeleton width="30%" height={32} />
+                </View>
+            </View>
+
+            {/* Action card */}
+            <View style={[styles.card, contentMaxWidthStyle, { marginTop: spacing.base }]}>
+                <Skeleton width={40} height={40} radius={borderRadius.xl} />
+                <Skeleton width="55%" height={14} style={{ marginTop: spacing.md }} />
+                <Skeleton width="40%" height={12} style={{ marginTop: spacing.xs }} />
+            </View>
+
+            {/* Upcoming section */}
             <View style={styles.listSection}>
                 <Skeleton width="38%" height={16} />
-                {Array.from({ length: 4 }).map((_, index) => (
-                    <View key={`dash-skeleton-${index}`} style={styles.listItem}>
-                        <Skeleton width={44} height={44} radius={borderRadius.md} />
+                <Skeleton width="60%" height={12} style={{ marginTop: spacing.xs }} />
+                {Array.from({ length: 2 }).map((_, index) => (
+                    <View key={`dash-skeleton-upcoming-${index}`} style={styles.listItem}>
+                        <Skeleton width={34} height={34} radius={borderRadius.md} />
+                        <View style={styles.flex1}>
+                            <Skeleton width="55%" height={14} />
+                            <Skeleton width="35%" height={12} style={{ marginTop: spacing.xs }} />
+                        </View>
+                        <Skeleton width={48} height={16} />
+                    </View>
+                ))}
+            </View>
+
+            {/* Recent section */}
+            <View style={styles.listSection}>
+                <Skeleton width="50%" height={16} />
+                {Array.from({ length: 3 }).map((_, index) => (
+                    <View key={`dash-skeleton-recent-${index}`} style={styles.listItem}>
+                        <Skeleton width={34} height={34} radius={borderRadius.md} />
                         <View style={styles.flex1}>
                             <Skeleton width="58%" height={14} />
                             <Skeleton width="32%" height={12} style={{ marginTop: spacing.xs }} />
@@ -98,11 +151,12 @@ export function DashboardSkeleton({ horizontalPadding, contentMaxWidth }: BlockP
 
 export function HistorySkeleton({ horizontalPadding, contentMaxWidth }: BlockProps) {
     const styles = useThemedStyles(createStyles);
+    const contentMaxWidthStyle = getContentMaxWidthStyle(contentMaxWidth);
     return (
         <View
             style={[
                 { paddingHorizontal: horizontalPadding },
-                contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : null,
+                contentMaxWidthStyle,
             ]}
         >
             <Skeleton width="100%" height={48} />
@@ -124,11 +178,12 @@ export function HistorySkeleton({ horizontalPadding, contentMaxWidth }: BlockPro
 
 export function AnalyticsSkeleton({ horizontalPadding, contentMaxWidth }: BlockProps) {
     const styles = useThemedStyles(createStyles);
+    const contentMaxWidthStyle = getContentMaxWidthStyle(contentMaxWidth);
     return (
         <View
             style={[
                 { paddingHorizontal: horizontalPadding },
-                contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : null,
+                contentMaxWidthStyle,
             ]}
         >
             <View style={styles.card}>
@@ -204,6 +259,11 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     row: {
         marginTop: spacing.base,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    rowCompact: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',

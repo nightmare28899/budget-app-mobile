@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { useI18n } from '../../../hooks/useI18n';
+import { useI18n } from '../../../hooks/shared/useI18n';
 import { borderRadius, spacing, typography, useTheme } from '../../../theme/index';
 import { Button } from '../primitives/Button';
 

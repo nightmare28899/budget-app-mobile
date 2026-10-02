@@ -3,7 +3,6 @@ import {
     Platform,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -13,10 +12,12 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { RootScreenProps } from '../../navigation/types';
-import { useIncomeForm } from '../../hooks/useIncomeForm';
+import { useIncomeForm } from '../../hooks/incomes/useIncomeForm';
 import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
+import { AmountEntryCard } from '../../components/ui/domain/AmountEntryCard';
 import { Button } from '../../components/ui/primitives/Button';
 import { Input } from '../../components/ui/primitives/Input';
+import { FieldError } from '../../components/ui/primitives/FieldError';
 import { EntryScreenScaffold } from '../../components/ui/layout/EntryScreenScaffold';
 import {
     borderRadius,
@@ -27,11 +28,12 @@ import {
     useThemedStyles,
     SemanticColors,
 } from '../../theme/index';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { sanitizeMoneyInput } from '../../utils/platform/moneyInput';
 import { getCurrencyLocale, getCurrencySymbol } from '../../utils/domain/currency';
 import { formatCurrency, formatDate, parseDateOrToday } from '../../utils/core/format';
 import { withAlpha } from '../../utils/domain/subscriptions';
+import { useScrollToFocusedInput } from '../../hooks/shared/useScrollToFocusedInput';
 
 export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncome'>) {
     const { colors } = useTheme();
@@ -44,6 +46,7 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
     const { t, language } = useI18n();
     const locale = getCurrencyLocale(language);
     const [showIosPicker, setShowIosPicker] = useState(false);
+    const { scrollRef, createScrollOnFocusHandler } = useScrollToFocusedInput(120);
     const {
         title,
         setTitle,
@@ -56,6 +59,8 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
         date,
         setDate,
         saveIncome,
+        validationErrors,
+        clearValidationError,
         resetForm,
         isPending,
         isEditMode,
@@ -83,6 +88,7 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
 
         const capped = value.getTime() > Date.now() ? new Date() : value;
         setDate(formatDate(capped, 'YYYY-MM-DD'));
+        clearValidationError('date');
     };
 
     const openDatePicker = () => {
@@ -100,7 +106,7 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
     };
 
     const onSave = async () => {
-        await saveIncome(() => {
+        const result = await saveIncome(() => {
             if (!isEditMode) {
                 resetForm();
             }
@@ -122,6 +128,21 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
                 },
             });
         });
+
+        if (result?.valid === false) {
+            const fieldOffsets: Record<string, number> = {
+                amount: 0,
+                currency: 220,
+                title: 380,
+                date: 520,
+            };
+            requestAnimationFrame(() => {
+                scrollRef.current?.scrollTo({
+                    y: fieldOffsets[result.firstInvalidField] ?? 0,
+                    animated: true,
+                });
+            });
+        }
     };
 
     return (
@@ -130,62 +151,52 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
             subtitle={t('income.subtitle')}
             embedded={isEmbedded}
             onBack={() => navigation.goBack()}
+            scrollRef={scrollRef}
             scrollContentContainerStyle={styles.scrollContent}
             scrollBottomSpacing={spacing['4xl']}
         >
-            <View style={styles.amountBlock}>
-                <View style={styles.amountContainer}>
-                    <Text style={[styles.currencySign, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>
-                        {currencySymbol}
-                    </Text>
-                    <TextInput
-                        style={[
-                            styles.amountInput,
-                            {
-                                fontSize: scaleFont(typography.fontSize['5xl']),
-                                lineHeight: scaleFont(typography.fontSize['5xl'] * 1.08),
-                                height: scaleFont(typography.fontSize['5xl'] + 18),
-                            },
-                        ]}
-                        placeholder={t('income.amountPlaceholder')}
-                        placeholderTextColor={colors.textMuted}
-                        keyboardType="decimal-pad"
-                        value={amount}
-                        onChangeText={(value) => setAmount(sanitizeMoneyInput(value))}
-                    />
-                    <View style={styles.amountCurrencyBadge}>
-                        <Text
-                            style={[
-                                styles.amountCurrencyText,
-                                { fontSize: scaleFont(typography.fontSize.sm) },
-                            ]}
-                        >
-                            {currency}
-                        </Text>
-                    </View>
-                </View>
-                <Text style={[styles.amountPreview, { fontSize: scaleFont(typography.fontSize.sm) }]}>
-                    {t('income.amountPreview', { amount: amountPreview })}
-                </Text>
-            </View>
+            <AmountEntryCard
+                value={amount}
+                onChangeText={(value) => {
+                    setAmount(sanitizeMoneyInput(value));
+                    clearValidationError('amount');
+                }}
+                currencySymbol={currencySymbol}
+                currency={currency}
+                previewLabel={t('income.amountPreview', { amount: amountPreview })}
+                accessibilityLabel={t('income.amountPlaceholder')}
+                placeholder={t('income.amountPlaceholder')}
+                accentColor={colors.primaryAction}
+                error={validationErrors.amount}
+                onFocus={createScrollOnFocusHandler(64)}
+            />
 
             <CurrencySelector
                 label={t('income.currency')}
                 value={currency}
-                onChange={setCurrency}
+                onChange={(nextCurrency) => {
+                    setCurrency(nextCurrency);
+                    clearValidationError('currency');
+                }}
             />
+            <FieldError message={validationErrors.currency} />
 
             <View style={styles.formCard}>
                 <Input
                     label={t('income.source')}
                     placeholder={t('income.sourcePlaceholder')}
                     value={title}
-                    onChangeText={setTitle}
+                    onChangeText={(value) => {
+                        setTitle(value);
+                        clearValidationError('title');
+                    }}
+                    onFocus={createScrollOnFocusHandler()}
+                    error={validationErrors.title}
                 />
 
                 <TouchableOpacity
                     activeOpacity={0.84}
-                    style={styles.dateButton}
+                    style={[styles.dateButton, validationErrors.date ? styles.dateButtonError : null]}
                     onPress={openDatePicker}
                 >
                     <View style={styles.dateCopy}>
@@ -198,6 +209,7 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
                     </View>
                     <Icon name="calendar-outline" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
+                <FieldError message={validationErrors.date} />
 
                 {Platform.OS === 'ios' && showIosPicker ? (
                     <DateTimePicker
@@ -215,6 +227,7 @@ export function AddIncomeScreen({ navigation, route }: RootScreenProps<'AddIncom
                     placeholder={t('income.notePlaceholder')}
                     value={note}
                     onChangeText={setNote}
+                    onFocus={createScrollOnFocusHandler(184)}
                     multiline
                     numberOfLines={4}
                 />
@@ -273,57 +286,6 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     scrollContent: {
         gap: spacing.base,
     },
-    amountBlock: {
-        borderRadius: borderRadius.xl,
-        borderWidth: 1,
-        borderColor: withAlpha(colors.success, 0.28),
-        backgroundColor: withAlpha(colors.surfaceElevated, 0.82),
-        padding: spacing.xl,
-        gap: spacing.sm,
-    },
-    amountContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.sm,
-        width: '100%',
-        maxWidth: 360,
-        alignSelf: 'center',
-    },
-    currencySign: {
-        color: colors.textPrimary,
-        fontWeight: typography.fontWeight.semibold,
-        marginBottom: spacing.sm,
-    },
-    amountInput: {
-        color: colors.textPrimary,
-        fontWeight: typography.fontWeight.bold,
-        flexGrow: 1,
-        flexShrink: 1,
-        minWidth: Platform.OS === 'android' ? 150 : 130,
-        maxWidth: Platform.OS === 'android' ? 240 : 250,
-        textAlign: 'center',
-        textAlignVertical: 'center',
-        includeFontPadding: Platform.OS === 'android',
-        paddingVertical: Platform.OS === 'android' ? spacing.xs : 0,
-        paddingHorizontal: spacing.xs,
-    },
-    amountCurrencyBadge: {
-        alignSelf: 'center',
-        borderRadius: borderRadius.full,
-        backgroundColor: withAlpha(colors.success, 0.14),
-        paddingHorizontal: spacing.sm,
-        paddingVertical: spacing.xs,
-        marginBottom: spacing.sm,
-    },
-    amountCurrencyText: {
-        color: colors.success,
-        fontWeight: typography.fontWeight.semibold,
-    },
-    amountPreview: {
-        color: colors.textMuted,
-        textAlign: 'center',
-    },
     formCard: {
         borderRadius: borderRadius.xl,
         borderWidth: 1,
@@ -342,6 +304,9 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+    },
+    dateButtonError: {
+        borderColor: colors.error,
     },
     dateCopy: {
         gap: 2,

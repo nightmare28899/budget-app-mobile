@@ -31,10 +31,10 @@ import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { HistorySkeleton } from '../../components/ui/primitives/Skeleton';
 import { Button } from '../../components/ui/primitives/Button';
 import { SwipeHintCard } from '../../components/ui/primitives/SwipeHintCard';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
-import { useExpensesScreen } from '../../hooks/useExpensesScreen';
-import { useSwipeHint } from '../../hooks/useSwipeHint';
+import { useExpensesScreen } from '../../hooks/expenses/useExpensesScreen';
+import { useSwipeHint } from '../../hooks/shared/useSwipeHint';
 
 export function ExpensesScreen({ route, navigation }: MainDrawerScreenProps<'Expenses'>) {
     const { colors } = useTheme();

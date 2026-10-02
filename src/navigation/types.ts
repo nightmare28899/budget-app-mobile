@@ -49,6 +49,7 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<MainDrawerParamList>;
   Settings: undefined;
   TermsAndConditions: undefined;
+  PrivacyPolicy: undefined;
   PlanOverview: undefined;
   AddEntry:
     | {

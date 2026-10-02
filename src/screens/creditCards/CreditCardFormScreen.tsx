@@ -15,10 +15,10 @@ import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { Button } from '../../components/ui/primitives/Button';
 import { Input } from '../../components/ui/primitives/Input';
-import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
-import { useCreditCardsCatalog } from '../../hooks/useCreditCardsCatalog';
+import { useScrollToFocusedInput } from '../../hooks/shared/useScrollToFocusedInput';
+import { useCreditCardsCatalog } from '../../hooks/creditCards/useCreditCardsCatalog';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import {
     CREDIT_CARD_BRAND_OPTIONS,
     CREDIT_CARD_COLOR_OPTIONS,
@@ -33,7 +33,7 @@ import {
     SemanticColors,
 } from '../../theme/index';
 import { sanitizeMoneyInput } from '../../utils/platform/moneyInput';
-import { useAppAccess } from '../../hooks/useAppAccess';
+import { useAppAccess } from '../../hooks/access/useAppAccess';
 import { PremiumFeatureGate } from '../../components/premium/PremiumFeatureGate';
 
 function digitsOnly(value: string) {
@@ -55,6 +55,9 @@ export function CreditCardFormScreen({
         contentMaxWidth,
         scaleFont,
     } = useResponsive();
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
     const { scrollRef, createScrollOnFocusHandler } = useScrollToFocusedInput(120);
     const {
         createCard,
@@ -181,9 +184,7 @@ export function CreditCardFormScreen({
                             paddingTop: insets.top + spacing.base,
                             paddingHorizontal: horizontalPadding,
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                 >
                     <View style={styles.headerRow}>
@@ -217,9 +218,7 @@ export function CreditCardFormScreen({
                             paddingHorizontal: horizontalPadding,
                             paddingBottom: insets.bottom + spacing['4xl'],
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode="on-drag"

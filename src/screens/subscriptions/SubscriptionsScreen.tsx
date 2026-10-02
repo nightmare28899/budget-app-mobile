@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
 import {
+    ActivityIndicator,
     View,
     Text,
     StyleSheet,
     ScrollView,
     RefreshControl,
+    TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainDrawerScreenProps } from '../../navigation/types';
@@ -24,11 +26,11 @@ import {
     useThemedStyles,
     SemanticColors,
 } from '../../theme/index';
-import { useI18n } from '../../hooks/useI18n';
-import { useSubscriptionsScreen } from '../../hooks/useSubscriptionsScreen';
-import { useSwipeHint } from '../../hooks/useSwipeHint';
+import { useI18n } from '../../hooks/shared/useI18n';
+import { useSubscriptionsScreen } from '../../hooks/subscriptions/useSubscriptionsScreen';
+import { useSwipeHint } from '../../hooks/shared/useSwipeHint';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
-import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
+import { ScreenHeader } from '../../components/ui/layout/ScreenHeader';
 
 function formatDateGroupLabel(value: string, locale: 'en-US' | 'es-MX'): string {
     const parsed = new Date(`${value}T12:00:00`);
@@ -77,7 +79,8 @@ export function SubscriptionsScreen({
         monthlyCurrencyBreakdown,
         locale,
         activeCountLabel,
-        hasUpcomingError,
+        hasError,
+        hasPartialError,
         activeSwipeableRef,
         activeSwipeableIdRef,
         goHomeOnBack,
@@ -158,24 +161,15 @@ export function SubscriptionsScreen({
                     }
                 >
                     <View style={styles.headerBlock}>
-                        <View style={styles.headerRow}>
-                            <ScreenBackButton
-                                onPress={goHomeOnBack}
-                                containerStyle={styles.backButton}
-                            />
-                            <View style={styles.headerCopy}>
-                                <Text style={[styles.headerTitle, { fontSize: scaleFont(typography.fontSize['3xl']) }]}>
-                                    {isUpcomingOnly
-                                        ? t('subscriptions.upcomingTitle')
-                                        : t('subscriptions.title')}
-                                </Text>
-                                <Text style={[styles.headerSubtitle, { fontSize: scaleFont(typography.fontSize.md) }]}>
-                                    {isUpcomingOnly
-                                        ? t('subscriptions.upcomingSubtitle', { days: upcomingDays })
-                                        : t('subscriptions.subtitle')}
-                                </Text>
-                            </View>
-                        </View>
+                        <ScreenHeader
+                            title={isUpcomingOnly
+                                ? t('subscriptions.upcomingTitle')
+                                : t('subscriptions.title')}
+                            subtitle={isUpcomingOnly
+                                ? t('subscriptions.upcomingSubtitle', { days: upcomingDays })
+                                : t('subscriptions.subtitle')}
+                            onBack={goHomeOnBack}
+                        />
                     </View>
 
                     {!isUpcomingOnly && (
@@ -212,7 +206,25 @@ export function SubscriptionsScreen({
                         />
                     ) : null}
 
-                    {isUpcomingOnly && hasUpcomingError ? (
+                    {hasPartialError ? (
+                        <TouchableOpacity
+                            style={styles.partialErrorCard}
+                            onPress={refetch}
+                            activeOpacity={0.82}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('common.retry')}
+                        >
+                            <Text style={styles.partialErrorTitle}>{t('common.error')}</Text>
+                            <Text style={styles.partialErrorText}>{t('common.retry')}</Text>
+                        </TouchableOpacity>
+                    ) : null}
+
+                    {isLoading && subscriptions.length === 0 && !hasError ? (
+                        <View style={styles.loadingBlock}>
+                            <ActivityIndicator color={colors.primary} />
+                            <Text style={styles.loadingText}>{t('common.loading')}</Text>
+                        </View>
+                    ) : hasError ? (
                         <View style={styles.emptyBlock}>
                             <EmptyState
                                 icon="alert-circle-outline"
@@ -360,34 +372,6 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     moduleButtonTextActive: {
         color: colors.textPrimary,
     },
-    headerRow: {
-        alignItems: 'center',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    backButton: {
-        alignItems: 'center',
-        backgroundColor: withAlpha(colors.surfaceElevated, 0.9),
-        borderColor: colors.border,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        height: 34,
-        justifyContent: 'center',
-        marginRight: spacing.sm,
-        width: 34,
-    },
-    headerCopy: {
-        flex: 1,
-        marginRight: spacing.base,
-    },
-    headerTitle: {
-        color: colors.textPrimary,
-        fontWeight: typography.fontWeight.extrabold,
-    },
-    headerSubtitle: {
-        color: colors.textSecondary,
-        marginTop: spacing.xs,
-    },
     addSubscriptionButton: {
         alignItems: 'center',
         backgroundColor: withAlpha(colors.primary, 0.24),
@@ -448,6 +432,34 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     emptyBlock: {
         marginTop: spacing.xl,
         alignItems: 'center',
+    },
+    loadingBlock: {
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing['3xl'],
+    },
+    loadingText: {
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.medium,
+    },
+    partialErrorCard: {
+        minHeight: 56,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: withAlpha(colors.error, 0.45),
+        backgroundColor: withAlpha(colors.error, 0.12),
+        paddingHorizontal: spacing.base,
+        paddingVertical: spacing.sm,
+        justifyContent: 'center',
+        marginBottom: spacing.base,
+    },
+    partialErrorTitle: {
+        color: colors.error,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    partialErrorText: {
+        color: colors.textSecondary,
+        marginTop: 2,
     },
     emptyButton: {
         width: '100%',

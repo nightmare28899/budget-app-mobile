@@ -9,7 +9,6 @@ const mockHydratePreferences = jest.fn();
 const mockHydrateGuestData = jest.fn();
 
 jest.mock('react-native-gesture-handler', () => {
-    const React = require('react');
     const { View } = require('react-native');
 
     return {
@@ -20,7 +19,6 @@ jest.mock('react-native-gesture-handler', () => {
 });
 
 jest.mock('react-native-safe-area-context', () => {
-    const React = require('react');
     const { View } = require('react-native');
 
     return {
@@ -31,7 +29,6 @@ jest.mock('react-native-safe-area-context', () => {
 });
 
 jest.mock('../src/navigation/RootNavigator', () => {
-    const React = require('react');
     const { Text } = require('react-native');
 
     return {
@@ -47,7 +44,7 @@ jest.mock('../src/components/OfflineRegistrationSync', () => ({
     OfflineRegistrationSync: () => null,
 }));
 
-jest.mock('../src/hooks/usePushNotifications', () => ({
+jest.mock('../src/hooks/notifications/usePushNotifications', () => ({
     usePushNotifications: jest.fn(),
 }));
 

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { subscriptionsApi } from '../../api/resources/subscriptions';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { toNum } from '../../utils/core/number';
 import { CreateSubscriptionPayload, UpdateSubscriptionPayload } from '../../types/index';
 import {
@@ -37,6 +37,7 @@ export function useSubscriptionManager() {
         data: allSubscriptions = [],
         isLoading: loadingSubscriptions,
         isRefetching: refetchingSubscriptions,
+        error: subscriptionsError,
         refetch: refetchSubscriptions,
     } = useQuery({
         queryKey: ['subscriptions', 'list'],
@@ -47,6 +48,7 @@ export function useSubscriptionManager() {
         data: projection,
         isLoading: loadingProjection,
         isRefetching: refetchingProjection,
+        error: projectionError,
         refetch: refetchProjection,
     } = useQuery({
         queryKey: ['subscriptions', 'projection'],
@@ -155,6 +157,8 @@ export function useSubscriptionManager() {
     return {
         isLoading: loadingSubscriptions || loadingProjection,
         isRefreshing: refetchingSubscriptions || refetchingProjection,
+        error: subscriptionsError,
+        partialError: subscriptionsError ? null : projectionError,
         subscriptions: sortedSubscriptions,
         managedSubscriptions,
         monthlyTotal,

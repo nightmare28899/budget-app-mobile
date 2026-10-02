@@ -62,6 +62,9 @@ export function EntryScreenScaffold({
     const { colors } = useTheme();
     const { contentMaxWidth, horizontalPadding, scaleFont } = useResponsive();
     const keyboardDismissMode = Platform.OS === 'ios' ? 'interactive' : 'none';
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
 
     return (
         <KeyboardAvoidingView
@@ -79,10 +82,11 @@ export function EntryScreenScaffold({
                 <View
                     style={[
                         styles.header,
+                        embedded ? styles.headerEmbedded : null,
                         {
                             backgroundColor: colors.background,
-                            paddingTop: embedded ? spacing.xs : insets.top + spacing.base,
-                            marginBottom: embedded ? spacing.xs : spacing.base,
+                            paddingTop: embedded ? spacing.lg : insets.top + spacing.base,
+                            marginBottom: embedded ? spacing.lg : spacing.base,
                             paddingHorizontal: horizontalPadding,
                         },
                     ]}
@@ -106,7 +110,13 @@ export function EntryScreenScaffold({
                             <Text
                                 style={[
                                     styles.headerSubtitle,
-                                    { fontSize: scaleFont(typography.fontSize.md) },
+                                    {
+                                        fontSize: scaleFont(
+                                            embedded
+                                                ? typography.fontSize.base
+                                                : typography.fontSize.md,
+                                        ),
+                                    },
                                 ]}
                             >
                                 {subtitle}
@@ -123,13 +133,7 @@ export function EntryScreenScaffold({
                             paddingHorizontal: horizontalPadding,
                             paddingBottom: insets.bottom + scrollBottomSpacing,
                         },
-                        contentMaxWidth
-                            ? {
-                                maxWidth: contentMaxWidth,
-                                alignSelf: 'center',
-                                width: '100%',
-                            }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode={keyboardDismissMode}
@@ -174,6 +178,9 @@ const createStyles = (colors: SemanticColors) =>
         header: {
             marginBottom: spacing.base,
         },
+        headerEmbedded: {
+            paddingBottom: spacing.sm,
+        },
         headerRow: {
             flexDirection: 'row',
             alignItems: 'flex-start',
@@ -194,7 +201,7 @@ const createStyles = (colors: SemanticColors) =>
             marginTop: spacing.xs,
             color: colors.textSecondary,
             fontWeight: typography.fontWeight.medium,
-            lineHeight: 20,
+            lineHeight: 24,
         },
         footerContainer: {
             backgroundColor: colors.background,

@@ -6,18 +6,17 @@ import {
     SectionList,
     StyleSheet,
     Text,
-    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { MainTabScreenProps } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
-import { useSubscriptionsScreen } from '../../hooks/useSubscriptionsScreen';
+import { useSubscriptionsScreen } from '../../hooks/subscriptions/useSubscriptionsScreen';
 import { formatCurrency } from '../../utils/core/format';
 import { withAlpha } from '../../utils/domain/subscriptions';
-import { Category, Expense, Income } from '../../types/index';
+import { Expense, Income } from '../../types/index';
 import { ExpenseItem } from '../../components/ui/domain/ExpenseItem';
 import { IncomeItem } from '../../components/ui/domain/IncomeItem';
 import { SubscriptionItem } from '../../components/ui/domain/SubscriptionItem';
@@ -26,8 +25,10 @@ import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { HistorySkeleton } from '../../components/ui/primitives/Skeleton';
 import { SwipeHintCard } from '../../components/ui/primitives/SwipeHintCard';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { Button } from '../../components/ui/primitives/Button';
+import { SearchField } from '../../components/ui/primitives/SearchField';
+import { categoriesApi } from '../../api/resources/categories';
 import {
     borderRadius,
     spacing,
@@ -39,16 +40,14 @@ import {
 } from '../../theme/index';
 import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
-import { useExpensesScreen } from '../../hooks/useExpensesScreen';
-import { useIncomesScreen } from '../../hooks/useIncomesScreen';
-import { useSwipeHint } from '../../hooks/useSwipeHint';
+import { useExpensesScreen } from '../../hooks/expenses/useExpensesScreen';
+import { useIncomesScreen } from '../../hooks/incomes/useIncomesScreen';
+import { useSwipeHint } from '../../hooks/shared/useSwipeHint';
 import {
     aggregateCurrencyTotals,
     formatCurrencyBreakdown,
     getCurrencyLocale,
 } from '../../utils/domain/currency';
-import Icon from 'react-native-vector-icons/Ionicons';
-
 type CardsTab = 'expenses' | 'subscriptions' | 'incomes';
 type CardsSection<T> = {
     title: string;
@@ -71,7 +70,6 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
     const insets = useSafeAreaInsets();
-    const queryClient = useQueryClient();
     const {
         horizontalPadding,
         contentMaxWidth,
@@ -154,6 +152,8 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         isRefreshing: subscriptionsRefreshing,
         subscriptions,
         refetch: refetchSubscriptions,
+        hasError: hasSubscriptionsError,
+        hasPartialError: hasSubscriptionsPartialError,
         locale,
         activeSwipeableRef,
         activeSwipeableIdRef,
@@ -282,15 +282,20 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
         [filteredSubscriptions],
     );
 
-    const cachedCategories = useMemo(() => {
-        const data = queryClient.getQueryData<Category[]>(['categories']);
-        return Array.isArray(data) ? data : [];
-    }, [queryClient]);
+    const {
+        data: availableCategories = [],
+        error: categoriesError,
+        refetch: refetchCategories,
+    } = useQuery({
+        queryKey: ['categories'],
+        queryFn: categoriesApi.getAll,
+        staleTime: 5 * 60_000,
+    });
 
     const expenseCategoryOptions = useMemo(() => {
         const map = new Map<string, string>();
 
-        for (const category of cachedCategories) {
+        for (const category of availableCategories) {
             if (!category?.id || !category?.name) {
                 continue;
             }
@@ -312,7 +317,7 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
             .sort((a, b) => a.name.localeCompare(b.name));
 
         return options;
-    }, [cachedCategories, expenses, t]);
+    }, [availableCategories, expenses, t]);
 
     const activeSearchQuery = isExpensesTab
         ? expenseSearchQuery
@@ -756,6 +761,26 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
     const subscriptionsHeaderWithHint = (
         <>
             {subscriptionsHeader}
+            {hasSubscriptionsPartialError ? (
+                <TouchableOpacity
+                    style={[
+                        styles.inlineErrorCard,
+                        { marginHorizontal: horizontalPadding },
+                        constrainedContentStyle,
+                    ]}
+                    onPress={refetchSubscriptions}
+                    activeOpacity={0.82}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('common.retry')}
+                >
+                    <Text style={[styles.inlineErrorTitle, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                        {t('common.error')}
+                    </Text>
+                    <Text style={[styles.inlineErrorDescription, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                        {t('common.retry')}
+                    </Text>
+                </TouchableOpacity>
+            ) : null}
             {showActivitySwipeHint ? (
                 <View
                     style={[
@@ -827,13 +852,15 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                         ]}
                         onPress={() => setActiveTab('expenses')}
                         activeOpacity={0.82}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isExpensesTab }}
                     >
                         <Text
                             style={[
                                 styles.segmentText,
                                 isExpensesTab ? styles.segmentTextActive : null,
                                 {
-                                    fontSize: scaleFont(typography.fontSize.sm),
+                                    fontSize: scaleFont(typography.fontSize.md),
                                 },
                             ]}
                         >
@@ -847,12 +874,14 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                         ]}
                         onPress={() => setActiveTab('subscriptions')}
                         activeOpacity={0.82}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: activeTab === 'subscriptions' }}
                     >
                         <Text
                             style={[
                                 styles.segmentText,
                                 activeTab === 'subscriptions' ? styles.segmentTextActive : null,
-                                { fontSize: scaleFont(typography.fontSize.sm) },
+                                { fontSize: scaleFont(typography.fontSize.md) },
                             ]}
                         >
                             {t('addEntry.subscriptionTab')}
@@ -865,12 +894,14 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                         ]}
                         onPress={() => setActiveTab('incomes')}
                         activeOpacity={0.82}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isIncomesTab }}
                     >
                         <Text
                             style={[
                                 styles.segmentText,
                                 isIncomesTab ? styles.segmentTextActive : null,
-                                { fontSize: scaleFont(typography.fontSize.sm) },
+                                { fontSize: scaleFont(typography.fontSize.md) },
                             ]}
                         >
                             {t('addEntry.incomeTab')}
@@ -885,33 +916,12 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                         constrainedContentStyle,
                     ]}
                 >
-                    <View style={styles.searchInputWrap}>
-                        <Icon name="search-outline" size={16} color={colors.textMuted} />
-                        <TextInput
-                            value={activeSearchQuery}
-                            onChangeText={setActiveSearchQuery}
-                            placeholder={searchPlaceholder}
-                            placeholderTextColor={colors.textMuted}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            returnKeyType="search"
-                            style={[
-                                styles.searchInput,
-                                { fontSize: scaleFont(typography.fontSize.sm) },
-                            ]}
-                        />
-                        {activeSearchQuery.trim() ? (
-                            <TouchableOpacity
-                                onPress={() => setActiveSearchQuery('')}
-                                activeOpacity={0.82}
-                                style={styles.clearSearchButton}
-                                accessibilityRole="button"
-                                accessibilityLabel={t('common.delete')}
-                            >
-                                <Icon name="close-circle" size={16} color={colors.textMuted} />
-                            </TouchableOpacity>
-                        ) : null}
-                    </View>
+                    <SearchField
+                        value={activeSearchQuery}
+                        onChangeText={setActiveSearchQuery}
+                        placeholder={searchPlaceholder}
+                        clearAccessibilityLabel={language === 'es' ? 'Limpiar búsqueda' : 'Clear search'}
+                    />
 
                     {isExpensesTab ? (
                         <ScrollView
@@ -928,6 +938,8 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                                 ]}
                                 onPress={() => setSelectedExpenseCategoryId('all')}
                                 activeOpacity={0.82}
+                                accessibilityRole="button"
+                                accessibilityState={{ selected: selectedExpenseCategoryId === 'all' }}
                             >
                                 <Text
                                     style={[
@@ -935,7 +947,7 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                                         selectedExpenseCategoryId === 'all'
                                             ? styles.categoryChipTextActive
                                             : null,
-                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                        { fontSize: scaleFont(typography.fontSize.sm) },
                                     ]}
                                 >
                                     {t('filters.allCategories')}
@@ -954,12 +966,14 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                                         ]}
                                         onPress={() => setSelectedExpenseCategoryId(option.id)}
                                         activeOpacity={0.82}
+                                        accessibilityRole="button"
+                                        accessibilityState={{ selected: isActive }}
                                     >
                                         <Text
                                             style={[
                                                 styles.categoryChipText,
                                                 isActive ? styles.categoryChipTextActive : null,
-                                                { fontSize: scaleFont(typography.fontSize.xs) },
+                                                { fontSize: scaleFont(typography.fontSize.sm) },
                                             ]}
                                         >
                                             {option.name}
@@ -968,6 +982,21 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                                 );
                             })}
                         </ScrollView>
+                    ) : null}
+                    {isExpensesTab && categoriesError ? (
+                        <TouchableOpacity
+                            style={styles.filterErrorRow}
+                            onPress={() => {
+                                refetchCategories();
+                            }}
+                            activeOpacity={0.82}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('common.retry')}
+                        >
+                            <Text style={[styles.filterErrorText, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                                {t('common.error')} · {t('common.retry')}
+                            </Text>
+                        </TouchableOpacity>
                     ) : null}
                 </View>
 
@@ -1166,8 +1195,56 @@ export function ActivityScreen({ navigation, route }: MainTabScreenProps<'Activi
                             },
                         ]}
                     />
+                ) : hasSubscriptionsError && subscriptions.length === 0 ? (
+                    <View
+                        style={[
+                            styles.listContent,
+                            styles.noHorizontalPadding,
+                            {
+                                paddingTop: spacing.sm,
+                                paddingBottom: listBottomPadding,
+                            },
+                        ]}
+                    >
+                        {subscriptionsHeaderWithHint}
+                        <View
+                            style={[
+                                styles.emptyBlock,
+                                { marginHorizontal: horizontalPadding },
+                                constrainedContentStyle,
+                            ]}
+                        >
+                            <EmptyState
+                                icon="alert-circle-outline"
+                                title={t('common.error')}
+                                description={t('subscriptions.upcomingLoadError')}
+                            />
+                            <Button
+                                title={t('common.retry')}
+                                onPress={refetchSubscriptions}
+                                containerStyle={styles.emptyButton}
+                            />
+                        </View>
+                    </View>
+                ) : subscriptionsLoading && subscriptions.length === 0 ? (
+                    <View
+                        style={[
+                            styles.listContent,
+                            styles.noHorizontalPadding,
+                            {
+                                paddingTop: spacing.sm,
+                                paddingBottom: listBottomPadding,
+                            },
+                        ]}
+                    >
+                        {subscriptionsHeaderWithHint}
+                        <View style={styles.subscriptionLoadingBlock}>
+                            <ActivityIndicator color={colors.primary} />
+                            <Text style={styles.subscriptionLoadingText}>{t('common.loading')}</Text>
+                        </View>
+                    </View>
                 ) : (
-                        <SectionList
+                    <SectionList
                             {...bottomDockScroll}
                             sections={subscriptionSections}
                             keyExtractor={(item) => item.id}
@@ -1264,39 +1341,19 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         padding: spacing.sm,
         gap: spacing.sm,
     },
-    searchInputWrap: {
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: colors.border,
-        backgroundColor: colors.surfaceElevated,
-        paddingHorizontal: spacing.sm,
-        minHeight: 40,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.xs,
-    },
-    searchInput: {
-        flex: 1,
-        color: colors.textPrimary,
-        paddingVertical: spacing.xs,
-    },
-    clearSearchButton: {
-        width: 24,
-        height: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     categoryChipRow: {
         gap: spacing.xs,
         paddingRight: spacing.xs,
     },
     categoryChip: {
+        minHeight: 44,
         borderRadius: borderRadius.full,
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.surfaceElevated,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,
+        justifyContent: 'center',
     },
     categoryChipActive: {
         borderColor: withAlpha(colors.primary, 0.6),
@@ -1312,6 +1369,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     segmentButton: {
         flex: 1,
+        minHeight: 44,
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: spacing.sm,
@@ -1525,5 +1583,28 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     emptyButton: {
         marginTop: spacing.sm,
         width: '100%',
+    },
+    filterErrorRow: {
+        minHeight: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: withAlpha(colors.error, 0.45),
+        backgroundColor: withAlpha(colors.error, 0.12),
+        paddingHorizontal: spacing.sm,
+    },
+    filterErrorText: {
+        color: colors.error,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    subscriptionLoadingBlock: {
+        alignItems: 'center',
+        gap: spacing.sm,
+        paddingVertical: spacing['3xl'],
+    },
+    subscriptionLoadingText: {
+        color: colors.textMuted,
+        fontWeight: typography.fontWeight.medium,
     },
 });

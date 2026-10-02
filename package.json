@@ -8,6 +8,7 @@
     "ios:release": "node scripts/run-ios-simulator.js --release",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test:ci": "jest --runInBand --ci",
     "postinstall": "patch-package && node scripts/patch-react-native-drawer-layout.js",
     "start": "react-native start",
     "test": "jest"
@@ -64,7 +65,7 @@
     "prettier": "2.8.8",
     "react-native-dotenv": "^3.4.11",
     "react-test-renderer": "19.2.3",
-    "typescript": "^5.8.3"
+    "typescript": "5.9.3"
   },
   "engines": {
     "node": ">= 22.11.0"

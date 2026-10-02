@@ -69,6 +69,7 @@ describe('local finance calculations', () => {
                 subscription('later', '2026-08-30', 50),
                 subscription('sooner', '2026-08-12', 80),
             ],
+            now: new Date('2026-08-15T12:00:00.000Z'),
         });
 
         expect(payload.expenses.map(item => item.id)).toEqual(['newer', 'older']);

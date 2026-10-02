@@ -26,6 +26,7 @@ interface PreferencesState {
     markOnboardingCompleted: (user?: PreferenceScopedUser | string) => void;
     resetOnboarding: (user?: PreferenceScopedUser | string) => void;
     setManualPremium: (user: PreferenceScopedUser | string, enabled: boolean) => void;
+    clearAccountData: () => void;
     hydrate: () => void;
 }
 
@@ -210,6 +211,11 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
             );
             return { manualPremiumByUser };
         });
+    },
+
+    clearAccountData: () => {
+        storage.remove(MANUAL_PREMIUM_KEY);
+        set({ manualPremiumByUser: {} });
     },
 
     hydrate: () => {

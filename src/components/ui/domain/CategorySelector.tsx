@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import {
     spacing,
@@ -12,13 +12,14 @@ import {
 import { Category } from '../../../types/index';
 import { CategoryIcon } from '../../CategoryIcon';
 import { CategorySelectorSkeleton } from '../primitives/Skeleton';
-import { useI18n } from '../../../hooks/useI18n';
+import { useI18n } from '../../../hooks/shared/useI18n';
 import { withAlpha } from '../../../utils/domain/subscriptions';
+import { CategoryPickerSheet } from './CategoryPickerSheet';
 
 interface CategorySelectorProps {
     categories: Category[];
     isLoading: boolean;
-    selectedCategory: string | undefined;
+    selectedCategory?: string;
     onSelectCategory: (id: string) => void;
 }
 
@@ -28,13 +29,20 @@ export function CategorySelector({
     selectedCategory,
     onSelectCategory,
 }: CategorySelectorProps) {
+    const [isPickerVisible, setIsPickerVisible] = useState(false);
     const { isSmallPhone, scaleFont, scaleSize } = useResponsive();
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
-    const { t } = useI18n();
+    const { language, t } = useI18n();
 
     const chipVerticalPadding = isSmallPhone ? spacing.xs : spacing.sm;
     const chipHorizontalPadding = scaleSize(spacing.base);
+    const firstCategories = categories.slice(0, 4);
+    const selectedQuickCategory = categories.find((category) => category.id === selectedCategory);
+    const quickCategories = selectedQuickCategory
+        && !firstCategories.some((category) => category.id === selectedQuickCategory.id)
+        ? [selectedQuickCategory, ...firstCategories].slice(0, 4)
+        : firstCategories;
 
     if (isLoading) {
         return (
@@ -58,7 +66,7 @@ export function CategorySelector({
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.categoryScroll}
         >
-            {categories.map((cat: Category) => (
+            {quickCategories.map((cat: Category) => (
                 <TouchableOpacity
                     key={cat.id}
                     style={[
@@ -71,6 +79,9 @@ export function CategorySelector({
                     ]}
                     onPress={() => onSelectCategory(cat.id)}
                     activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={cat.name}
+                    accessibilityState={{ selected: selectedCategory === cat.id }}
                 >
                     <View style={styles.categoryIcon}>
                         <CategoryIcon
@@ -96,6 +107,35 @@ export function CategorySelector({
                     </Text>
                 </TouchableOpacity>
             ))}
+            {categories.length > 0 ? (
+                <TouchableOpacity
+                    style={styles.moreButton}
+                    onPress={() => setIsPickerVisible(true)}
+                    activeOpacity={0.78}
+                    accessibilityRole="button"
+                    accessibilityLabel={language === 'es' ? 'Más categorías' : 'More categories'}
+                >
+                    <Text
+                        style={[
+                            styles.moreButtonText,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                    >
+                        {language === 'es' ? 'Más categorías' : 'More categories'}
+                    </Text>
+                    <Text style={styles.moreButtonIcon}>+</Text>
+                </TouchableOpacity>
+            ) : null}
+            <CategoryPickerSheet
+                categories={categories}
+                selectedCategory={selectedCategory}
+                visible={isPickerVisible}
+                onClose={() => setIsPickerVisible(false)}
+                onSelectCategory={(id) => {
+                    onSelectCategory(id);
+                    setIsPickerVisible(false);
+                }}
+            />
         </ScrollView>
     );
 }
@@ -110,6 +150,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         justifyContent: 'center',
     },
     categoryChip: {
+        minHeight: 44,
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.surfaceElevated,
@@ -122,6 +163,26 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     categoryChipSelected: {
         backgroundColor: withAlpha(colors.primary, 0.3),
         borderColor: colors.primary,
+    },
+    moreButton: {
+        minHeight: 44,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        paddingHorizontal: spacing.md,
+        borderRadius: borderRadius.full,
+        borderWidth: 1,
+        borderColor: colors.primaryLight,
+        backgroundColor: colors.surfaceElevated,
+    },
+    moreButtonText: {
+        color: colors.primaryLight,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    moreButtonIcon: {
+        color: colors.primaryLight,
+        fontSize: typography.fontSize.lg,
+        fontWeight: typography.fontWeight.bold,
     },
     categoryIcon: {
         marginRight: spacing.xs,

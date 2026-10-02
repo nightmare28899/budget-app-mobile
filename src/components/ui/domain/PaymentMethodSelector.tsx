@@ -22,7 +22,7 @@ import {
     useThemedStyles,
     SemanticColors,
 } from '../../../theme/index';
-import { useI18n } from '../../../hooks/useI18n';
+import { useI18n } from '../../../hooks/shared/useI18n';
 import {
     getPaymentMethodOption,
     PAYMENT_METHOD_OPTIONS,

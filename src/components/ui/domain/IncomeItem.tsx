@@ -14,10 +14,13 @@ import {
     useThemedStyles,
     SemanticColors,
 } from '../../../theme/index';
-import { useI18n } from '../../../hooks/useI18n';
+import { useI18n } from '../../../hooks/shared/useI18n';
 import { SwipeableRef } from '../../../types/swipeable';
+import {
+    SwipeActions,
+    SWIPE_ANIMATION_OPTIONS,
+} from './SwipeActions';
 
-const ACTION_WIDTH = 150;
 const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 type IncomeItemProps = {
@@ -116,39 +119,23 @@ export function IncomeItem({
         }).start();
     };
 
-    const renderRightActions = () => (
-        <View style={styles.swipeActionsContainer}>
-            {onEdit ? (
-                <TouchableOpacity
-                    style={styles.editAction}
-                    onPress={() => {
-                        closeSwipeable();
-                        onEdit(income);
-                    }}
-                    activeOpacity={0.8}
-                >
-                    <View style={styles.swipeActionContent}>
-                        <Icon name="create-outline" size={22} color="#fff" />
-                        <Text style={styles.swipeActionText}>{t('common.edit')}</Text>
-                    </View>
-                </TouchableOpacity>
-            ) : null}
-            {onDelete ? (
-                <TouchableOpacity
-                    style={styles.deleteAction}
-                    onPress={() => {
-                        closeSwipeable();
-                        onDelete(income.id, income.title);
-                    }}
-                    activeOpacity={0.8}
-                >
-                    <View style={styles.swipeActionContent}>
-                        <Icon name="trash-outline" size={22} color="#fff" />
-                        <Text style={styles.swipeActionText}>{t('common.delete')}</Text>
-                    </View>
-                </TouchableOpacity>
-            ) : null}
-        </View>
+    const renderRightActions = (progress: Parameters<NonNullable<React.ComponentProps<typeof Swipeable>['renderRightActions']>>[0]) => (
+        <SwipeActions
+            progress={progress}
+            editLabel={t('common.edit')}
+            deleteLabel={t('common.delete')}
+            editColor={colors.primaryAction}
+            deleteColor={colors.error}
+            textColor={colors.textOnAction}
+            onEdit={onEdit ? () => {
+                closeSwipeable();
+                onEdit(income);
+            } : undefined}
+            onDelete={onDelete ? () => {
+                closeSwipeable();
+                onDelete(income.id, income.title);
+            } : undefined}
+        />
     );
 
     const formattedDate = formatIncomeDate(income.date, locale, !compact || showDateInMeta);
@@ -280,6 +267,7 @@ export function IncomeItem({
                 overshootRight={false}
                 friction={2}
                 rightThreshold={40}
+                animationOptions={SWIPE_ANIMATION_OPTIONS}
                 onSwipeableWillOpen={() => {
                     setIsSwipedOpen(true);
                     if (!activeSwipeableRef || !activeSwipeableIdRef) {
@@ -307,9 +295,6 @@ export function IncomeItem({
                         activeSwipeableIdRef.current = null;
                         activeSwipeableRef.current = null;
                     }
-                }}
-                onSwipeableWillClose={() => {
-                    setIsSwipedOpen(false);
                 }}
             >
                 {innerContent}
@@ -366,35 +351,5 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     incomeAmount: {
         color: colors.success,
         fontWeight: typography.fontWeight.bold,
-    },
-    swipeActionsContainer: {
-        width: ACTION_WIDTH,
-        borderTopRightRadius: borderRadius.xl,
-        borderBottomRightRadius: borderRadius.xl,
-        overflow: 'hidden',
-    },
-    deleteAction: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.error,
-    },
-    editAction: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.primaryAction,
-    },
-    swipeActionContent: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: spacing.md,
-    },
-    swipeActionText: {
-        color: '#fff',
-        fontSize: typography.fontSize.xs,
-        fontWeight: typography.fontWeight.bold,
-        marginTop: 4,
-        textAlign: 'center',
     },
 });

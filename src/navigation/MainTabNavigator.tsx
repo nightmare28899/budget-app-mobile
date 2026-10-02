@@ -1,16 +1,9 @@
 import React from 'react';
+import { StyleSheet, View } from 'react-native';
 import {
-    Animated,
-    StyleSheet,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import {
-    BottomTabBar,
     BottomTabBarProps,
     createBottomTabNavigator,
 } from '@react-navigation/bottom-tabs';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,124 +12,12 @@ import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
 import { AnalyticsScreen } from '../screens/analytics/AnalyticsScreen';
 import { HistoryNavigator } from './HistoryNavigator';
 import { ActivityScreen } from '../screens/activity/ActivityScreen';
-import { useI18n } from '../hooks/useI18n';
-import { spacing, typography, useResponsive, useTheme, useThemedStyles, SemanticColors,
-} from '../theme/index';
-import { withAlpha } from '../utils/domain/subscriptions';
-import {
-    getMainTabBarHeight,
-    getMainTabFabBottomOffset,
-    getMainTabFabSize,
-} from './mainTabLayout';
-import {
-    BottomDockVisibilityProvider,
-    useBottomDockVisibility,
-} from './bottomDockVisibility';
+import { spacing, useResponsive } from '../theme/index';
+import { getMainTabDockTotalHeight } from './mainTabLayout';
+import { MainTabDock } from './MainTabDock';
+import { BottomDockVisibilityProvider } from './bottomDockVisibility';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
-
-type GlobalActionFabProps = {
-    hideOffset: number;
-};
-
-type AnimatedMainTabBarProps = BottomTabBarProps & {
-    hideOffset: number;
-};
-
-function AnimatedMainTabBar({
-    hideOffset,
-    ...props
-}: AnimatedMainTabBarProps) {
-    const { isVisible, progress } = useBottomDockVisibility();
-    const translateY = React.useMemo(
-        () => progress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [hideOffset, 0],
-        }),
-        [hideOffset, progress],
-    );
-
-    return (
-        <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-            <Animated.View
-                pointerEvents={isVisible ? 'box-none' : 'none'}
-                style={[
-                    StyleSheet.absoluteFill,
-                    {
-                        opacity: progress,
-                        transform: [{ translateY }],
-                    },
-                ]}
-            >
-                <BottomTabBar {...props} />
-            </Animated.View>
-        </View>
-    );
-}
-
-function GlobalActionFab({ hideOffset }: GlobalActionFabProps) {
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-    const { t } = useI18n();
-    const { isSmallPhone, isTablet, scaleSize } = useResponsive();
-    const styles = useThemedStyles(createStyles);
-    const { isVisible, progress } = useBottomDockVisibility();
-    const fabSize = getMainTabFabSize({ isSmallPhone, isTablet, scaleSize });
-    const fabBottomOffset = getMainTabFabBottomOffset({
-        isSmallPhone,
-        isTablet,
-    });
-    const translateY = React.useMemo(
-        () => progress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [hideOffset, 0],
-        }),
-        [hideOffset, progress],
-    );
-
-    const onOpenAddEntry = () => {
-        navigation.navigate('AddEntry', { initialTab: 'expense' });
-    };
-
-    return (
-        <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-            <Animated.View
-                pointerEvents={isVisible ? 'box-none' : 'none'}
-                style={[
-                    styles.animationLayer,
-                    {
-                        opacity: progress,
-                        transform: [{ translateY }],
-                    },
-                ]}
-            >
-                <View
-                    pointerEvents="box-none"
-                    style={[
-                        styles.fabLayer,
-                        { bottom: fabBottomOffset },
-                    ]}
-                >
-                    <TouchableOpacity
-                        activeOpacity={0.9}
-                        style={[
-                            styles.fabMain,
-                            {
-                                width: fabSize,
-                                height: fabSize,
-                                borderRadius: fabSize / 2,
-                            },
-                        ]}
-                        onPress={onOpenAddEntry}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('navigation.addEntry')}
-                    >
-                        <Icon name="add" size={Math.round(fabSize * 0.52)} color="#FFFFFF" />
-                    </TouchableOpacity>
-                </View>
-            </Animated.View>
-        </View>
-    );
-}
 
 export function MainTabNavigator() {
     return (
@@ -147,179 +28,56 @@ export function MainTabNavigator() {
 }
 
 function MainTabNavigatorContent() {
+    const { isSmallPhone, isTablet } = useResponsive();
     const insets = useSafeAreaInsets();
-    const {
-        width,
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+    const dockHideOffset = getMainTabDockTotalHeight({
+        insetsBottom: insets.bottom,
         isSmallPhone,
         isTablet,
-        scaleSize,
-        tabBarMaxWidth,
-    } = useResponsive();
-    const styles = useThemedStyles(createStyles);
-    const { colors } = useTheme();
-    const { t } = useI18n();
-    const centerGap = isTablet ? 36 : isSmallPhone ? 24 : 32;
-    const tabBarHeight = getMainTabBarHeight({
-        isSmallPhone,
-        isTablet,
-    });
-    const fabSize = getMainTabFabSize({ isSmallPhone, isTablet, scaleSize });
-    const dockHideOffset = tabBarHeight + fabSize + spacing.xl;
-    const tabBarSideOffset = isTablet && tabBarMaxWidth
-        ? Math.max(Math.round((width - tabBarMaxWidth) / 2), spacing.base)
-        : spacing.base;
-    const tabBarFrameStyle = isTablet && tabBarMaxWidth
-        ? {
-            left: tabBarSideOffset,
-            right: tabBarSideOffset,
-        }
-        : {
-            left: spacing.base,
-            right: spacing.base,
-        };
+    }) + spacing.xl;
+
+    const onOpenAddEntry = React.useCallback(() => {
+        navigation.navigate('AddEntry', { initialTab: 'expense' });
+    }, [navigation]);
+
+    const renderTabBar = React.useCallback((props: BottomTabBarProps) => (
+        <MainTabDock
+            {...props}
+            hideOffset={dockHideOffset}
+            onPressAction={onOpenAddEntry}
+        />
+    ), [dockHideOffset, onOpenAddEntry]);
 
     return (
         <View style={styles.container}>
             <Tab.Navigator
-                tabBar={(props) => (
-                    <AnimatedMainTabBar
-                        {...props}
-                        hideOffset={dockHideOffset}
-                    />
-                )}
+                tabBar={renderTabBar}
                 screenOptions={{
                     headerShown: false,
                     animation: 'none',
-                    tabBarStyle: [
-                        styles.tabBar,
-                        {
-                            height: tabBarHeight,
-                            paddingBottom: Math.max(insets.bottom, spacing.sm),
-                            paddingTop: isSmallPhone ? spacing.xs : spacing.sm,
-                            paddingHorizontal: spacing.lg,
-                        },
-                        tabBarFrameStyle,
-                    ],
-                    tabBarActiveTintColor: colors.primaryAction,
-                    tabBarInactiveTintColor: colors.textMuted,
-                    tabBarShowLabel: true,
-                    tabBarLabelStyle: styles.tabBarLabel,
-                    tabBarItemStyle: styles.tabBarItem,
+                    tabBarStyle: styles.hiddenNativeTabBar,
                     tabBarHideOnKeyboard: true,
                 }}
             >
-                <Tab.Screen
-                    name="Dashboard"
-                    component={DashboardScreen}
-                    options={{
-                        tabBarLabel: t('tab.home'),
-                        tabBarIcon: ({ color, size, focused }) => (
-                            <Icon
-                                name={focused ? 'home' : 'home-outline'}
-                                size={size}
-                                color={color}
-                            />
-                        ),
-                    }}
-                />
-                <Tab.Screen
-                    name="Analytics"
-                    component={AnalyticsScreen}
-                    options={{
-                        tabBarLabel: t('tab.analytics'),
-                        tabBarItemStyle: [styles.tabBarItem, { marginRight: centerGap }],
-                        tabBarIcon: ({ color, size, focused }) => (
-                            <Icon
-                                name={focused ? 'stats-chart' : 'stats-chart-outline'}
-                                size={size}
-                                color={color}
-                            />
-                        ),
-                    }}
-                />
-                <Tab.Screen
-                    name="Activity"
-                    component={ActivityScreen}
-                    options={{
-                        tabBarLabel: t('tab.activity'),
-                        tabBarItemStyle: [styles.tabBarItem, { marginLeft: centerGap }],
-                        tabBarIcon: ({ color, size, focused }) => (
-                            <Icon
-                                name={focused ? 'list' : 'list-outline'}
-                                size={size}
-                                color={color}
-                            />
-                        ),
-                    }}
-                />
-                <Tab.Screen
-                    name="History"
-                    component={HistoryNavigator}
-                    options={{
-                        tabBarLabel: t('tab.history'),
-                        tabBarIcon: ({ color, size, focused }) => (
-                            <Icon
-                                name={focused ? 'time' : 'time-outline'}
-                                size={size}
-                                color={color}
-                            />
-                        ),
-                    }}
-                />
+                <Tab.Screen name="Dashboard" component={DashboardScreen} />
+                <Tab.Screen name="Analytics" component={AnalyticsScreen} />
+                <Tab.Screen name="Activity" component={ActivityScreen} />
+                <Tab.Screen name="History" component={HistoryNavigator} />
             </Tab.Navigator>
-            <GlobalActionFab hideOffset={dockHideOffset} />
         </View>
     );
 }
 
-const createStyles = (colors: SemanticColors) =>
-    StyleSheet.create({
-        container: {
-            flex: 1,
-        },
-        animationLayer: {
-            ...StyleSheet.absoluteFillObject,
-        },
-        tabBar: {
-            position: 'absolute',
-            bottom: spacing.xs,
-            borderRadius: 30,
-            backgroundColor: withAlpha(colors.surfaceCard, 0.96),
-            borderTopColor: withAlpha(colors.border, 0.75),
-            borderTopWidth: 1,
-            borderWidth: 1,
-            borderColor: withAlpha(colors.border, 0.9),
-            elevation: 0,
-            shadowColor: colors.textPrimary,
-            shadowOffset: { width: 0, height: 14 },
-            shadowOpacity: 0.35,
-            shadowRadius: 22,
-            paddingHorizontal: spacing.lg,
-        },
-        tabBarItem: {
-            paddingTop: 4,
-            paddingBottom: 2,
-        },
-        tabBarLabel: {
-            fontSize: 11,
-            fontWeight: typography.fontWeight.semibold,
-        },
-        fabLayer: {
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            alignItems: 'center',
-        },
-        fabMain: {
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: colors.primaryAction,
-            borderWidth: 4,
-            borderColor: colors.background,
-            shadowColor: colors.primaryAction,
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.42,
-            shadowRadius: 14,
-            elevation: 12,
-        },
-    });
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    hiddenNativeTabBar: {
+        position: 'absolute',
+        height: 0,
+        borderTopWidth: 0,
+        backgroundColor: 'transparent',
+    },
+});

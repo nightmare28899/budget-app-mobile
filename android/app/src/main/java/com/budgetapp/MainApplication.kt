@@ -6,6 +6,7 @@ import android.app.Application
 import android.os.Build
 import androidx.core.content.getSystemService
 import com.budgetapp.security.BudgetAppSecureKeyStorePackage
+import com.budgetapp.widget.BudgetWidgetPackage
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -20,6 +21,7 @@ class MainApplication : Application(), ReactApplication {
       packageList =
         PackageList(this).packages.apply {
           add(BudgetAppSecureKeyStorePackage())
+          add(BudgetWidgetPackage())
         },
     )
   }

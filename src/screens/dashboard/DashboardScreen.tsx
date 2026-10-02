@@ -12,8 +12,9 @@ import { DrawerActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { MainTabScreenProps } from '../../navigation/types';
+import { CategoryIcon } from '../../components/CategoryIcon';
 import { EmptyState } from '../../components/ui/primitives/EmptyState';
-import { DashboardSkeleton } from '../../components/ui/primitives/Skeleton';
+import { DashboardSkeleton, Skeleton } from '../../components/ui/primitives/Skeleton';
 import { formatCurrency, formatDate } from '../../utils/core/format';
 import { getCurrencyLocale } from '../../utils/domain/currency';
 import {
@@ -30,8 +31,8 @@ import {
     SemanticColors,
 } from '../../theme/index';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
-import { useDashboardScreen } from '../../hooks/useDashboardScreen';
-import { useI18n } from '../../hooks/useI18n';
+import { useDashboardScreen } from '../../hooks/dashboard/useDashboardScreen';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
@@ -70,6 +71,10 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
         netCashflow,
         savingsRate,
         actionItems,
+        priorityCategoryBudget,
+        isCategoryBudgetLoading,
+        hasCategoryBudgetError,
+        refetchCategoryBudgets,
         upcomingSubscriptions,
         isUpcomingLoading,
         hasUpcomingError,
@@ -124,6 +129,23 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
         || netCashflow !== 0
         || savingsRate !== null
     );
+    const categoryBudgetPercentage = priorityCategoryBudget?.budgetAmount
+        ? Math.round((priorityCategoryBudget.spent / priorityCategoryBudget.budgetAmount) * 100)
+        : 0;
+    const categoryBudgetProgressWidth: `${number}%` = `${Math.min(
+        Math.max(categoryBudgetPercentage, 0),
+        100,
+    )}%`;
+    const categoryBudgetTone = priorityCategoryBudget?.status === 'off_track'
+        ? colors.error
+        : priorityCategoryBudget?.status === 'watch'
+            ? colors.warning
+            : colors.success;
+    const categoryBudgetStatusLabel = priorityCategoryBudget?.status === 'off_track'
+        ? t('categoryBudgets.statusOffTrack')
+        : priorityCategoryBudget?.status === 'watch'
+            ? t('categoryBudgets.statusWatch')
+            : t('categoryBudgets.statusOnTrack');
     const resolveActionTone = (tone: 'info' | 'warning' | 'success' | 'danger') => {
         if (tone === 'success') {
             return { color: colors.success, background: withAlpha(colors.success, 0.12) };
@@ -184,11 +206,6 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
             return;
         }
 
-        if (actionId === 'review-category-budgets') {
-            onOpenCategoryBudgets();
-            return;
-        }
-
         if (actionId === 'review-spending') {
             navigation.navigate('Analytics');
             return;
@@ -201,6 +218,246 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
 
         onOpenSavings();
     };
+    const categoryBudgetWidgetContent = isCategoryBudgetLoading ? (
+        <View
+            style={[
+                styles.categoryBudgetCard,
+                { padding: secondaryCardPadding },
+            ]}
+            accessible
+            accessibilityLabel={`${t('categoryBudgets.sectionTitle')}. ${t('common.loading')}`}
+        >
+            <View style={styles.categoryBudgetHeader}>
+                <Skeleton width="48%" height={16} />
+                <Skeleton width={54} height={14} />
+            </View>
+            <View style={styles.categoryBudgetLoadingRow}>
+                <Skeleton width={40} height={40} radius={borderRadius.full} />
+                <View style={styles.categoryBudgetCopy}>
+                    <Skeleton width="52%" height={14} />
+                    <Skeleton width="74%" height={12} style={{ marginTop: spacing.xs }} />
+                </View>
+            </View>
+            <Skeleton
+                width="100%"
+                height={8}
+                radius={borderRadius.full}
+                style={{ marginTop: spacing.md }}
+            />
+        </View>
+    ) : hasCategoryBudgetError ? (
+        <View
+            style={[
+                styles.categoryBudgetCard,
+                styles.categoryBudgetErrorCard,
+                { padding: secondaryCardPadding },
+            ]}
+        >
+            <Text
+                style={[
+                    styles.categoryBudgetErrorTitle,
+                    { fontSize: scaleFont(typography.fontSize.base) },
+                ]}
+            >
+                {t('dashboard.categoryBudgetErrorTitle')}
+            </Text>
+            <Text
+                style={[
+                    styles.categoryBudgetErrorDescription,
+                    { fontSize: scaleFont(typography.fontSize.sm) },
+                ]}
+            >
+                {t('dashboard.categoryBudgetErrorDescription')}
+            </Text>
+            <TouchableOpacity
+                onPress={() => {
+                    refetchCategoryBudgets();
+                }}
+                activeOpacity={0.84}
+                style={styles.categoryBudgetRetryButton}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.retry')}
+            >
+                <Icon name="refresh-outline" size={15} color={colors.textPrimary} />
+                <Text
+                    style={[
+                        styles.categoryBudgetRetryText,
+                        { fontSize: scaleFont(typography.fontSize.sm) },
+                    ]}
+                >
+                    {t('common.retry')}
+                </Text>
+            </TouchableOpacity>
+        </View>
+    ) : !priorityCategoryBudget ? (
+        <TouchableOpacity
+            style={[
+                styles.categoryBudgetCard,
+                { padding: secondaryCardPadding },
+            ]}
+            onPress={onOpenCategoryBudgets}
+            activeOpacity={0.86}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('dashboard.categoryBudgetEmptyTitle')}. ${t('dashboard.categoryBudgetEmptyDescription')}`}
+            accessibilityHint={t('dashboard.categoryBudgetAccessibilityHint')}
+        >
+            <View style={styles.categoryBudgetHeader}>
+                <Text
+                    style={[
+                        styles.categoryBudgetTitle,
+                        { fontSize: scaleFont(typography.fontSize.base) },
+                    ]}
+                >
+                    {t('categoryBudgets.sectionTitle')}
+                </Text>
+                <View style={styles.categoryBudgetLink}>
+                    <Text
+                        style={[
+                            styles.categoryBudgetLinkText,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                    >
+                        {t('categoryBudgets.setBudget')}
+                    </Text>
+                    <Icon name="chevron-forward" size={17} color={colors.primaryAction} />
+                </View>
+            </View>
+            <View style={styles.categoryBudgetEmptyRow}>
+                <View style={styles.categoryBudgetEmptyIcon}>
+                    <Icon name="pie-chart-outline" size={19} color={colors.primaryAction} />
+                </View>
+                <View style={styles.categoryBudgetCopy}>
+                    <Text
+                        style={[
+                            styles.categoryBudgetName,
+                            { fontSize: scaleFont(typography.fontSize.base) },
+                        ]}
+                    >
+                        {t('dashboard.categoryBudgetEmptyTitle')}
+                    </Text>
+                    <Text
+                        style={[
+                            styles.categoryBudgetMeta,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                    >
+                        {t('dashboard.categoryBudgetEmptyDescription')}
+                    </Text>
+                </View>
+            </View>
+        </TouchableOpacity>
+    ) : (
+        <TouchableOpacity
+            style={[
+                styles.categoryBudgetCard,
+                { padding: secondaryCardPadding },
+            ]}
+            onPress={onOpenCategoryBudgets}
+            activeOpacity={0.86}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('categoryBudgets.sectionTitle')}. ${priorityCategoryBudget.name}. ${t('categoryBudgets.spentOfLimit', {
+                spent: formatCurrency(priorityCategoryBudget.spent, user?.currency, locale),
+                limit: formatCurrency(priorityCategoryBudget.budgetAmount, user?.currency, locale),
+            })}. ${categoryBudgetStatusLabel}. ${categoryBudgetPercentage}%.`}
+            accessibilityHint={t('dashboard.categoryBudgetAccessibilityHint')}
+        >
+            <View style={styles.categoryBudgetHeader}>
+                <Text
+                    style={[
+                        styles.categoryBudgetTitle,
+                        { fontSize: scaleFont(typography.fontSize.base) },
+                    ]}
+                >
+                    {t('categoryBudgets.sectionTitle')}
+                </Text>
+                <View style={styles.categoryBudgetLink}>
+                    <Text
+                        style={[
+                            styles.categoryBudgetLinkText,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                    >
+                        {t('dashboard.seeAll')}
+                    </Text>
+                    <Icon name="chevron-forward" size={17} color={colors.primaryAction} />
+                </View>
+            </View>
+
+            <View style={styles.categoryBudgetCategoryRow}>
+                <View
+                    style={[
+                        styles.categoryBudgetIcon,
+                        {
+                            backgroundColor: withAlpha(
+                                priorityCategoryBudget.color || colors.primaryAction,
+                                0.16,
+                            ),
+                        },
+                    ]}
+                >
+                    <CategoryIcon
+                        icon={priorityCategoryBudget.icon}
+                        categoryName={priorityCategoryBudget.name}
+                        size={19}
+                        color={priorityCategoryBudget.color || colors.primaryAction}
+                    />
+                </View>
+                <View style={styles.categoryBudgetCopy}>
+                    <Text
+                        style={[
+                            styles.categoryBudgetName,
+                            { fontSize: scaleFont(typography.fontSize.base) },
+                        ]}
+                        numberOfLines={1}
+                    >
+                        {priorityCategoryBudget.name}
+                    </Text>
+                    <Text
+                        style={[
+                            styles.categoryBudgetMeta,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                        ]}
+                        numberOfLines={2}
+                    >
+                        {t('categoryBudgets.spentOfLimit', {
+                            spent: formatCurrency(priorityCategoryBudget.spent, user?.currency, locale),
+                            limit: formatCurrency(priorityCategoryBudget.budgetAmount, user?.currency, locale),
+                        })}
+                    </Text>
+                </View>
+                <View
+                    style={[
+                        styles.categoryBudgetStatusChip,
+                        { backgroundColor: withAlpha(categoryBudgetTone, 0.14) },
+                    ]}
+                >
+                    <Text
+                        style={[
+                            styles.categoryBudgetStatusText,
+                            {
+                                color: categoryBudgetTone,
+                                fontSize: scaleFont(typography.fontSize.sm),
+                            },
+                        ]}
+                    >
+                        {categoryBudgetStatusLabel}
+                    </Text>
+                </View>
+            </View>
+
+            <View style={styles.categoryBudgetProgressTrack}>
+                <View
+                    style={[
+                        styles.categoryBudgetProgressFill,
+                        {
+                            width: categoryBudgetProgressWidth,
+                            backgroundColor: categoryBudgetTone,
+                        },
+                    ]}
+                />
+            </View>
+        </TouchableOpacity>
+    );
     const upcomingSectionContent = shouldShowUpcomingSection ? (
         <>
             <View style={styles.sectionHeader}>
@@ -252,7 +509,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                         <Text
                             style={[
                                 styles.upcomingRetryText,
-                                { fontSize: scaleFont(typography.fontSize.xs) },
+                                { fontSize: scaleFont(typography.fontSize.sm) },
                             ]}
                         >
                             {t('common.retry')}
@@ -264,7 +521,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                     <Text
                         style={[
                             styles.upcomingSummary,
-                            { fontSize: scaleFont(typography.fontSize.xs) },
+                            { fontSize: scaleFont(typography.fontSize.sm) },
                         ]}
                     >
                         {t('dashboard.upcomingSummary', {
@@ -607,7 +864,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                         <Text
                                             style={[
                                                 styles.errorDescription,
-                                                { fontSize: scaleFont(typography.fontSize.xs) },
+                                                { fontSize: scaleFont(typography.fontSize.sm) },
                                             ]}
                                         >
                                             {t('dashboard.loadError')}
@@ -621,7 +878,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                             <Text
                                                 style={[
                                                     styles.errorRetryText,
-                                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    { fontSize: scaleFont(typography.fontSize.sm) },
                                                 ]}
                                             >
                                                 {t('common.retry')}
@@ -671,7 +928,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                             <Text
                                                 style={[
                                                     styles.budgetStatLabel,
-                                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                                    { fontSize: scaleFont(typography.fontSize.sm) },
                                                 ]}
                                             >
                                                 {t('dashboard.safeToSpend')}
@@ -698,7 +955,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                 <Text
                                                     style={[
                                                         styles.budgetMetaLabel,
-                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
                                                     ]}
                                                 >
                                                     {t('dashboard.budget')}
@@ -717,7 +974,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                 <Text
                                                     style={[
                                                         styles.budgetMetaLabel,
-                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
                                                     ]}
                                                     numberOfLines={1}
                                                 >
@@ -739,6 +996,8 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                         </View>
                                     </View>
                                 </View>
+
+                                {categoryBudgetWidgetContent}
 
                                 {shouldShowCashflow ? (
                                     <View
@@ -777,7 +1036,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                 <Text
                                                     style={[
                                                         styles.cashflowMetricLabel,
-                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
                                                     ]}
                                                 >
                                                     {t('dashboard.incomeLabel')}
@@ -804,7 +1063,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                 <Text
                                                     style={[
                                                         styles.cashflowMetricLabel,
-                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
                                                     ]}
                                                 >
                                                     {t('dashboard.expensesLabel')}
@@ -831,7 +1090,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                 <Text
                                                     style={[
                                                         styles.cashflowMetricLabel,
-                                                        { fontSize: scaleFont(typography.fontSize.xs) },
+                                                        { fontSize: scaleFont(typography.fontSize.sm) },
                                                     ]}
                                                 >
                                                     {t('dashboard.netLabel')}
@@ -1092,6 +1351,130 @@ const createStyles = (colors: SemanticColors) =>
             borderColor: colors.border,
             marginBottom: spacing.base,
             gap: spacing.base,
+        },
+        categoryBudgetCard: {
+            backgroundColor: withAlpha(colors.surfaceCard, 0.84),
+            borderRadius: borderRadius.xl,
+            borderWidth: 1,
+            borderColor: colors.border,
+            marginBottom: spacing.base,
+        },
+        categoryBudgetHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: spacing.sm,
+        },
+        categoryBudgetTitle: {
+            flex: 1,
+            color: colors.textPrimary,
+            fontWeight: typography.fontWeight.semibold,
+        },
+        categoryBudgetLink: {
+            minHeight: 44,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 2,
+        },
+        categoryBudgetLinkText: {
+            color: colors.primaryAction,
+            fontWeight: typography.fontWeight.semibold,
+        },
+        categoryBudgetLoadingRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            marginTop: spacing.sm,
+        },
+        categoryBudgetCategoryRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            marginTop: spacing.sm,
+        },
+        categoryBudgetEmptyRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            paddingTop: spacing.xs,
+        },
+        categoryBudgetIcon: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        categoryBudgetEmptyIcon: {
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: withAlpha(colors.primaryAction, 0.12),
+        },
+        categoryBudgetCopy: {
+            flex: 1,
+            minWidth: 0,
+        },
+        categoryBudgetName: {
+            color: colors.textPrimary,
+            fontWeight: typography.fontWeight.semibold,
+        },
+        categoryBudgetMeta: {
+            color: colors.textMuted,
+            lineHeight: 20,
+            marginTop: 2,
+        },
+        categoryBudgetStatusChip: {
+            flexShrink: 0,
+            borderRadius: borderRadius.full,
+            paddingHorizontal: spacing.sm,
+            paddingVertical: spacing.xs,
+        },
+        categoryBudgetStatusText: {
+            fontWeight: typography.fontWeight.semibold,
+        },
+        categoryBudgetProgressTrack: {
+            height: 8,
+            borderRadius: borderRadius.full,
+            backgroundColor: withAlpha(colors.textMuted, 0.14),
+            overflow: 'hidden',
+            marginTop: spacing.md,
+        },
+        categoryBudgetProgressFill: {
+            height: '100%',
+            borderRadius: borderRadius.full,
+        },
+        categoryBudgetErrorCard: {
+            borderColor: withAlpha(colors.error, 0.35),
+            backgroundColor: withAlpha(colors.error, 0.1),
+        },
+        categoryBudgetErrorTitle: {
+            color: colors.textPrimary,
+            fontWeight: typography.fontWeight.bold,
+        },
+        categoryBudgetErrorDescription: {
+            color: colors.textSecondary,
+            lineHeight: 20,
+            marginTop: spacing.xs,
+        },
+        categoryBudgetRetryButton: {
+            minHeight: 44,
+            alignSelf: 'flex-start',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.xs,
+            marginTop: spacing.sm,
+            borderWidth: 1,
+            borderColor: withAlpha(colors.error, 0.3),
+            borderRadius: borderRadius.full,
+            paddingHorizontal: spacing.md,
+        },
+        categoryBudgetRetryText: {
+            color: colors.textPrimary,
+            fontWeight: typography.fontWeight.semibold,
         },
         cashflowHeader: {
             gap: 4,

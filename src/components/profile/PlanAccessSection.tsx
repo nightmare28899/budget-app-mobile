@@ -6,8 +6,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Button } from '../ui/primitives/Button';
-import { useAppAccess } from '../../hooks/useAppAccess';
-import { useI18n } from '../../hooks/useI18n';
+import { useAppAccess } from '../../hooks/access/useAppAccess';
+import { useI18n } from '../../hooks/shared/useI18n';
 import {
     borderRadius,
     spacing,

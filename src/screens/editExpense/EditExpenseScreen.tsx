@@ -16,7 +16,7 @@ import DateTimePicker, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { RootScreenProps } from '../../navigation/types';
-import { useExpenseForm } from '../../hooks/useExpenseForm';
+import { useExpenseForm } from '../../hooks/expenses/useExpenseForm';
 import { CategorySelector } from '../../components/ui/domain/CategorySelector';
 import { CurrencySelector } from '../../components/ui/domain/CurrencySelector';
 import { CreditCardSelector } from '../../components/ui/domain/CreditCardSelector';
@@ -34,14 +34,14 @@ import {
     useThemedStyles,
     SemanticColors,
 } from '../../theme/index';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { getCurrencyLocale, getCurrencySymbol } from '../../utils/domain/currency';
 import { sanitizeMoneyInput } from '../../utils/platform/moneyInput';
-import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
+import { useScrollToFocusedInput } from '../../hooks/shared/useScrollToFocusedInput';
 import { isCreditCardPaymentMethod } from '../../utils/domain/paymentMethod';
 import { formatCurrency, formatDate } from '../../utils/core/format';
-import { useAppAccess } from '../../hooks/useAppAccess';
-import { usePremiumAccess } from '../../hooks/usePremiumAccess';
+import { useAppAccess } from '../../hooks/access/useAppAccess';
+import { usePremiumAccess } from '../../hooks/access/usePremiumAccess';
 
 type DateField = 'purchase' | 'firstPayment';
 
@@ -69,6 +69,17 @@ export function EditExpenseScreen({
         isSmallPhone,
         scaleFont,
     } = useResponsive();
+    const contentMaxWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, alignSelf: 'center' as const, width: '100%' as const }
+        : null;
+    const loadingSkeletonWidthStyle = contentMaxWidth
+        ? { maxWidth: contentMaxWidth, width: '100%' as const }
+        : null;
+    const amountInputSizeStyle = {
+        fontSize: scaleFont(typography.fontSize['5xl']),
+        lineHeight: scaleFont(typography.fontSize['5xl']),
+        minWidth: isSmallPhone ? 100 : 120,
+    };
     const { t, language } = useI18n();
     const { hasPremium } = useAppAccess();
     const { requirePremiumAccess } = usePremiumAccess();
@@ -244,7 +255,7 @@ export function EditExpenseScreen({
                 <View
                     style={[
                         styles.loadingSkeleton,
-                        contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%' } : null,
+                        loadingSkeletonWidthStyle,
                     ]}
                 >
                     <Skeleton width="40%" height={18} />
@@ -272,9 +283,7 @@ export function EditExpenseScreen({
                             paddingBottom: insets.bottom + spacing['4xl'],
                             paddingHorizontal: horizontalPadding,
                         },
-                        contentMaxWidth
-                            ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' }
-                            : null,
+                        contentMaxWidthStyle,
                     ]}
                     keyboardShouldPersistTaps="handled"
                     keyboardDismissMode={keyboardDismissMode}
@@ -289,11 +298,7 @@ export function EditExpenseScreen({
                             <TextInput
                                 style={[
                                     styles.amountInput,
-                                    {
-                                        fontSize: scaleFont(typography.fontSize['5xl']),
-                                        lineHeight: scaleFont(typography.fontSize['5xl']),
-                                        minWidth: isSmallPhone ? 100 : 120,
-                                    },
+                                    amountInputSizeStyle,
                                 ]}
                                 placeholder={t('common.amountPlaceholder')}
                                 placeholderTextColor={colors.textMuted}

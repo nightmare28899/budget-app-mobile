@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Long-press shortcuts on the launcher icon. They reuse the same deep links as the quick add
+  widget, and One UI also surfaces them in Edge panels and as pinnable home screen shortcuts.
+-->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_expense"
+        android:shortcutId="add_expense"
+        android:shortcutLongLabel="@string/quick_add_widget_expense_description"
+        android:shortcutShortLabel="@string/quick_add_widget_expense">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="budgetapp://add/expense"
+            android:targetClass="com.budgetapp.MainActivity"
+            android:targetPackage="com.budgetapp" />
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_income"
+        android:shortcutId="add_income"
+        android:shortcutLongLabel="@string/quick_add_widget_income_description"
+        android:shortcutShortLabel="@string/quick_add_widget_income">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="budgetapp://add/income"
+            android:targetClass="com.budgetapp.MainActivity"
+            android:targetPackage="com.budgetapp" />
+    </shortcut>
+
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_subscription"
+        android:shortcutId="add_subscription"
+        android:shortcutLongLabel="@string/quick_add_widget_subscription_description"
+        android:shortcutShortLabel="@string/quick_add_widget_subscription">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="budgetapp://add/subscription"
+            android:targetClass="com.budgetapp.MainActivity"
+            android:targetPackage="com.budgetapp" />
+    </shortcut>
+</shortcuts>

@@ -20,7 +20,7 @@ import { Skeleton } from '../../components/ui/primitives/Skeleton';
 import { SavingsFundsModal } from '../../components/savings/SavingsFundsModal';
 import { SavingsProgressRing } from '../../components/savings/SavingsProgressRing';
 import { SavingsTransactionItem } from '../../components/savings/SavingsTransactionItem';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { RootScreenProps } from '../../navigation/types';
 import { useSavingsStore } from '../../store/savingsStore';
 import {

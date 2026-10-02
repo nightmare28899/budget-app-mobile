@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 16 makes every home screen widget eligible for the lock screen. The summary shows
+  balances, and the app already blocks screenshots with FLAG_SECURE, so it opts out.
+  Remove "not_keyguard" below to allow it on the lock screen.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/budget_widget_description"
+    android:initialLayout="@layout/budget_widget"
+    android:minHeight="110dp"
+    android:minResizeHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minWidth="250dp"
+    android:previewLayout="@layout/budget_widget"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="3"
+    android:targetCellWidth="4"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen|not_keyguard" />

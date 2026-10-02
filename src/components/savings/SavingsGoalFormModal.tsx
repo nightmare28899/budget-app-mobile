@@ -16,7 +16,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { CreateSavingsGoalPayload, SavingsGoal } from '../../types/index';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { formatCurrency } from '../../utils/core/format';
 import { formatDateISO } from '../../utils/domain/subscriptions';
 import {
@@ -42,7 +42,7 @@ import {
     MAX_COST_VALUE,
     sanitizeMoneyInput,
 } from '../../utils/platform/moneyInput';
-import { useScrollToFocusedInput } from '../../hooks/useScrollToFocusedInput';
+import { useScrollToFocusedInput } from '../../hooks/shared/useScrollToFocusedInput';
 
 type SavingsGoalFormMode = 'create' | 'edit';
 type SavingsGoalFormInitialValues = Partial<

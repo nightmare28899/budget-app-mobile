@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useI18n } from '../../../hooks/useI18n';
+import { useI18n } from '../../../hooks/shared/useI18n';
 import { withAlpha } from '../../../utils/domain/subscriptions';
 import {
     borderRadius,
@@ -56,11 +56,13 @@ export function SwipeHintCard({ accentColor, onDismiss }: SwipeHintCardProps) {
                             borderColor: withAlpha(accentColor, 0.24),
                         },
                     ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('common.gotIt')}
                 >
                     <Text
                         style={[
                             styles.dismissText,
-                            { fontSize: scaleFont(typography.fontSize.xs) },
+                            { fontSize: scaleFont(typography.fontSize.sm) },
                         ]}
                     >
                         {t('common.gotIt')}
@@ -171,10 +173,10 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         justifyContent: 'center',
     },
     dismissButton: {
-        minHeight: 30,
+        minHeight: 44,
         borderRadius: borderRadius.full,
         borderWidth: 1,
-        paddingHorizontal: spacing.sm,
+        paddingHorizontal: spacing.base,
         justifyContent: 'center',
     },
     dismissText: {

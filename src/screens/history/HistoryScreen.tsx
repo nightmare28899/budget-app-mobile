@@ -35,9 +35,9 @@ import { EmptyState } from '../../components/ui/primitives/EmptyState';
 import { formatCreditCardLabel } from '../../utils/domain/creditCards';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { HistorySkeleton } from '../../components/ui/primitives/Skeleton';
-import { useI18n } from '../../hooks/useI18n';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
-import { HistoryRecord, useHistory } from '../../hooks/useHistory';
+import { HistoryRecord, useHistory } from '../../hooks/history/useHistory';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
@@ -348,6 +348,8 @@ export function HistoryScreen({
                             onPress={() => setShowFilters((prev) => !prev)}
                             activeOpacity={0.82}
                             accessibilityLabel={t('history.filterAction')}
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded: showFilters }}
                         >
                             <Icon name="funnel-outline" size={18} color={colors.textPrimary} />
                         </TouchableOpacity>
@@ -409,6 +411,9 @@ export function HistoryScreen({
                             style={styles.filterSelector}
                             onPress={() => setShowFilterPicker(true)}
                             activeOpacity={0.84}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('filters.category')}
+                            accessibilityState={{ expanded: showFilterPicker }}
                         >
                             <View style={styles.filterSelectorLeft}>
                                 <Icon
@@ -556,6 +561,9 @@ export function HistoryScreen({
                                             setSelectedCategoryId(item.id);
                                             setShowFilterPicker(false);
                                         }}
+                                        accessibilityRole="button"
+                                        accessibilityLabel={item.name}
+                                        accessibilityState={{ selected: isActive }}
                                     >
                                         <View style={styles.filterOptionLeft}>
                                             <Icon
@@ -667,9 +675,9 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         marginTop: spacing.xs,
     },
     summaryAction: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         borderWidth: 1,
         borderColor: colors.border,
         backgroundColor: colors.surfaceCard,
@@ -692,6 +700,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         fontWeight: typography.fontWeight.semibold,
     },
     filterSelector: {
+        minHeight: 48,
         marginTop: spacing.sm,
         borderRadius: borderRadius.md,
         borderWidth: 1,
@@ -813,7 +822,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         paddingBottom: spacing.xs,
     },
     filterOptionRow: {
-        minHeight: 42,
+        minHeight: 48,
         borderRadius: borderRadius.md,
         paddingHorizontal: spacing.sm,
         paddingVertical: spacing.xs,

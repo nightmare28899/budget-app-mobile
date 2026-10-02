@@ -13,9 +13,9 @@ import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { Button } from '../../components/ui/primitives/Button';
 import { EmptyState } from '../../components/ui/primitives/EmptyState';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
-import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
-import { useNotificationCenter } from '../../hooks/useNotificationCenter';
-import { useI18n } from '../../hooks/useI18n';
+import { ScreenHeader } from '../../components/ui/layout/ScreenHeader';
+import { useNotificationCenter } from '../../hooks/notifications/useNotificationCenter';
+import { useI18n } from '../../hooks/shared/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
 import {
     borderRadius,
@@ -111,7 +111,7 @@ export function NotificationsScreen({
                     <Text
                         style={[
                             styles.sectionEmptyText,
-                            { fontSize: scaleFont(typography.fontSize.sm) },
+                            { fontSize: scaleFont(typography.fontSize.md) },
                         ]}
                     >
                         {emptyLabel}
@@ -171,7 +171,7 @@ export function NotificationsScreen({
                                     <Text
                                         style={[
                                             styles.itemDescription,
-                                            { fontSize: scaleFont(typography.fontSize.sm) },
+                                            { fontSize: scaleFont(typography.fontSize.md) },
                                         ]}
                                     >
                                         {item.description}
@@ -204,27 +204,11 @@ export function NotificationsScreen({
                         constrainedContentStyle,
                     ]}
                 >
-                    <View style={styles.headerRow}>
-                        <ScreenBackButton onPress={handleBackPress} />
-                        <View style={styles.headerCopy}>
-                            <Text
-                                style={[
-                                    styles.headerTitle,
-                                    { fontSize: scaleFont(typography.fontSize['2xl']) },
-                                ]}
-                            >
-                                {t('notifications.title')}
-                            </Text>
-                            <Text
-                                style={[
-                                    styles.headerSubtitle,
-                                    { fontSize: scaleFont(typography.fontSize.sm) },
-                                ]}
-                            >
-                                {t('notifications.subtitle')}
-                            </Text>
-                        </View>
-                    </View>
+                    <ScreenHeader
+                        title={t('notifications.title')}
+                        subtitle={t('notifications.subtitle')}
+                        onBack={handleBackPress}
+                    />
                 </View>
 
                 <ScrollView
@@ -251,7 +235,7 @@ export function NotificationsScreen({
                             <Text
                                 style={[
                                     styles.summaryLabel,
-                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                    { fontSize: scaleFont(typography.fontSize.sm) },
                                 ]}
                             >
                                 {t('notifications.summaryTotal')}
@@ -269,7 +253,7 @@ export function NotificationsScreen({
                             <Text
                                 style={[
                                     styles.summaryLabel,
-                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                    { fontSize: scaleFont(typography.fontSize.sm) },
                                 ]}
                             >
                                 {t('notifications.summaryAttention')}
@@ -287,7 +271,7 @@ export function NotificationsScreen({
                             <Text
                                 style={[
                                     styles.summaryLabel,
-                                    { fontSize: scaleFont(typography.fontSize.xs) },
+                                    { fontSize: scaleFont(typography.fontSize.sm) },
                                 ]}
                             >
                                 {t('notifications.summarySuggestions')}
@@ -313,7 +297,7 @@ export function NotificationsScreen({
                             <Text
                                 style={[
                                     styles.errorText,
-                                    { fontSize: scaleFont(typography.fontSize.sm) },
+                                    { fontSize: scaleFont(typography.fontSize.md) },
                                 ]}
                             >
                                 {t('notifications.loadError')}
@@ -357,23 +341,6 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     header: {
         paddingBottom: spacing.base,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.base,
-    },
-    headerCopy: {
-        flex: 1,
-    },
-    headerTitle: {
-        color: colors.textPrimary,
-        fontWeight: typography.fontWeight.bold,
-    },
-    headerSubtitle: {
-        color: colors.textMuted,
-        marginTop: spacing.xs,
-        lineHeight: 20,
     },
     content: {
         gap: spacing.base,

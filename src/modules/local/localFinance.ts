@@ -360,8 +360,9 @@ export function buildLocalHistoryPayload({
   user,
   expenses,
   subscriptions = [],
+  now,
 }: LocalFinanceInput): HistoryPayload {
-  const visibleExpenses = filterVisibleExpenses(expenses);
+  const visibleExpenses = filterVisibleExpenses(expenses, now);
 
   return {
     user,
