@@ -24,6 +24,8 @@ import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { ScreenBackButton } from '../../components/ui/primitives/ScreenBackButton';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { reportsApi } from '../../api/resources/reports';
+import { analyticsApi } from '../../api/resources/analytics';
+import { expensesApi } from '../../api/resources/expenses';
 import { useAppAccess } from '../../hooks/access/useAppAccess';
 import { useI18n } from '../../hooks/shared/useI18n';
 import { MainDrawerScreenProps } from '../../navigation/types';
@@ -44,6 +46,8 @@ import {
 import { getCurrencyLocale } from '../../utils/domain/currency';
 import { formatCurrency, formatDate, todayISO } from '../../utils/core/format';
 import { withAlpha } from '../../utils/domain/subscriptions';
+import { dateOnly } from '../../utils/core/filters';
+import { buildReportCsv, buildReportCsvData } from '../../utils/domain/reportCsv';
 import { useAuthStore } from '../../store/authStore';
 
 function parsePickerDate(value?: string) {
@@ -338,6 +342,62 @@ export function ReportsScreen({
   }, []);
 
   const report = reportQuery.data;
+  const rangeStart = report?.report.start ? dateOnly(report.report.start) : '';
+  const rangeEnd = report?.report.end ? dateOnly(report.report.end) : '';
+  const cardsQuery = useQuery({
+    queryKey: ['analytics', 'cards', rangeStart, rangeEnd],
+    queryFn: () => analyticsApi.getCardBreakdown(rangeStart, rangeEnd),
+    enabled: !!rangeStart && !!rangeEnd,
+  });
+  const [isExportingCsv, setIsExportingCsv] = React.useState(false);
+
+  const onExportCsv = React.useCallback(async () => {
+    if (!rangeStart || !rangeEnd) {
+      return;
+    }
+
+    setIsExportingCsv(true);
+    try {
+      const [{ expenses }, cardBreakdown] = await Promise.all([
+        expensesApi.getAllPages({ from: rangeStart, to: rangeEnd, limit: 100 }),
+        cardsQuery.data ?? analyticsApi.getCardBreakdown(rangeStart, rangeEnd),
+      ]);
+      const { buckets, categories } = buildReportCsvData(
+        expenses,
+        t('parity.csv.uncategorized'),
+      );
+      const csv = buildReportCsv({
+        labels: {
+          period: t('parity.csv.period'),
+          currency: t('parity.csv.currency'),
+          total: t('parity.csv.total'),
+          operations: t('parity.csv.operations'),
+          card: t('parity.csv.card'),
+          last4: t('parity.csv.last4'),
+          expenses: t('parity.csv.expenses'),
+          category: t('parity.csv.category'),
+        },
+        buckets,
+        primaryCurrency: user?.currency ?? null,
+        cards: cardBreakdown.groups.map(group => ({
+          name: group.card?.name ?? t('parity.reports.noCard'),
+          last4: group.card?.last4 ?? '',
+          expenseCount: group.expenseCount,
+          totalsByCurrency: group.totalsByCurrency,
+        })),
+        categories,
+      });
+      await Share.share({
+        title: t('parity.reports.exportTitle', { range: `${rangeStart} - ${rangeEnd}` }),
+        message: csv,
+      });
+    } catch {
+      alert(t('common.error'), t('parity.reports.exportFailed'));
+    } finally {
+      setIsExportingCsv(false);
+    }
+  }, [alert, cardsQuery.data, rangeEnd, rangeStart, t, user?.currency]);
+
   const historyItems = historyQuery.data ?? [];
   const hasAnyData =
     !!report &&
@@ -468,6 +528,14 @@ export function ReportsScreen({
                 title={t('reports.shareCta')}
                 onPress={onShareReport}
                 variant="secondary"
+                containerStyle={styles.actionButtonCompact}
+                disabled={!report}
+              />
+              <Button
+                title={t('parity.reports.exportCsv')}
+                onPress={onExportCsv}
+                variant="secondary"
+                loading={isExportingCsv}
                 containerStyle={styles.actionButtonCompact}
                 disabled={!report}
               />
@@ -857,6 +925,70 @@ export function ReportsScreen({
                       >
                         {formatCurrency(category.total, user?.currency)}
                       </Text>
+                    </View>
+                  ))
+                )}
+              </View>
+
+              <View style={[styles.sectionCard, { padding: cardPadding }]}>
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    { fontSize: scaleFont(typography.fontSize.lg) },
+                  ]}
+                >
+                  {t('parity.reports.cardsTitle')}
+                </Text>
+                {!cardsQuery.data || cardsQuery.data.groups.length === 0 ? (
+                  <Text
+                    style={[
+                      styles.emptySectionText,
+                      { fontSize: scaleFont(typography.fontSize.sm) },
+                    ]}
+                  >
+                    {t('parity.reports.cardsEmpty')}
+                  </Text>
+                ) : (
+                  cardsQuery.data.groups.map(group => (
+                    <View
+                      key={group.creditCardId ?? 'no-card'}
+                      style={styles.categoryRow}
+                    >
+                      <View style={styles.categoryTextWrap}>
+                        <Text
+                          style={[
+                            styles.categoryName,
+                            { fontSize: scaleFont(typography.fontSize.base) },
+                          ]}
+                        >
+                          {group.card
+                            ? `${group.card.name} •••• ${group.card.last4}`
+                            : t('parity.reports.noCard')}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.categoryMeta,
+                            { fontSize: scaleFont(typography.fontSize.sm) },
+                          ]}
+                        >
+                          {t('parity.reports.cardMeta', {
+                            count: group.expenseCount,
+                          })}
+                        </Text>
+                      </View>
+                      <View>
+                        {group.totalsByCurrency.map(item => (
+                          <Text
+                            key={item.currency}
+                            style={[
+                              styles.categoryAmount,
+                              { fontSize: scaleFont(typography.fontSize.base) },
+                            ]}
+                          >
+                            {formatCurrency(item.total, item.currency)}
+                          </Text>
+                        ))}
+                      </View>
                     </View>
                   ))
                 )}
