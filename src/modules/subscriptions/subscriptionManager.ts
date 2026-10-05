@@ -1,4 +1,5 @@
 import { BudgetPeriod, Subscription, SubscriptionBillingCycle } from '../../types/index';
+import { toLocalDateString } from '../../utils/core/dateOnly';
 import { dateOnly } from '../../utils/core/filters';
 import { toNum } from '../../utils/core/number';
 
@@ -234,7 +235,7 @@ export function listChargesForPeriod(
         while (occurrence <= periodEnd && guard < MAX_ITERATIONS) {
             charges.push({
                 subscriptionId: subscription.id,
-                dueDate: occurrence.toISOString().slice(0, 10),
+                dueDate: toLocalDateString(occurrence),
                 amount: subscription.amount,
                 subscription,
             });
@@ -288,7 +289,7 @@ export function listUpcomingSubscriptions(
 
         upcoming.push({
             subscription,
-            dueDate: nextDue.toISOString().slice(0, 10),
+            dueDate: toLocalDateString(nextDue),
             daysUntilDue: daysBetween(from, nextDue),
         });
     }

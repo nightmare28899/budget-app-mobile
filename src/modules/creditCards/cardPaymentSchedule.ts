@@ -1,4 +1,5 @@
 import { CreditCardOverviewCard } from '../../types/index';
+import { parseDateOnly } from '../../utils/core/dateOnly';
 
 const DAY_MS = 86_400_000;
 
@@ -15,15 +16,7 @@ export type PendingPayment = {
     daysUntilDue: number | null;
 };
 
-/** Parses "YYYY-MM-DD" (or an ISO string starting with it) as a local calendar day. */
-export function parseDateOnly(value: string): Date | null {
-    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (!match) {
-        return null;
-    }
-
-    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-}
+export { parseDateOnly };
 
 /** Whole local calendar days from `from` to `to` (negative when `to` is earlier). */
 export function calendarDaysBetween(from: Date, to: Date): number {

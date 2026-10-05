@@ -21,6 +21,7 @@ import {
     normalizeInstallmentFrequency,
     splitAmountAcrossInstallments,
 } from '../../utils/domain/installments';
+import { parseDateOnly, toDateOnlyNoonUtcIso } from '../../utils/core/dateOnly';
 import { dateOnly } from '../../utils/core/filters';
 import { isLocalMode } from '../../modules/access/localMode';
 import { buildTodaySummary, filterExpensesList } from '../../modules/local/localFinance';
@@ -220,9 +221,10 @@ function toExpenseDateTime(value?: string | null): string {
 }
 
 function addMonthsToDate(dateValue: string, monthOffset: number): string {
-    const base = new Date(`${dateOnly(dateValue)}T12:00:00`);
+    const base = parseDateOnly(dateOnly(dateValue)) ?? new Date();
+    base.setHours(12, 0, 0, 0);
     base.setMonth(base.getMonth() + monthOffset);
-    return base.toISOString();
+    return toDateOnlyNoonUtcIso(base);
 }
 
 function buildLocalExpensePayload(

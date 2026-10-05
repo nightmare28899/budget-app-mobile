@@ -1,3 +1,5 @@
+import { toLocalDateString } from './dateOnly';
+
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function sanitizeDateFilterInput(value: string): string {
@@ -26,12 +28,12 @@ export function dateOnly(value: unknown): string {
 
         const parsed = new Date(value);
         if (!Number.isNaN(parsed.getTime())) {
-            return parsed.toISOString().slice(0, 10);
+            return toLocalDateString(parsed);
         }
     }
 
     if (value instanceof Date && !Number.isNaN(value.getTime())) {
-        return value.toISOString().slice(0, 10);
+        return toLocalDateString(value);
     }
 
     return '';

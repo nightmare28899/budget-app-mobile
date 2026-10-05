@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { parseDateOnly } from './dateOnly';
 import { DEFAULT_CURRENCY, normalizeCurrency } from '../domain/currency';
 
 /**
@@ -29,12 +30,7 @@ export function parseDateOrToday(value?: string | null): Date {
         return new Date();
     }
 
-    const parsed = new Date(`${value}T12:00:00`);
-    if (Number.isNaN(parsed.getTime())) {
-        return new Date();
-    }
-
-    return parsed;
+    return parseDateOnly(value) ?? new Date();
 }
 
 /**

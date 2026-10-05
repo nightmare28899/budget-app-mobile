@@ -1,6 +1,7 @@
 import { CreditCard, Expense, Income, Subscription } from '../../types/index';
 import { CurrencyTotal, aggregateCurrencyTotals } from '../../utils/domain/currency';
 import { formatCreditCardLabel } from '../../utils/domain/creditCards';
+import { toLocalDateString } from '../../utils/core/dateOnly';
 import { dateOnly } from '../../utils/core/filters';
 import { toNum } from '../../utils/core/number';
 import {
@@ -70,10 +71,7 @@ function atNoon(value: Date) {
 }
 
 function toIsoDate(value: Date) {
-    const year = value.getFullYear();
-    const month = String(value.getMonth() + 1).padStart(2, '0');
-    const day = String(value.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return toLocalDateString(value);
 }
 
 function clampDay(day: number, maxDay: number) {

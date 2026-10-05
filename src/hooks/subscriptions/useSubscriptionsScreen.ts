@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { EventArg, NavigationAction, useFocusEffect } from '@react-navigation/native';
+import { toLocalDateString } from '../../utils/core/dateOnly';
+import { dateOnly } from '../../utils/core/filters';
 import { subscriptionsApi } from '../../api/resources/subscriptions';
 import { useSubscriptionManager } from '../../modules/subscriptions/useSubscriptionManager';
 import { useAuthStore } from '../../store/authStore';
@@ -41,7 +43,7 @@ function getChargeDateFromDaysRemaining(daysRemaining: number): string {
         ? Math.max(0, Math.trunc(daysRemaining))
         : 0;
     date.setDate(date.getDate() + safeDays);
-    return date.toISOString().slice(0, 10);
+    return toLocalDateString(date);
 }
 
 function toDateOnly(value: string | null | undefined): string | null {
@@ -49,12 +51,7 @@ function toDateOnly(value: string | null | undefined): string | null {
         return null;
     }
 
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-        return null;
-    }
-
-    return parsed.toISOString().slice(0, 10);
+    return dateOnly(value) || null;
 }
 
 export function useSubscriptionsScreen({

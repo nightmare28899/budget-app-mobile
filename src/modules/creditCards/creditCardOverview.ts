@@ -6,6 +6,7 @@ import {
     Expense,
     Subscription,
 } from '../../types/index';
+import { toLocalDateString } from '../../utils/core/dateOnly';
 import { toNum } from '../../utils/core/number';
 import { DEFAULT_CURRENCY, normalizeCurrency } from '../../utils/domain/currency';
 
@@ -29,10 +30,7 @@ function endOfDay(date: Date) {
 }
 
 function formatDateOnly(date: Date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return toLocalDateString(date);
 }
 
 function resolveMonthlyDay(anchor: Date, day: number, useEndOfDay = false) {

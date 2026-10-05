@@ -1,3 +1,4 @@
+import { toLocalDateString } from '../../utils/core/dateOnly';
 import {
   BudgetSummary,
   Category,
@@ -191,8 +192,8 @@ export function buildBudgetSummary({
   return {
     period: {
       type: periodType,
-      start: range.start.toISOString().slice(0, 10),
-      end: range.end.toISOString().slice(0, 10),
+      start: toLocalDateString(range.start),
+      end: toLocalDateString(range.end),
     },
     totalSpent,
     budgetAmount,
@@ -245,8 +246,8 @@ export function buildIncomeSummary({
   return {
     period: {
       type: periodType,
-      start: range.start.toISOString().slice(0, 10),
-      end: trackedEnd.toISOString().slice(0, 10),
+      start: toLocalDateString(range.start),
+      end: toLocalDateString(trackedEnd),
     },
     totalIncome: roundMoney(totalIncome),
     totalExpenses: roundMoney(totalExpenses),
@@ -319,7 +320,7 @@ export function buildDailyTotals(
   for (let index = safeDays - 1; index >= 0; index -= 1) {
     const date = new Date(anchorDate);
     date.setDate(date.getDate() - index);
-    totalsByDay.set(date.toISOString().slice(0, 10), 0);
+    totalsByDay.set(toLocalDateString(date), 0);
   }
 
   for (const expense of expenses) {
@@ -464,8 +465,8 @@ export function buildCategoryBudgetOverview({
   return {
     period: {
       type: periodType,
-      start: range.start.toISOString().slice(0, 10),
-      end: range.end.toISOString().slice(0, 10),
+      start: toLocalDateString(range.start),
+      end: toLocalDateString(range.end),
     },
     totalBudgeted: roundMoney(
       budgetedItems.reduce((sum, item) => sum + item.budgetAmount, 0),
@@ -511,8 +512,8 @@ export function buildWeeklySummary({
   return {
     period: {
       type: 'weekly',
-      start: range.start.toISOString().slice(0, 10),
-      end: range.end.toISOString().slice(0, 10),
+      start: toLocalDateString(range.start),
+      end: toLocalDateString(range.end),
     },
     totalSpent,
     budgetAmount: weeklyBudget,

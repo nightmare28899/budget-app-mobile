@@ -1,4 +1,6 @@
 import apiClient from '../client';
+import { toLocalDateString } from '../../utils/core/dateOnly';
+import { dateOnly } from '../../utils/core/filters';
 import {
     CreateSubscriptionPayload,
     UpcomingSubscriptionCharge,
@@ -41,15 +43,10 @@ function normalizeBillingCycle(value: unknown): Subscription['billingCycle'] {
 
 function toDateOnly(isoLike: unknown): string {
     if (typeof isoLike !== 'string') {
-        return new Date().toISOString().slice(0, 10);
+        return toLocalDateString(new Date());
     }
 
-    const date = new Date(isoLike);
-    if (Number.isNaN(date.getTime())) {
-        return new Date().toISOString().slice(0, 10);
-    }
-
-    return date.toISOString().slice(0, 10);
+    return dateOnly(isoLike) || toLocalDateString(new Date());
 }
 
 export function normalizeSubscription(item: any): Subscription {

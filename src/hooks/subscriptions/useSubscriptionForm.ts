@@ -19,6 +19,7 @@ import {
     sanitizeMoneyInput,
 } from '../../utils/platform/moneyInput';
 import { DEFAULT_CURRENCY, normalizeCurrency } from '../../utils/domain/currency';
+import { toDateOnlyNoonUtcIso } from '../../utils/core/dateOnly';
 import { parseDateOrToday } from '../../utils/core/format';
 import { useTheme } from '../../theme/index';
 import { useI18n } from '../shared/useI18n';
@@ -235,7 +236,7 @@ export function useSubscriptionForm({
             paymentMethod: normalizedPaymentMethod,
             creditCardId: effectiveCreditCardId ?? null,
             billingCycle,
-            nextPaymentDate: parsedDate.toISOString(),
+            nextPaymentDate: toDateOnlyNoonUtcIso(parsedDate),
             currency,
             reminderDays: editingSubscription?.reminderDays ?? 3,
             isActive: true,

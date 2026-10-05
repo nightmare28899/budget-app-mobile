@@ -1,4 +1,5 @@
 import { Expense, HistoryPayload, Subscription } from '../../types/index';
+import { toLocalDateString } from '../../utils/core/dateOnly';
 import { dateOnly } from '../../utils/core/filters';
 import { toNum } from '../../utils/core/number';
 
@@ -14,13 +15,6 @@ export type UnifiedHistoryRecord = {
 };
 
 const AUTO_MARKERS = /\b(auto|automatic|subscription|suscripcion)\b/g;
-
-function localDateOnly(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
 
 function toTimestamp(value: string): number {
     if (!value) {
@@ -109,7 +103,7 @@ function mapSubscription(subscription: Subscription): UnifiedHistoryRecord {
 export function buildUnifiedHistory(
     payload: HistoryPayload | null | undefined,
 ): UnifiedHistoryRecord[] {
-    const today = localDateOnly(new Date());
+    const today = toLocalDateString(new Date());
     const expenseRows = payload?.expenses ?? [];
     const expenses = expenseRows.map(mapExpense);
     const subscriptions = (payload?.subscriptions ?? [])
