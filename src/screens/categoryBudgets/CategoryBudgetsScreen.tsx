@@ -17,6 +17,7 @@ import { analyticsApi } from '../../api/resources/analytics';
 import { categoriesApi } from '../../api/resources/categories';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { CategoryIcon } from '../../components/CategoryIcon';
+import { CategoryEditModal, EditableCategory } from '../../components/categories/CategoryEditModal';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { Button } from '../../components/ui/primitives/Button';
 import { EmptyState } from '../../components/ui/primitives/EmptyState';
@@ -83,6 +84,7 @@ export function CategoryBudgetsScreen({
     const [selectedItem, setSelectedItem] = React.useState<CategoryBudgetStatus | null>(null);
     const [budgetValue, setBudgetValue] = React.useState('');
     const [budgetError, setBudgetError] = React.useState<string | undefined>();
+    const [managedCategory, setManagedCategory] = React.useState<EditableCategory | null>(null);
 
     const {
         data: overview,
@@ -375,6 +377,19 @@ export function CategoryBudgetsScreen({
 
                                             <TouchableOpacity
                                                 activeOpacity={0.84}
+                                                accessibilityLabel={t('parity.category.manage')}
+                                                style={styles.manageButton}
+                                                onPress={() => setManagedCategory({
+                                                    id: item.categoryId,
+                                                    name: item.name,
+                                                    icon: item.icon,
+                                                    color: item.color,
+                                                })}
+                                            >
+                                                <Icon name="create-outline" size={18} color={colors.primaryAction} />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                activeOpacity={0.84}
                                                 style={styles.editButton}
                                                 onPress={() => onEditBudget(item)}
                                             >
@@ -503,6 +518,10 @@ export function CategoryBudgetsScreen({
                     </View>
                 </View>
             </Modal>
+            <CategoryEditModal
+                category={managedCategory}
+                onClose={() => setManagedCategory(null)}
+            />
         </View>
     );
 }
@@ -672,6 +691,12 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     categoryMeta: {
         color: colors.textSecondary,
+    },
+    manageButton: {
+        borderRadius: borderRadius.full,
+        padding: spacing.sm,
+        marginRight: spacing.xs,
+        backgroundColor: withAlpha(colors.primaryAction, 0.12),
     },
     editButton: {
         borderRadius: borderRadius.full,
