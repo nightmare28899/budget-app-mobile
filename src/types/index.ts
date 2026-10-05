@@ -703,3 +703,24 @@ export interface CreditCardsOverviewResponse {
   portfolio: CreditCardPortfolioOverview;
   cards: CreditCardOverviewCard[];
 }
+
+export interface CardExpenseBreakdownGroup {
+  creditCardId: string | null;
+  card: {
+    id: string;
+    name: string;
+    bank: string;
+    brand: string;
+    last4: string;
+  } | null;
+  expenseCount: number;
+  totalsByCurrency: Array<{ currency: string; total: number }>;
+}
+
+export interface CardExpenseBreakdown {
+  from: string;
+  to: string;
+  totalCount: number;
+  currencyBreakdown: Array<{ currency: string; total: number }>;
+  groups: CardExpenseBreakdownGroup[];
+}

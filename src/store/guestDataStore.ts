@@ -40,6 +40,7 @@ interface GuestDataState {
     reset: () => void;
     addCategory: (category: Category) => Category;
     updateCategory: (id: string, updater: (category: Category) => Category) => Category | null;
+    removeCategory: (id: string) => boolean;
     addExpenses: (expenses: Expense[]) => Expense[];
     updateExpense: (id: string, updater: (expense: Expense) => Expense) => Expense | null;
     removeExpenses: (ids: string[]) => string[];
@@ -219,6 +220,21 @@ export const useGuestDataStore = create<GuestDataState>((set, get) => ({
         persistSnapshot(snapshot);
         set({ categories: next });
         return updatedCategory;
+    },
+
+    removeCategory: (id) => {
+        const next = get().categories.filter((category) => category.id !== id);
+        if (next.length === get().categories.length) {
+            return false;
+        }
+
+        const snapshot = buildSnapshotFromState({
+            ...get(),
+            categories: next,
+        });
+        persistSnapshot(snapshot);
+        set({ categories: next });
+        return true;
     },
 
     addExpenses: (expenses) => {

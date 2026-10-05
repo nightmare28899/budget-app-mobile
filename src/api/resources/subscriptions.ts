@@ -8,6 +8,7 @@ import {
     Category,
 } from '../../types/index';
 import { toNum } from '../../utils/core/number';
+import { buildLinkExpensesPayload } from '../../utils/domain/subscriptionLinks';
 import {
     inferSubscriptionColor,
     inferSubscriptionIcon,
@@ -272,5 +273,61 @@ export const subscriptionsApi = {
 
         const { data } = await apiClient.delete(`/subscriptions/${id}`);
         return data;
+    },
+
+    /** Hard delete (DELETE /:id/permanent). `remove` only deactivates server-side. */
+    removePermanently: async (id: string) => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            state.removeSubscription(id);
+            return { success: true };
+        }
+
+        const { data } = await apiClient.delete(`/subscriptions/${id}/permanent`);
+        return data;
+    },
+
+    linkExpenses: async (id: string, expenseIds: string[]) => {
+        const payload = buildLinkExpensesPayload(expenseIds);
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            let count = 0;
+            for (const expenseId of payload.expenseIds) {
+                const updated = state.updateExpense(expenseId, (expense) => ({
+                    ...expense,
+                    subscriptionId: id,
+                    isSubscription: true,
+                }));
+                if (updated) {
+                    count += 1;
+                }
+            }
+            return { count };
+        }
+
+        const { data } = await apiClient.post(`/subscriptions/${id}/link-expenses`, payload);
+        return { count: toNum(data?.linkedCount) };
+    },
+
+    unlinkExpenses: async (id: string, expenseIds: string[]) => {
+        const payload = buildLinkExpensesPayload(expenseIds);
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            let count = 0;
+            for (const expenseId of payload.expenseIds) {
+                const updated = state.updateExpense(expenseId, (expense) =>
+                    expense.subscriptionId === id
+                        ? { ...expense, subscriptionId: null, isSubscription: false }
+                        : expense,
+                );
+                if (updated?.subscriptionId == null) {
+                    count += 1;
+                }
+            }
+            return { count };
+        }
+
+        const { data } = await apiClient.post(`/subscriptions/${id}/unlink-expenses`, payload);
+        return { count: toNum(data?.unlinkedCount) };
     },
 };

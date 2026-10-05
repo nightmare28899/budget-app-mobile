@@ -6,6 +6,10 @@ import {
     getGuestUserId,
 } from '../../store/guestDataStore';
 import { createApiError, toApiRecord } from '../../utils/platform/api';
+import {
+    CATEGORY_IN_USE_CODE,
+    CATEGORY_IN_USE_MESSAGE,
+} from '../../utils/domain/categoryManagement';
 
 export interface CreateCategoryPayload {
     name: string;
@@ -201,5 +205,35 @@ export const categoriesApi = {
             throw new Error('Invalid category payload received from API.');
         }
         return normalized;
+    },
+
+    remove: async (id: string) => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            const inUse =
+                state.expenses.some(
+                    (item) => item.categoryId === id || item.category?.id === id,
+                )
+                || state.subscriptions.some(
+                    (item) => item.categoryId === id || item.category?.id === id,
+                );
+
+            if (inUse) {
+                throw createApiError(
+                    409,
+                    { code: CATEGORY_IN_USE_CODE, message: CATEGORY_IN_USE_MESSAGE },
+                    CATEGORY_IN_USE_MESSAGE,
+                );
+            }
+
+            if (!state.removeCategory(id)) {
+                throw createApiError(404, { message: 'Category not found' }, 'Category not found');
+            }
+
+            return { id };
+        }
+
+        const { data } = await apiClient.delete(`/categories/${id}`);
+        return data;
     },
 };

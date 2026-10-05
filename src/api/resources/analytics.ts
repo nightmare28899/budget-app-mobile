@@ -5,6 +5,8 @@ import {
     DailyTotal,
     CategoryBreakdown,
     BudgetSummary,
+    CardExpenseBreakdown,
+    CardExpenseBreakdownGroup,
 } from '../../types/index';
 import { normalizeBudgetPeriod } from '../../utils/domain/budget';
 import { toNum } from '../../utils/core/number';
@@ -307,5 +309,81 @@ export const analyticsApi = {
         );
 
         return normalizeInsights(data);
+    },
+
+    getCardBreakdown: async (from: string, to: string): Promise<CardExpenseBreakdown> => {
+        if (isLocalMode()) {
+            const { expenses } = ensureGuestDataHydrated();
+            const inRange = expenses.filter((expense) => {
+                const day = dateOnly(expense.date);
+                return day >= from && day <= to;
+            });
+            const groups = new Map<string, CardExpenseBreakdownGroup>();
+            const totals = new Map<string, number>();
+            for (const expense of inRange) {
+                const key = expense.creditCardId ?? 'no-card';
+                const card = expense.creditCard ?? null;
+                const group = groups.get(key) ?? {
+                    creditCardId: expense.creditCardId ?? null,
+                    card: card
+                        ? { id: card.id, name: card.name, bank: card.bank, brand: card.brand, last4: card.last4 }
+                        : null,
+                    expenseCount: 0,
+                    totalsByCurrency: [],
+                };
+                const cents = Math.round(toNum(expense.cost) * 100);
+                const entry = group.totalsByCurrency.find((i) => i.currency === expense.currency);
+                if (entry) {
+                    entry.total = (Math.round(entry.total * 100) + cents) / 100;
+                } else {
+                    group.totalsByCurrency.push({ currency: expense.currency, total: cents / 100 });
+                }
+                group.expenseCount += 1;
+                groups.set(key, group);
+                totals.set(expense.currency, (totals.get(expense.currency) ?? 0) + cents);
+            }
+            return {
+                from,
+                to,
+                totalCount: inRange.length,
+                currencyBreakdown: Array.from(totals.entries()).map(([currency, cents]) => ({
+                    currency,
+                    total: cents / 100,
+                })),
+                groups: Array.from(groups.values()),
+            };
+        }
+
+        const { data } = await apiClient.get('/analytics/cards', { params: { from, to } });
+        const toTotals = (list: unknown) =>
+            Array.isArray(list)
+                ? list.map((item: any) => ({
+                    currency: typeof item?.currency === 'string' ? item.currency : 'MXN',
+                    total: toNum(item?.total),
+                }))
+                : [];
+
+        return {
+            from: typeof data?.from === 'string' ? data.from : from,
+            to: typeof data?.to === 'string' ? data.to : to,
+            totalCount: toNum(data?.totalCount),
+            currencyBreakdown: toTotals(data?.currencyBreakdown),
+            groups: Array.isArray(data?.groups)
+                ? data.groups.map((group: any) => ({
+                    creditCardId: typeof group?.creditCardId === 'string' ? group.creditCardId : null,
+                    card: group?.card && typeof group.card === 'object'
+                        ? {
+                            id: String(group.card.id ?? ''),
+                            name: String(group.card.name ?? ''),
+                            bank: String(group.card.bank ?? ''),
+                            brand: String(group.card.brand ?? ''),
+                            last4: String(group.card.last4 ?? ''),
+                        }
+                        : null,
+                    expenseCount: toNum(group?.expenseCount),
+                    totalsByCurrency: toTotals(group?.totalsByCurrency),
+                }))
+                : [],
+        };
     },
 };
