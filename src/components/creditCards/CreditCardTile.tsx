@@ -17,6 +17,7 @@ import {
     useTheme,
     useThemedStyles,
 } from '../../theme/index';
+import { summarizeInstallmentPlans } from '../../modules/creditCards/installmentPlans';
 import { CreditCardFace } from './CreditCardFace';
 import { formatCardShortDate } from './creditCardFormat';
 
@@ -27,6 +28,7 @@ type CreditCardTileProps = {
     onDeactivate: () => void;
     onActivate: () => void;
     onOpenStatements?: () => void;
+    onOpenInstallmentPlans?: () => void;
     onViewStatement?: (statementImportId: string) => void;
     isRemoving?: boolean;
     isUpdating?: boolean;
@@ -41,6 +43,7 @@ export function CreditCardTile({
     onDeactivate,
     onActivate,
     onOpenStatements,
+    onOpenInstallmentPlans,
     onViewStatement,
     isRemoving,
     isUpdating,
@@ -227,6 +230,11 @@ export function CreditCardTile({
         }
     }
 
+    const installmentSummary = summarizeInstallmentPlans(overview?.installmentPlans ?? []);
+    const installmentTotal =
+        installmentSummary.totals.find(total => total.currency === currency) ??
+        installmentSummary.totals[0];
+
     const renderRow = (row: Row) => (
         <View key={row.key} style={styles.row}>
             <Text style={[styles.rowLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
@@ -286,6 +294,27 @@ export function CreditCardTile({
                         </View>
                     ))}
                 </View>
+            ) : null}
+
+            {installmentSummary.count > 0 && installmentTotal ? (
+                <TouchableOpacity
+                    onPress={onOpenInstallmentPlans}
+                    disabled={!onOpenInstallmentPlans}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    style={styles.installmentsLine}
+                >
+                    <Text
+                        style={[styles.installmentsText, { fontSize: scaleFont(typography.fontSize.sm) }]}
+                        numberOfLines={1}
+                    >
+                        {t('cardInstallments.summaryLine', {
+                            count: installmentSummary.count,
+                            amount: formatCurrency(installmentTotal.monthly, installmentTotal.currency, locale),
+                        })}
+                    </Text>
+                    <Text style={styles.installmentsChevron}>{'›'}</Text>
+                </TouchableOpacity>
             ) : null}
 
             {primaryRows.length ? <View style={styles.rows}>{primaryRows.map(renderRow)}</View> : null}
@@ -447,6 +476,26 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     rowHint: {
         color: colors.textMuted,
         marginTop: 2,
+    },
+    installmentsLine: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.surfaceElevated,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        paddingHorizontal: spacing.sm,
+        minHeight: 44,
+    },
+    installmentsText: {
+        flex: 1,
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    installmentsChevron: {
+        color: colors.primaryLight,
+        fontSize: typography.fontSize.lg,
     },
     toggle: {
         alignItems: 'center',

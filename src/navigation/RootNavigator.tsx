@@ -16,6 +16,7 @@ import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { SavingsGoalDetailScreen } from '../screens/savings/SavingsGoalDetailScreen';
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { CreditCardFormScreen } from '../screens/creditCards/CreditCardFormScreen';
+import { CardInstallmentPlansScreen } from '../screens/creditCards/CardInstallmentPlansScreen';
 import { StatementUploadScreen } from '../screens/statements/StatementUploadScreen';
 import { StatementDetailScreen } from '../screens/statements/StatementDetailScreen';
 import { StatementReviewScreen } from '../screens/statements/StatementReviewScreen';
@@ -205,6 +206,14 @@ export function RootNavigator() {
                         <Stack.Screen
                             name="CreditCardForm"
                             component={CreditCardFormScreen}
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_right',
+                            }}
+                        />
+                        <Stack.Screen
+                            name="CardInstallmentPlans"
+                            component={CardInstallmentPlansScreen}
                             options={{
                                 headerShown: false,
                                 animation: 'slide_from_right',

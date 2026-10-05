@@ -1,4 +1,6 @@
 import {
+    CreditCardInstallmentPlan,
+    CreditCardInstallmentPlanType,
     CreditCardNextPayment,
     CreditCardOverviewCard,
     CreditCardPortfolioCurrency,
@@ -76,6 +78,32 @@ function normalizeNextPayment(value: unknown, fallbackCurrency: string): CreditC
     };
 }
 
+function toInstallmentPlanType(value: unknown): CreditCardInstallmentPlanType {
+    return value === 'NO_INTEREST' || value === 'REFINANCED' ? value : 'INTEREST_BEARING';
+}
+
+export function normalizeInstallmentPlans(
+    value: unknown,
+    fallbackCurrency: string,
+): CreditCardInstallmentPlan[] {
+    return toApiArray(value)
+        .filter((item): item is Record<string, unknown> => item != null && typeof item === 'object')
+        .map((item, index) => ({
+            id: toNullableString(item.id) ?? `plan-${index}`,
+            type: toInstallmentPlanType(item.type),
+            merchantName: toNullableString(item.merchantName),
+            purchaseDate: toNullableString(item.purchaseDate),
+            originalAmount: toNullableNumber(item.originalAmount),
+            installmentNumber: toNullableNumber(item.installmentNumber),
+            installmentCount: toNullableNumber(item.installmentCount),
+            installmentAmount: toNullableNumber(item.installmentAmount),
+            remainingAmount: toNullableNumber(item.remainingAmount),
+            currency: normalizeCurrency(toNullableString(item.currency), fallbackCurrency),
+            statementPeriodEnd: toNullableString(item.statementPeriodEnd),
+            isFinalInstallment: item.isFinalInstallment === true,
+        }));
+}
+
 export function normalizeOverviewCard(card: unknown): CreditCardOverviewCard {
     const raw = toApiRecord(card);
     const base = normalizeCreditCard(raw);
@@ -120,6 +148,7 @@ export function normalizeOverviewCard(card: unknown): CreditCardOverviewCard {
             currencyMismatchCount: toNum(subscriptions.currencyMismatchCount),
         },
         currencyMismatchCount: toNum(raw.currencyMismatchCount),
+        installmentPlans: normalizeInstallmentPlans(raw.installmentPlans, currency),
         flags: {
             missingLimit: flags.missingLimit === true,
             highUtilization: flags.highUtilization === true,

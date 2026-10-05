@@ -1465,6 +1465,16 @@ const en = {
   'financingPlan.originalAmountLabel': 'Original amount',
   'financingPlan.remainingAmountLabel': 'Remaining',
   'financingPlan.purchaseDateLabel': 'Purchase date',
+  // card installment plans
+  'cardInstallments.title': 'Installment purchases',
+  'cardInstallments.summaryLine': '{count} installment purchases · {amount}/mo',
+  'cardInstallments.refinanced': 'Refinanced',
+  'cardInstallments.unknownMerchant': 'Purchase',
+  'cardInstallments.final': 'Last',
+  'cardInstallments.empty': 'No installment purchases on this card.',
+  'cardInstallments.totalMonthly': 'Total per month',
+  'cardInstallments.totalRemaining': 'Total remaining',
+  'cardInstallments.asOfStatement': 'As of your statement dated {date}',
 } as const;
 
 type TranslationKeyInternal = keyof typeof en;
@@ -2957,6 +2967,16 @@ const es: Record<TranslationKeyInternal, string> = {
   'financingPlan.originalAmountLabel': 'Monto original',
   'financingPlan.remainingAmountLabel': 'Restante',
   'financingPlan.purchaseDateLabel': 'Fecha de compra',
+  // card installment plans
+  'cardInstallments.title': 'Compras a meses',
+  'cardInstallments.summaryLine': '{count} compras a meses · {amount}/mes',
+  'cardInstallments.refinanced': 'Refinanciado',
+  'cardInstallments.unknownMerchant': 'Compra',
+  'cardInstallments.final': 'Última',
+  'cardInstallments.empty': 'No hay compras a meses en esta tarjeta.',
+  'cardInstallments.totalMonthly': 'Total al mes',
+  'cardInstallments.totalRemaining': 'Total restante',
+  'cardInstallments.asOfStatement': 'Según tu estado de cuenta del {date}',
 };
 
 const translations = { en, es } as const;

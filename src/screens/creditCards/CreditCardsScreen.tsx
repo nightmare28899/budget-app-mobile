@@ -226,6 +226,9 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                                     onOpenStatements={() =>
                                         navigation.navigate('Statements', { creditCardId: card.id })
                                     }
+                                    onOpenInstallmentPlans={() =>
+                                        navigation.navigate('CardInstallmentPlans', { creditCardId: card.id })
+                                    }
                                     onViewStatement={id => navigation.navigate('StatementDetail', { id })}
                                     isRemoving={isRemoving}
                                     isUpdating={isUpdating}

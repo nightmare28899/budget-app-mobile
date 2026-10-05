@@ -63,6 +63,7 @@ export type RootStackParamList = {
     | { subscription?: Subscription; embedded?: boolean }
     | undefined;
   CreditCardForm: { card?: CreditCard } | undefined;
+  CardInstallmentPlans: { creditCardId: string };
   StatementUpload: { creditCardId?: string } | undefined;
   StatementDetail: { id: string };
   StatementReview: { id: string };

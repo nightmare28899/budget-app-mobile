@@ -225,6 +225,7 @@ export function buildCreditCardsOverview({
             statementSummary: null,
             nextPayment: null,
             currencyMismatchCount: 0,
+            installmentPlans: [],
             currentCycle: {
                 start: formatDateOnly(cycleWindow.start),
                 end: formatDateOnly(cycleWindow.end),

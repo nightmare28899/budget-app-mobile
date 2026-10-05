@@ -205,3 +205,66 @@ describe('normalizeOverviewResponse', () => {
         expect(result.portfolio.byCurrency).toEqual([]);
     });
 });
+
+describe('installmentPlans normalization', () => {
+    const withPlans = (installmentPlans: unknown) =>
+        normalizeOverviewResponse({
+            cards: [{ id: 'c', name: 'X', currency: 'MXN', installmentPlans }],
+        }).cards[0];
+
+    it('defaults to [] when missing or malformed', () => {
+        expect(normalizeOverviewResponse(backendPayload).cards[0].installmentPlans).toEqual([]);
+        expect(withPlans(undefined).installmentPlans).toEqual([]);
+        expect(withPlans('nope').installmentPlans).toEqual([]);
+        expect(withPlans([null, 5]).installmentPlans).toEqual([]);
+    });
+
+    it('coerces numeric strings and nulls missing fields', () => {
+        const [full, sparse] = withPlans([
+            {
+                id: 'p1',
+                type: 'NO_INTEREST',
+                merchantName: 'Liverpool',
+                purchaseDate: '2026-03-10',
+                originalAmount: '12000.00',
+                installmentNumber: '7',
+                installmentCount: 12,
+                installmentAmount: '1000',
+                remainingAmount: '5000.5',
+                currency: 'USD',
+                statementPeriodEnd: '2026-09-15',
+                isFinalInstallment: true,
+            },
+            { type: 'REFINANCED' },
+        ]).installmentPlans;
+
+        expect(full).toEqual({
+            id: 'p1',
+            type: 'NO_INTEREST',
+            merchantName: 'Liverpool',
+            purchaseDate: '2026-03-10',
+            originalAmount: 12000,
+            installmentNumber: 7,
+            installmentCount: 12,
+            installmentAmount: 1000,
+            remainingAmount: 5000.5,
+            currency: 'USD',
+            statementPeriodEnd: '2026-09-15',
+            isFinalInstallment: true,
+        });
+        expect(sparse).toEqual({
+            id: 'plan-1',
+            type: 'REFINANCED',
+            merchantName: null,
+            purchaseDate: null,
+            originalAmount: null,
+            installmentNumber: null,
+            installmentCount: null,
+            installmentAmount: null,
+            remainingAmount: null,
+            currency: 'MXN',
+            statementPeriodEnd: null,
+            isFinalInstallment: false,
+        });
+    });
+});

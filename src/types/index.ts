@@ -664,6 +664,26 @@ export interface CreditCardOverviewFlags {
   currencyMismatch?: boolean;
 }
 
+export type CreditCardInstallmentPlanType =
+  | 'NO_INTEREST'
+  | 'INTEREST_BEARING'
+  | 'REFINANCED';
+
+export interface CreditCardInstallmentPlan {
+  id: string;
+  type: CreditCardInstallmentPlanType;
+  merchantName: string | null;
+  purchaseDate: string | null;
+  originalAmount: number | null;
+  installmentNumber: number | null;
+  installmentCount: number | null;
+  installmentAmount: number | null;
+  remainingAmount: number | null;
+  currency: string;
+  statementPeriodEnd: string | null;
+  isFinalInstallment: boolean;
+}
+
 export interface CreditCardOverviewCard extends CreditCard {
   currency: string;
   currentCycle: CreditCardCycleSnapshot;
@@ -675,6 +695,7 @@ export interface CreditCardOverviewCard extends CreditCard {
   subscriptions: CreditCardRecurringSnapshot;
   flags: CreditCardOverviewFlags;
   currencyMismatchCount: number;
+  installmentPlans: CreditCardInstallmentPlan[];
 }
 
 export interface CreditCardPortfolioCurrency {
