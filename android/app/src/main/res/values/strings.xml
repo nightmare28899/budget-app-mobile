@@ -52,4 +52,22 @@
     <string name="upcoming_widget_preview_count">2 payments · 7 days</string>
     <string name="upcoming_widget_preview_total_label">7-day total</string>
     <string name="upcoming_widget_preview_total_value">$27.98</string>
+
+    <!-- Live updates -->
+    <string name="live_channel_import_name">Statement imports</string>
+    <string name="live_channel_import_description">Progress of credit card statement imports</string>
+    <string name="live_channel_due_name">Payment due</string>
+    <string name="live_channel_due_description">Credit card payments due today or tomorrow</string>
+    <string name="live_import_default_title">Statement import</string>
+    <string name="live_import_uploading">Uploading statement…</string>
+    <string name="live_import_parsing">Reading statement…</string>
+    <string name="live_import_review">Ready to review</string>
+    <string name="live_import_done">Import complete</string>
+    <string name="live_import_failed">Import failed</string>
+    <string name="live_due_title">%1$s payment due</string>
+    <string name="live_due_text">%1$s · %2$s</string>
+    <string name="live_due_short_today">Today</string>
+    <string name="live_due_short_tomorrow">1 day</string>
+    <string name="live_due_short_days">%1$d days</string>
+    <string name="quick_add_tile_label">Add expense</string>
 </resources>

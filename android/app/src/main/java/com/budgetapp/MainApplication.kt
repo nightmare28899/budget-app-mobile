@@ -6,7 +6,9 @@ import android.app.Application
 import android.os.Build
 import androidx.core.content.getSystemService
 import com.budgetapp.security.BudgetAppSecureKeyStorePackage
+import com.budgetapp.liveupdates.LiveUpdatesPackage
 import com.budgetapp.widget.BudgetWidgetPackage
+import com.budgetapp.widget.WidgetRefreshWorker
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -22,6 +24,7 @@ class MainApplication : Application(), ReactApplication {
         PackageList(this).packages.apply {
           add(BudgetAppSecureKeyStorePackage())
           add(BudgetWidgetPackage())
+          add(LiveUpdatesPackage())
         },
     )
   }
@@ -29,6 +32,7 @@ class MainApplication : Application(), ReactApplication {
   override fun onCreate() {
     super.onCreate()
     ensureDefaultNotificationChannel()
+    WidgetRefreshWorker.schedule(this)
     loadReactNative(this)
   }
 

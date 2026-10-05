@@ -49,4 +49,22 @@
     <string name="upcoming_widget_preview_count">2 pagos · 7 días</string>
     <string name="upcoming_widget_preview_total_label">Total de 7 días</string>
     <string name="upcoming_widget_preview_total_value">$399.00</string>
+
+    <!-- Live updates -->
+    <string name="live_channel_import_name">Importación de estados de cuenta</string>
+    <string name="live_channel_import_description">Progreso de la importación de estados de cuenta</string>
+    <string name="live_channel_due_name">Pagos por vencer</string>
+    <string name="live_channel_due_description">Pagos de tarjeta que vencen hoy o mañana</string>
+    <string name="live_import_default_title">Importación de estado de cuenta</string>
+    <string name="live_import_uploading">Subiendo estado de cuenta…</string>
+    <string name="live_import_parsing">Leyendo estado de cuenta…</string>
+    <string name="live_import_review">Listo para revisar</string>
+    <string name="live_import_done">Importación completa</string>
+    <string name="live_import_failed">Error al importar</string>
+    <string name="live_due_title">Pago de %1$s por vencer</string>
+    <string name="live_due_text">%1$s · %2$s</string>
+    <string name="live_due_short_today">Hoy</string>
+    <string name="live_due_short_tomorrow">1 día</string>
+    <string name="live_due_short_days">%1$d días</string>
+    <string name="quick_add_tile_label">Agregar gasto</string>
 </resources>

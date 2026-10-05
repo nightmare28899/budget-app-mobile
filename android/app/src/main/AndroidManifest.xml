@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
@@ -76,5 +77,15 @@
           android:name="android.appwidget.provider"
           android:resource="@xml/upcoming_payments_widget_info" />
       </receiver>
+      <service
+        android:name=".liveupdates.QuickAddTileService"
+        android:label="@string/quick_add_tile_label"
+        android:icon="@drawable/ic_stat_live_update"
+        android:exported="true"
+        android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+        <intent-filter>
+          <action android:name="android.service.quicksettings.action.QS_TILE" />
+        </intent-filter>
+      </service>
     </application>
 </manifest>
