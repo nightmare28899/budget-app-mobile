@@ -80,6 +80,18 @@ export function useSubscriptionManager() {
         },
     });
 
+    const removePermanentlyMutation = useMutation({
+        mutationFn: (id: string) => subscriptionsApi.removePermanently(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+            queryClient.invalidateQueries({ queryKey: ['history'] });
+            queryClient.invalidateQueries({ queryKey: ['analytics'] });
+        },
+        onError: (error: unknown) => {
+            handleMutationError(getApiErrorData(error), t('parity.subscription.permFailed'));
+        },
+    });
+
     const updateMutation = useMutation({
         mutationFn: ({ id, payload }: { id: string; payload: UpdateSubscriptionPayload }) =>
             subscriptionsApi.update(id, payload),
@@ -150,6 +162,10 @@ export function useSubscriptionManager() {
         await removeMutation.mutateAsync(id);
     };
 
+    const removeSubscriptionPermanently = async (id: string) => {
+        await removePermanentlyMutation.mutateAsync(id);
+    };
+
     const updateSubscription = async (id: string, payload: UpdateSubscriptionPayload) => {
         await updateMutation.mutateAsync({ id, payload });
     };
@@ -169,8 +185,9 @@ export function useSubscriptionManager() {
         createSubscription,
         updateSubscription,
         removeSubscription,
+        removeSubscriptionPermanently,
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
-        isRemoving: removeMutation.isPending,
+        isRemoving: removeMutation.isPending || removePermanentlyMutation.isPending,
     };
 }

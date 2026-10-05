@@ -50,6 +50,7 @@ export function useSubscriptionForm({
         createSubscription,
         updateSubscription,
         removeSubscription,
+        removeSubscriptionPermanently,
         isCreating,
         isUpdating,
         isRemoving,
@@ -312,12 +313,12 @@ export function useSubscriptionForm({
         }
 
         alert(
-            t('subscriptions.deleteTitle'),
-            t('subscriptions.deleteMessage', { name: editingSubscription.name }),
+            t('parity.subscription.cancelTitle'),
+            t('parity.subscription.cancelMessage', { name: editingSubscription.name }),
             [
                 { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: t('common.delete'),
+                    text: t('parity.subscription.cancelCta'),
                     style: 'destructive',
                     onPress: () => {
                         removeSubscription(editingSubscription.id)
@@ -337,6 +338,40 @@ export function useSubscriptionForm({
         isEditMode,
         navigation,
         removeSubscription,
+        t,
+    ]);
+
+    const onDeletePermanently = useCallback(() => {
+        if (!editingSubscription || !isEditMode) {
+            return;
+        }
+
+        alert(
+            t('parity.subscription.permTitle'),
+            t('parity.subscription.permMessage', { name: editingSubscription.name }),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                    text: t('parity.subscription.permCta'),
+                    style: 'destructive',
+                    onPress: () => {
+                        removeSubscriptionPermanently(editingSubscription.id)
+                            .then(() => {
+                                navigation.goBack();
+                            })
+                            .catch((error) => {
+                                console.error('Failed to delete subscription permanently', error);
+                            });
+                    },
+                },
+            ],
+        );
+    }, [
+        alert,
+        editingSubscription,
+        isEditMode,
+        navigation,
+        removeSubscriptionPermanently,
         t,
     ]);
 
@@ -374,6 +409,7 @@ export function useSubscriptionForm({
         onPickPreset,
         onSave,
         onDelete,
+        onDeletePermanently,
     };
 }
 

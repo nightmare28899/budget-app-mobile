@@ -17,6 +17,7 @@ import { CreditCardSelector } from '../../components/ui/domain/CreditCardSelecto
 import { CategorySelector } from '../../components/ui/domain/CategorySelector';
 import { Input } from '../../components/ui/primitives/Input';
 import { Button } from '../../components/ui/primitives/Button';
+import { SubscriptionLinkedExpensesModal } from '../../components/subscriptions/SubscriptionLinkedExpensesModal';
 import { SearchField } from '../../components/ui/primitives/SearchField';
 import { PaymentMethodSelector } from '../../components/ui/domain/PaymentMethodSelector';
 import {
@@ -75,6 +76,7 @@ export function AddSubscriptionScreen({
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
     const isEmbedded = route.params?.embedded === true;
+    const [linkModalVisible, setLinkModalVisible] = useState(false);
     const { t, language } = useI18n();
     const { hasPremium } = useAppAccess();
     const { requirePremiumAccess } = usePremiumAccess();
@@ -118,6 +120,7 @@ export function AddSubscriptionScreen({
         onPickPreset,
         onSave,
         onDelete,
+        onDeletePermanently,
         chargeDate,
     } = useSubscriptionForm({
         navigation,
@@ -195,14 +198,37 @@ export function AddSubscriptionScreen({
     const footer = (
         <>
             {isEditMode ? (
-                <Button
-                    title={t('common.delete')}
-                    variant="danger"
-                    onPress={onDelete}
-                    loading={isRemoving}
-                    disabled={isCreating || isUpdating}
-                    containerStyle={styles.deleteButton}
-                />
+                <>
+                    <Button
+                        title={t('parity.subscription.linkCta')}
+                        variant="secondary"
+                        onPress={() => setLinkModalVisible(true)}
+                        disabled={isCreating || isUpdating || isRemoving}
+                        containerStyle={styles.deleteButton}
+                    />
+                    <Button
+                        title={t('parity.subscription.cancelCta')}
+                        variant="danger"
+                        onPress={onDelete}
+                        loading={isRemoving}
+                        disabled={isCreating || isUpdating}
+                        containerStyle={styles.deleteButton}
+                    />
+                    <Button
+                        title={t('parity.subscription.permCta')}
+                        variant="danger"
+                        onPress={onDeletePermanently}
+                        disabled={isCreating || isUpdating || isRemoving}
+                        containerStyle={styles.deleteButton}
+                    />
+                    {route.params?.subscription?.id ? (
+                        <SubscriptionLinkedExpensesModal
+                            subscriptionId={route.params.subscription.id}
+                            visible={linkModalVisible}
+                            onClose={() => setLinkModalVisible(false)}
+                        />
+                    ) : null}
+                </>
             ) : null}
             <Button
                 title={t(isEditMode ? 'addSubscription.update' : 'addSubscription.save')}
