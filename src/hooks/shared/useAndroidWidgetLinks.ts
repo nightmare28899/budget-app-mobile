@@ -28,6 +28,14 @@ export function useAndroidWidgetLinks(enabled: boolean): void {
                 return;
             }
 
+            if (link.type === 'statement') {
+                openNotificationDestination({
+                    targetScreen: 'StatementDetail',
+                    statementId: link.id,
+                });
+                return;
+            }
+
             if (link.type === 'upcoming-payments') {
                 openNotificationDestination({
                     targetScreen: 'UpcomingSubscriptions',

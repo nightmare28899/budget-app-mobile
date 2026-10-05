@@ -65,6 +65,12 @@ export function openNotificationDestination(
         return false;
     }
 
+    const statementId = readString(data.statementId);
+    if (readString(data.targetScreen) === 'StatementDetail' && statementId) {
+        rootNavigationRef.navigate('StatementDetail', { id: statementId });
+        return true;
+    }
+
     if (
         readString(data.targetScreen) === 'UpcomingSubscriptions'
         || readString(data.type) === 'subscription_reminder'
