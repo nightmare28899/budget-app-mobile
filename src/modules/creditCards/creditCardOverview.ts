@@ -1,11 +1,13 @@
 import {
     CreditCard,
     CreditCardOverviewCard,
+    CreditCardPortfolioCurrency,
     CreditCardsOverviewResponse,
     Expense,
     Subscription,
 } from '../../types/index';
 import { toNum } from '../../utils/core/number';
+import { DEFAULT_CURRENCY, normalizeCurrency } from '../../utils/domain/currency';
 
 type BuildCreditCardsOverviewParams = {
     creditCards: CreditCard[];
@@ -119,6 +121,46 @@ function getMonthlyFactor(billingCycle?: Subscription['billingCycle']) {
     }
 }
 
+function buildPortfolioByCurrency(
+    cards: CreditCardOverviewCard[],
+): CreditCardPortfolioCurrency[] {
+    const currencies = [...new Set(cards.map((card) => card.currency))].sort();
+
+    return currencies.map((currency) => {
+        const group = cards.filter((card) => card.currency === currency);
+        const sum = (pick: (card: CreditCardOverviewCard) => number) =>
+            roundMoney(group.reduce((total, card) => total + pick(card), 0));
+        const totalCreditLimit = sum((card) => card.creditStatus.limit ?? 0);
+        const totalCurrentCycleSpend = sum((card) => card.currentCycle.spend);
+
+        return {
+            currency,
+            cardCount: group.length,
+            totalCreditLimit,
+            totalCurrentCycleSpend,
+            totalAvailableCredit: sum((card) => card.creditStatus.availableCredit ?? 0),
+            totalOwedBalance: totalCurrentCycleSpend,
+            totalClosingBalance: 0,
+            totalPaid: 0,
+            totalStatementRemainder: 0,
+            totalDeferredInstallmentBalance: 0,
+            totalCurrentPaymentDue: 0,
+            earliestPaymentDueDate: null,
+            totalPostCloseSpend: 0,
+            postCloseExpenseCount: 0,
+            totalProjectedNextCloseAmount: 0,
+            earliestProjectedNextCloseDate: null,
+            totalProjectedDebt: totalCurrentCycleSpend,
+            totalNextClosePaymentEstimate: 0,
+            totalEstimatedRemainingAfterNextClose: 0,
+            utilizationPercent: totalCreditLimit > 0
+                ? roundPercent((totalCurrentCycleSpend / totalCreditLimit) * 100)
+                : null,
+            monthlyRecurringSpend: sum((card) => card.subscriptions.monthlyRecurringSpend),
+        };
+    });
+}
+
 export function buildCreditCardsOverview({
     creditCards,
     expenses,
@@ -134,14 +176,10 @@ export function buildCreditCardsOverview({
                 trackedCards: 0,
                 activeCards: 0,
                 cardsWithLimit: 0,
-                totalCreditLimit: 0,
-                totalCurrentCycleSpend: 0,
-                totalAvailableCredit: 0,
-                utilizationPercent: null,
+                byCurrency: [],
                 paymentDueSoonCount: 0,
                 highUtilizationCount: 0,
                 linkedSubscriptionsCount: 0,
-                monthlyRecurringSpend: 0,
             },
             cards: [],
         };
@@ -181,8 +219,14 @@ export function buildCreditCardsOverview({
             .filter((date) => !Number.isNaN(date.getTime()))
             .sort((left, right) => left.getTime() - right.getTime())[0] ?? null;
 
+        const currency = normalizeCurrency(card.currency, DEFAULT_CURRENCY);
+
         return {
             ...card,
+            currency,
+            statementSummary: null,
+            nextPayment: null,
+            currencyMismatchCount: 0,
             currentCycle: {
                 start: formatDateOnly(cycleWindow.start),
                 end: formatDateOnly(cycleWindow.end),
@@ -193,6 +237,7 @@ export function buildCreditCardsOverview({
                 limit,
                 availableCredit,
                 utilizationPercent,
+                owedBalance: currentCycleSpend,
             },
             schedule: {
                 nextClosingDate: nextClosingDate ? formatDateOnly(nextClosingDate) : null,
@@ -222,18 +267,7 @@ export function buildCreditCardsOverview({
     });
 
     const activeOverviewCards = overviewCards.filter((card) => card.isActive);
-    const totalCreditLimit = roundMoney(
-        activeOverviewCards.reduce((sum, card) => sum + (card.creditStatus.limit ?? 0), 0),
-    );
-    const totalCurrentCycleSpend = roundMoney(
-        activeOverviewCards.reduce((sum, card) => sum + card.currentCycle.spend, 0),
-    );
-    const totalAvailableCredit = roundMoney(
-        activeOverviewCards.reduce(
-            (sum, card) => sum + (card.creditStatus.availableCredit ?? 0),
-            0,
-        ),
-    );
+    const byCurrency = buildPortfolioByCurrency(activeOverviewCards);
 
     return {
         referenceDate: formatDateOnly(effectiveNow),
@@ -243,12 +277,7 @@ export function buildCreditCardsOverview({
             cardsWithLimit: activeOverviewCards.filter((card) => {
                 return card.creditStatus.limit != null && card.creditStatus.limit > 0;
             }).length,
-            totalCreditLimit,
-            totalCurrentCycleSpend,
-            totalAvailableCredit,
-            utilizationPercent: totalCreditLimit > 0
-                ? roundPercent((totalCurrentCycleSpend / totalCreditLimit) * 100)
-                : null,
+            byCurrency,
             paymentDueSoonCount: activeOverviewCards.filter((card) => card.flags.paymentDueSoon).length,
             highUtilizationCount: activeOverviewCards.filter((card) => {
                 return card.flags.highUtilization || card.flags.overLimit;
@@ -256,12 +285,6 @@ export function buildCreditCardsOverview({
             linkedSubscriptionsCount: activeOverviewCards.reduce(
                 (sum, card) => sum + card.subscriptions.activeCount,
                 0,
-            ),
-            monthlyRecurringSpend: roundMoney(
-                activeOverviewCards.reduce(
-                    (sum, card) => sum + card.subscriptions.monthlyRecurringSpend,
-                    0,
-                ),
             ),
         },
         cards: overviewCards,

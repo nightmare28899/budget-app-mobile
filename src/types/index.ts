@@ -36,6 +36,7 @@ export interface CreditCard {
   creditLimit?: number | null;
   closingDay?: number | null;
   paymentDueDay?: number | null;
+  currency?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -569,16 +570,61 @@ export interface CreateCreditCardPayload {
 export type UpdateCreditCardPayload = Partial<CreateCreditCardPayload>;
 
 export interface CreditCardCycleSnapshot {
+  currency?: string;
   start: string;
   end: string;
   spend: number;
   expenseCount: number;
+  currencyMismatchCount?: number;
 }
 
 export interface CreditCardCreditStatus {
+  currency?: string;
   limit: number | null;
   availableCredit: number | null;
   utilizationPercent: number | null;
+  owedBalance?: number;
+}
+
+export interface CreditCardNextPayment {
+  currency: string;
+  amount: number;
+  dueDate: string | null;
+  previousAmount: number | null;
+}
+
+export type StatementPaymentStatus = 'UNPAID' | 'PARTIAL' | 'PAID';
+
+export interface CreditCardStatementIntegrityFlags {
+  missingReconciliation: boolean;
+  failedReconciliation: boolean;
+  missingPaymentBasis: boolean;
+  conflictingNoInterestTargets: boolean;
+}
+
+export interface CreditCardStatementSummary {
+  statementImportId: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  closingBalance: number | null;
+  paidTotal: number;
+  paymentStatus: StatementPaymentStatus;
+  remainingStatement: number;
+  deferredInstallmentBalance: number;
+  noInterestTarget: number | null;
+  currentPaymentDue: number | null;
+  minimumPayment: number | null;
+  dueDate: string | null;
+  postCloseSpend: number;
+  postCloseExpenseCount: number;
+  projectedNextCloseDate: string | null;
+  projectedNextCloseAmount: number;
+  projectedTotalDebt: number;
+  nextPlanInstallments: number;
+  nextClosePaymentEstimate: number;
+  estimatedRemainingAfterNextClose: number;
+  overpaid: number;
+  integrityFlags: CreditCardStatementIntegrityFlags;
 }
 
 export interface CreditCardScheduleSnapshot {
@@ -589,9 +635,11 @@ export interface CreditCardScheduleSnapshot {
 }
 
 export interface CreditCardRecurringSnapshot {
+  currency?: string;
   activeCount: number;
   monthlyRecurringSpend: number;
   nextChargeDate: string | null;
+  currencyMismatchCount?: number;
 }
 
 export interface CreditCardOverviewFlags {
@@ -600,28 +648,54 @@ export interface CreditCardOverviewFlags {
   overLimit: boolean;
   paymentDueSoon: boolean;
   closingSoon: boolean;
+  currencyMismatch?: boolean;
 }
 
 export interface CreditCardOverviewCard extends CreditCard {
+  currency: string;
   currentCycle: CreditCardCycleSnapshot;
   creditStatus: CreditCardCreditStatus;
+  /** Null in guest/local mode, where no statements exist. */
+  statementSummary: CreditCardStatementSummary | null;
+  nextPayment: CreditCardNextPayment | null;
   schedule: CreditCardScheduleSnapshot;
   subscriptions: CreditCardRecurringSnapshot;
   flags: CreditCardOverviewFlags;
+  currencyMismatchCount: number;
+}
+
+export interface CreditCardPortfolioCurrency {
+  currency: string;
+  cardCount: number;
+  totalCreditLimit: number;
+  totalCurrentCycleSpend: number;
+  totalAvailableCredit: number;
+  totalOwedBalance: number;
+  totalClosingBalance: number;
+  totalPaid: number;
+  totalStatementRemainder: number;
+  totalDeferredInstallmentBalance: number;
+  totalCurrentPaymentDue: number;
+  earliestPaymentDueDate: string | null;
+  totalPostCloseSpend: number;
+  postCloseExpenseCount: number;
+  totalProjectedNextCloseAmount: number;
+  earliestProjectedNextCloseDate: string | null;
+  totalProjectedDebt: number;
+  totalNextClosePaymentEstimate: number;
+  totalEstimatedRemainingAfterNextClose: number;
+  utilizationPercent: number | null;
+  monthlyRecurringSpend: number;
 }
 
 export interface CreditCardPortfolioOverview {
   trackedCards: number;
   activeCards: number;
   cardsWithLimit: number;
-  totalCreditLimit: number;
-  totalCurrentCycleSpend: number;
-  totalAvailableCredit: number;
-  utilizationPercent: number | null;
+  byCurrency: CreditCardPortfolioCurrency[];
   paymentDueSoonCount: number;
   highUtilizationCount: number;
   linkedSubscriptionsCount: number;
-  monthlyRecurringSpend: number;
 }
 
 export interface CreditCardsOverviewResponse {

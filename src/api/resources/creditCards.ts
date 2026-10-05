@@ -2,7 +2,6 @@ import apiClient from '../client';
 import {
     CreateCreditCardPayload,
     CreditCard,
-    CreditCardOverviewCard,
     CreditCardsOverviewResponse,
     UpdateCreditCardPayload,
 } from '../../types/index';
@@ -10,97 +9,7 @@ import { normalizeCreditCard } from '../../utils/domain/creditCards';
 import { isLocalMode } from '../../modules/access/localMode';
 import { ensureGuestDataHydrated } from '../../store/guestDataStore';
 import { buildCreditCardsOverview } from '../../modules/creditCards/creditCardOverview';
-import { toNum } from '../../utils/core/number';
-import { toApiArray, toApiRecord } from '../../utils/platform/api';
-
-function normalizeOverviewCard(card: unknown): CreditCardOverviewCard {
-    const normalizedCard = toApiRecord(card);
-    const currentCycle = toApiRecord(normalizedCard.currentCycle);
-    const creditStatus = toApiRecord(normalizedCard.creditStatus);
-    const schedule = toApiRecord(normalizedCard.schedule);
-    const subscriptions = toApiRecord(normalizedCard.subscriptions);
-    const flags = toApiRecord(normalizedCard.flags);
-
-    return {
-        ...normalizeCreditCard(normalizedCard),
-        currentCycle: {
-            start: String(currentCycle.start ?? ''),
-            end: String(currentCycle.end ?? ''),
-            spend: toNum(currentCycle.spend),
-            expenseCount: toNum(currentCycle.expenseCount),
-        },
-        creditStatus: {
-            limit: creditStatus.limit == null ? null : toNum(creditStatus.limit),
-            availableCredit:
-                creditStatus.availableCredit == null
-                    ? null
-                    : toNum(creditStatus.availableCredit),
-            utilizationPercent:
-                creditStatus.utilizationPercent == null
-                    ? null
-                    : toNum(creditStatus.utilizationPercent),
-        },
-        schedule: {
-            nextClosingDate:
-                typeof schedule.nextClosingDate === 'string'
-                    ? schedule.nextClosingDate
-                    : null,
-            daysUntilClosing:
-                schedule.daysUntilClosing == null
-                    ? null
-                    : toNum(schedule.daysUntilClosing),
-            nextPaymentDueDate:
-                typeof schedule.nextPaymentDueDate === 'string'
-                    ? schedule.nextPaymentDueDate
-                    : null,
-            daysUntilPaymentDue:
-                schedule.daysUntilPaymentDue == null
-                    ? null
-                    : toNum(schedule.daysUntilPaymentDue),
-        },
-        subscriptions: {
-            activeCount: toNum(subscriptions.activeCount),
-            monthlyRecurringSpend: toNum(subscriptions.monthlyRecurringSpend),
-            nextChargeDate:
-                typeof subscriptions.nextChargeDate === 'string'
-                    ? subscriptions.nextChargeDate
-                    : null,
-        },
-        flags: {
-            missingLimit: flags.missingLimit === true,
-            highUtilization: flags.highUtilization === true,
-            overLimit: flags.overLimit === true,
-            paymentDueSoon: flags.paymentDueSoon === true,
-            closingSoon: flags.closingSoon === true,
-        },
-    };
-}
-
-function normalizeOverviewResponse(data: unknown): CreditCardsOverviewResponse {
-    const normalizedData = toApiRecord(data);
-    const portfolio = toApiRecord(normalizedData.portfolio);
-
-    return {
-        referenceDate: String(normalizedData.referenceDate ?? ''),
-        portfolio: {
-            trackedCards: toNum(portfolio.trackedCards),
-            activeCards: toNum(portfolio.activeCards),
-            cardsWithLimit: toNum(portfolio.cardsWithLimit),
-            totalCreditLimit: toNum(portfolio.totalCreditLimit),
-            totalCurrentCycleSpend: toNum(portfolio.totalCurrentCycleSpend),
-            totalAvailableCredit: toNum(portfolio.totalAvailableCredit),
-            utilizationPercent:
-                portfolio.utilizationPercent == null
-                    ? null
-                    : toNum(portfolio.utilizationPercent),
-            paymentDueSoonCount: toNum(portfolio.paymentDueSoonCount),
-            highUtilizationCount: toNum(portfolio.highUtilizationCount),
-            linkedSubscriptionsCount: toNum(portfolio.linkedSubscriptionsCount),
-            monthlyRecurringSpend: toNum(portfolio.monthlyRecurringSpend),
-        },
-        cards: toApiArray(normalizedData.cards).map(normalizeOverviewCard),
-    };
-}
+import { normalizeOverviewResponse } from '../../modules/creditCards/overviewNormalizer';
 
 export const creditCardsApi = {
     getAll: async (options?: { includeInactive?: boolean }) => {

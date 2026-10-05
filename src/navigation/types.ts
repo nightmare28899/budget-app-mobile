@@ -39,6 +39,7 @@ export type MainDrawerParamList = {
   Incomes: { successMessage?: string } | undefined;
   Subscriptions: { successMessage?: string } | undefined;
   CreditCards: undefined;
+  Statements: { creditCardId?: string } | undefined;
   Savings: undefined;
   UpcomingSubscriptions: { upcomingDays?: number } | undefined;
 };
@@ -62,6 +63,8 @@ export type RootStackParamList = {
     | { subscription?: Subscription; embedded?: boolean }
     | undefined;
   CreditCardForm: { card?: CreditCard } | undefined;
+  StatementUpload: { creditCardId?: string } | undefined;
+  StatementDetail: { id: string };
   SavingsGoalDetail: { goalId: string; title?: string };
   ExpenseDetail: { id: string };
   EditExpense: { id: string };

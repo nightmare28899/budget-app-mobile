@@ -15,6 +15,7 @@ export function usePremiumAccess() {
         () => ({
             credit_cards: t('premium.featureCreditCards'),
             installments: t('premium.featureInstallments'),
+            statement_imports: t('premium.featureStatementImports'),
         }),
         [t],
     );

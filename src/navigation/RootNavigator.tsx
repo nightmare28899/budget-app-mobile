@@ -16,6 +16,8 @@ import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { SavingsGoalDetailScreen } from '../screens/savings/SavingsGoalDetailScreen';
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { CreditCardFormScreen } from '../screens/creditCards/CreditCardFormScreen';
+import { StatementUploadScreen } from '../screens/statements/StatementUploadScreen';
+import { StatementDetailScreen } from '../screens/statements/StatementDetailScreen';
 import { PremiumPaywallScreen } from '../screens/premium/PremiumPaywallScreen';
 import { TermsAndConditionsScreen } from '../screens/legal/TermsAndConditionsScreen';
 import { PrivacyPolicyScreen } from '../screens/legal/PrivacyPolicyScreen';
@@ -45,7 +47,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const MIN_SPLASH_MS = 1200;
 
 export function RootNavigator() {
-    const { isAuthenticated, isLoading, hydrate, setUser } = useAuthStore();
+    const { isLoading, hydrate } = useAuthStore();
     const isPreferencesHydrated = usePreferencesStore((s) => s.isHydrated);
     const hasCompletedOnboarding = usePreferencesStore((s) => s.hasCompletedOnboarding);
     const isGuestDataHydrated = useGuestDataStore((s) => s.isHydrated);
@@ -202,6 +204,22 @@ export function RootNavigator() {
                         <Stack.Screen
                             name="CreditCardForm"
                             component={CreditCardFormScreen}
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_right',
+                            }}
+                        />
+                        <Stack.Screen
+                            name="StatementUpload"
+                            component={StatementUploadScreen}
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_right',
+                            }}
+                        />
+                        <Stack.Screen
+                            name="StatementDetail"
+                            component={StatementDetailScreen}
                             options={{
                                 headerShown: false,
                                 animation: 'slide_from_right',

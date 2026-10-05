@@ -20,6 +20,7 @@ import { CategoryBudgetsScreen } from '../screens/categoryBudgets/CategoryBudget
 import { SubscriptionsScreen } from '../screens/subscriptions/SubscriptionsScreen';
 import { SavingsScreen } from '../screens/savings/SavingsScreen';
 import { CreditCardsScreen } from '../screens/creditCards/CreditCardsScreen';
+import { StatementsScreen } from '../screens/statements/StatementsScreen';
 import { spacing, typography, useTheme } from '../theme/index';
 import { useI18n } from '../hooks/shared/useI18n';
 import { useAuthStore } from '../store/authStore';
@@ -36,6 +37,7 @@ const DRAWER_ICONS: Record<keyof MainDrawerParamList, string> = {
   Incomes: 'trending-up-outline',
   Subscriptions: 'albums-outline',
   CreditCards: 'card-outline',
+  Statements: 'receipt-outline',
   Savings: 'cash-outline',
   UpcomingSubscriptions: 'albums-outline',
 };
@@ -65,6 +67,7 @@ type AppDrawerContentProps = DrawerContentComponentProps & {
   plannerLabel: string;
   categoryBudgetsLabel: string;
   creditCardsLabel: string;
+  statementsLabel: string;
   savingsLabel: string;
   homeLabel: string;
   planLabel: string;
@@ -83,6 +86,7 @@ function AppDrawerContent({
   plannerLabel,
   categoryBudgetsLabel,
   creditCardsLabel,
+  statementsLabel,
   savingsLabel,
   homeLabel,
   planLabel,
@@ -111,6 +115,7 @@ function AppDrawerContent({
     { route: 'Planner', label: plannerLabel, icon: 'calendar-outline' },
     { route: 'CategoryBudgets', label: categoryBudgetsLabel, icon: 'pie-chart-outline' },
     { route: 'CreditCards', label: creditCardsLabel, icon: 'card-outline' },
+    { route: 'Statements', label: statementsLabel, icon: 'receipt-outline' },
     { route: 'Savings', label: savingsLabel, icon: 'cash-outline' },
   ];
 
@@ -236,6 +241,7 @@ export function MainDrawerNavigator() {
       plannerLabel={t('planner.title')}
       categoryBudgetsLabel={t('categoryBudgets.title')}
       creditCardsLabel={t('creditCards.title')}
+      statementsLabel={t('statements.title')}
       savingsLabel={t('savings.title')}
       homeLabel={t('tab.home')}
       planLabel={t('settings.planLabel')}
@@ -321,6 +327,11 @@ export function MainDrawerNavigator() {
         name="CreditCards"
         component={CreditCardsScreen}
         options={{ drawerLabel: t('creditCards.title') }}
+      />
+      <Drawer.Screen
+        name="Statements"
+        component={StatementsScreen}
+        options={{ drawerLabel: t('statements.title') }}
       />
       <Drawer.Screen
         name="Expenses"

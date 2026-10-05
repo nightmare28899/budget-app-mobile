@@ -10,7 +10,6 @@ import {
 } from '../../utils/platform/media';
 
 export function useProfileSync() {
-    const user = useAuthStore((state) => state.user);
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const isLoading = useAuthStore((state) => state.isLoading);
     const setUser = useAuthStore((state) => state.setUser);

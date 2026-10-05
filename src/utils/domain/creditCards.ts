@@ -41,6 +41,10 @@ export function normalizeCreditCard(card: unknown): CreditCard {
             normalizedCard.paymentDueDay == null
                 ? null
                 : toNum(normalizedCard.paymentDueDay),
+        currency:
+            typeof normalizedCard.currency === 'string' && normalizedCard.currency
+                ? normalizedCard.currency
+                : undefined,
         isActive: normalizedCard.isActive !== false,
         createdAt:
             typeof normalizedCard.createdAt === 'string'

@@ -184,6 +184,16 @@ function normalizePremiumFeature(value: unknown): PremiumFeature | null {
         return 'installments';
     }
 
+    if (
+        normalized === 'statement_imports'
+        || normalized === 'statement-imports'
+        || normalized === 'statementimports'
+        || normalized === 'statements'
+        || normalized.includes('statement')
+    ) {
+        return 'statement_imports';
+    }
+
     if (normalized.includes('card')) {
         return 'credit_cards';
     }

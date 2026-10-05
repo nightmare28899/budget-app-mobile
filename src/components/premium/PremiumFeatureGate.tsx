@@ -67,6 +67,23 @@ export function PremiumFeatureGate({
             };
         }
 
+        if (feature === 'statement_imports') {
+            return {
+                icon: 'receipt-outline',
+                title: t('premium.statementImportsTitle'),
+                description: hasPremium
+                    ? t('premium.statementImportsEnabledDescription')
+                    : t('premium.statementImportsDescription'),
+                bullets: [
+                    t('premium.statementImportsBullet1'),
+                    t('premium.statementImportsBullet2'),
+                    t('premium.statementImportsBullet3'),
+                ],
+                bulletIcons: ['cloud-upload-outline', 'checkmark-done-outline', 'calendar-outline'],
+                actionTitle: null,
+            };
+        }
+
         return {
             icon: 'albums-outline',
             title: t('premium.installmentsTitle'),
