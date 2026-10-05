@@ -18,6 +18,7 @@ import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { CreditCardFormScreen } from '../screens/creditCards/CreditCardFormScreen';
 import { StatementUploadScreen } from '../screens/statements/StatementUploadScreen';
 import { StatementDetailScreen } from '../screens/statements/StatementDetailScreen';
+import { StatementReviewScreen } from '../screens/statements/StatementReviewScreen';
 import { PremiumPaywallScreen } from '../screens/premium/PremiumPaywallScreen';
 import { TermsAndConditionsScreen } from '../screens/legal/TermsAndConditionsScreen';
 import { PrivacyPolicyScreen } from '../screens/legal/PrivacyPolicyScreen';
@@ -220,6 +221,14 @@ export function RootNavigator() {
                         <Stack.Screen
                             name="StatementDetail"
                             component={StatementDetailScreen}
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_right',
+                            }}
+                        />
+                        <Stack.Screen
+                            name="StatementReview"
+                            component={StatementReviewScreen}
                             options={{
                                 headerShown: false,
                                 animation: 'slide_from_right',

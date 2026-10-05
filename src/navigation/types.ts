@@ -65,6 +65,7 @@ export type RootStackParamList = {
   CreditCardForm: { card?: CreditCard } | undefined;
   StatementUpload: { creditCardId?: string } | undefined;
   StatementDetail: { id: string };
+  StatementReview: { id: string };
   SavingsGoalDetail: { goalId: string; title?: string };
   ExpenseDetail: { id: string };
   EditExpense: { id: string };

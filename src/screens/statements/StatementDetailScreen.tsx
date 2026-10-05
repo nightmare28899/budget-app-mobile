@@ -9,11 +9,15 @@ import { Button } from '../../components/ui/primitives/Button';
 import { PremiumFeatureGate } from '../../components/premium/PremiumFeatureGate';
 import { CreditCardFace } from '../../components/creditCards/CreditCardFace';
 import { StatementScreenHeader } from '../../components/statements/StatementScreenHeader';
+import { StatementPaymentsSection } from '../../components/statements/StatementPaymentsSection';
 import { StatementStatusBadge } from '../../components/statements/StatementStatusBadge';
 import { useCreditCardsCatalog } from '../../hooks/creditCards/useCreditCardsCatalog';
 import { usePremiumAccess } from '../../hooks/access/usePremiumAccess';
 import { useStatementDetail } from '../../hooks/statements/useStatementDetail';
 import { useStatementRetry } from '../../hooks/statements/useStatementRetry';
+import { useStatementActions } from '../../hooks/statements/useStatementActions';
+import { useStatementErrorMessage } from '../../hooks/statements/useStatementErrorMessage';
+import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { useI18n } from '../../hooks/shared/useI18n';
 import {
     formatFileSize,
@@ -34,7 +38,7 @@ import {
 
 type Row = { key: string; label: string; value: string; color?: string };
 
-/** Read-only import summary. Review, confirm and payments arrive in later phases. */
+/** Import summary with review entry point, confirm lifecycle (revert/resume/delete) and payments. */
 export function StatementDetailScreen({ navigation, route }: RootScreenProps<'StatementDetail'>) {
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
@@ -49,6 +53,9 @@ export function StatementDetailScreen({ navigation, route }: RootScreenProps<'St
     );
     const { cards } = useCreditCardsCatalog({ includeInactive: true, enabled: hasPremium });
     const { retry, isRetrying } = useStatementRetry();
+    const { alert } = useAppAlert();
+    const describeError = useStatementErrorMessage();
+    const actions = useStatementActions(route.params.id);
 
     if (!hasPremium) {
         return (
@@ -139,6 +146,48 @@ export function StatementDetailScreen({ navigation, route }: RootScreenProps<'St
             });
         }
     }
+
+    const runAction = async (
+        action: () => Promise<{ ok: true } | { ok: false; error: import('../../modules/statements/statementErrors').StatementError }>,
+        failureKey: 'statements.detail.revertFailed' | 'statements.detail.resumeFailed' | 'statements.detail.deleteFailed',
+        onDone?: () => void,
+    ) => {
+        const result = await action();
+        if (!result.ok) {
+            if (result.error.kind !== 'premium') {
+                alert(t('common.error'), describeError(result.error, failureKey));
+            }
+            return;
+        }
+        onDone?.();
+    };
+
+    const confirmRevert = () => {
+        if (!statement) return;
+        alert(t('statements.detail.revertTitle'), t('statements.detail.revertMessage'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            {
+                text: t('statements.detail.revert'),
+                style: 'destructive',
+                onPress: () => void runAction(() => actions.revert(statement.version), 'statements.detail.revertFailed'),
+            },
+        ]);
+    };
+
+    const confirmDelete = () => {
+        if (!statement) return;
+        alert(t('statements.detail.deleteTitle'), t('statements.detail.deleteMessage'), [
+            { text: t('common.cancel'), style: 'cancel' },
+            {
+                text: t('common.delete'),
+                style: 'destructive',
+                onPress: () =>
+                    void runAction(() => actions.remove(), 'statements.detail.deleteFailed', () =>
+                        navigation.goBack(),
+                    ),
+            },
+        ]);
+    };
 
     const canRetry = statement?.status === 'FAILED' || statement?.status === 'UPLOADED';
 
@@ -256,14 +305,66 @@ export function StatementDetailScreen({ navigation, route }: RootScreenProps<'St
                                 />
                             ) : null}
 
-                            <View style={styles.comingSoon}>
-                                <Icon name="construct-outline" size={20} color={colors.textMuted} />
-                                <Text
-                                    style={[styles.comingSoonText, { fontSize: scaleFont(typography.fontSize.sm) }]}
-                                >
-                                    {t('statements.reviewComingSoon')}
-                                </Text>
-                            </View>
+                            {statement.reconciliation ? (
+                                <View style={styles.rows}>
+                                    {[
+                                        ['opening', 'statements.recon.opening', statement.reconciliation.openingBalance],
+                                        ['charges', 'statements.recon.charges', statement.reconciliation.chargesTotal],
+                                        ['payments', 'statements.recon.payments', statement.reconciliation.paymentsTotal],
+                                        ['credits', 'statements.recon.credits', statement.reconciliation.creditsTotal],
+                                        ['difference', 'statements.recon.difference', statement.reconciliation.difference],
+                                    ].map(([key, labelKey, amount]) => (
+                                        <View key={key as string} style={styles.row}>
+                                            <Text style={[styles.rowLabel, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                                                {t(labelKey as 'statements.recon.opening')}
+                                            </Text>
+                                            <Text style={[styles.rowValue, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                                                {money(amount as number)}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                    {statement.reconciliation.status === 'FAILED' ? (
+                                        <Text style={[styles.errorText, styles.reconNote]}>
+                                            {statement.reconciliation.message ?? t('statements.recon.failedHint')}
+                                        </Text>
+                                    ) : null}
+                                </View>
+                            ) : null}
+
+                            {statement.status === 'NEEDS_REVIEW' ? (
+                                <Button
+                                    title={t('statements.detail.reviewRows')}
+                                    onPress={() => navigation.navigate('StatementReview', { id: statement.id })}
+                                />
+                            ) : null}
+                            {statement.status === 'REVERTED' ? (
+                                <Button
+                                    title={t('statements.detail.resume')}
+                                    onPress={() =>
+                                        void runAction(() => actions.resume(statement.version), 'statements.detail.resumeFailed')
+                                    }
+                                    loading={actions.isResuming}
+                                />
+                            ) : null}
+                            {statement.status === 'CONFIRMED' ? (
+                                <Button
+                                    title={t('statements.detail.revert')}
+                                    variant="secondary"
+                                    onPress={confirmRevert}
+                                    loading={actions.isReverting}
+                                />
+                            ) : null}
+                            {statement.status === 'CONFIRMED' ? (
+                                <StatementPaymentsSection statement={statement} />
+                            ) : null}
+                            {statement.status !== 'CONFIRMED' ? (
+                                <Button
+                                    title={t('common.delete')}
+                                    variant="danger"
+                                    onPress={confirmDelete}
+                                    loading={actions.isRemoving}
+                                />
+                            ) : null}
                         </>
                     )}
                 </ScrollView>
@@ -356,19 +457,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         color: colors.warning,
         fontWeight: typography.fontWeight.semibold,
     },
-    comingSoon: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.sm,
-        backgroundColor: colors.surfaceElevated,
-        borderRadius: borderRadius.lg,
-        borderWidth: 1,
-        borderColor: colors.border,
-        padding: spacing.base,
-    },
-    comingSoonText: {
-        flex: 1,
-        color: colors.textSecondary,
-        lineHeight: 20,
+    reconNote: {
+        paddingVertical: spacing.sm,
     },
 });
