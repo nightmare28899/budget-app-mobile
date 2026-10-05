@@ -1,9 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '../utils/core/constants';
 import { useAuthStore } from '../store/authStore';
-import { translate, TranslationKey } from '../i18n/index';
-import { usePreferencesStore } from '../store/preferencesStore';
-import { showGlobalAlert } from '../components/alerts/alertBridge';
 import { extractPremiumRequiredError } from '../utils/platform/api';
 import { openPremiumPaywall } from '../navigation/navigationBridge';
 
@@ -17,20 +14,35 @@ type RefreshResponse = {
     refreshToken: string;
 };
 
-type SessionDecision = 'renew' | 'close';
-type SessionRenewalResult =
-    | { kind: 'renewed'; tokens: RefreshResponse }
-    | { kind: 'closed' }
-    | { kind: 'failed' };
-
-let promptSessionRenewalPromise: Promise<SessionDecision> | null = null;
-let refreshTokensPromise: Promise<RefreshResponse> | null = null;
-let renewSessionPromise: Promise<SessionRenewalResult> | null = null;
-
-function t(key: TranslationKey) {
-    const language = usePreferencesStore.getState().language;
-    return translate(language, key);
+declare module 'axios' {
+    export interface AxiosRequestConfig {
+        /** Request metadata. `background: true` never opens the premium paywall. */
+        meta?: { background?: boolean };
+    }
 }
+
+export const REFRESH_TIMEOUT_MS = 15000;
+const PAYWALL_DEDUPE_WINDOW_MS = 4000;
+
+export class SessionRefreshError extends Error {
+    readonly transient: boolean;
+    readonly cause?: unknown;
+
+    constructor(transient: boolean, cause?: unknown) {
+        super(
+            transient
+                ? 'Could not refresh the session. Please try again.'
+                : 'Session refresh was rejected.',
+        );
+        this.name = 'SessionRefreshError';
+        this.transient = transient;
+        this.cause = cause;
+    }
+}
+
+let refreshSessionPromise: Promise<string> | null = null;
+let lastPaywallOpenedAt = 0;
+
 
 function isAuthRoute(url?: string): boolean {
     if (!url) {
@@ -61,115 +73,80 @@ function removeContentTypeHeader(
     delete headers['content-type'];
 }
 
-function askSessionRenewal(): Promise<SessionDecision> {
-    if (promptSessionRenewalPromise) {
-        return promptSessionRenewalPromise;
-    }
+function isRefreshRejection(error: unknown): boolean {
+    const status = (error as AxiosError)?.response?.status;
+    return status === 400 || status === 401 || status === 403;
+}
 
-    promptSessionRenewalPromise = new Promise<SessionDecision>((resolve) => {
-        showGlobalAlert(
-            t('session.expiredTitle'),
-            t('session.expiredMessage'),
-            [
-                {
-                    text: t('session.close'),
-                    style: 'destructive',
-                    onPress: () => resolve('close'),
-                },
-                {
-                    text: t('session.renew'),
-                    onPress: () => resolve('renew'),
-                },
-            ],
-            { cancelable: false },
+async function requestTokens(refreshToken: string): Promise<RefreshResponse> {
+    try {
+        const { data } = await axios.post(
+            `${API_BASE_URL}/auth/refresh`,
+            { refreshToken },
+            { timeout: REFRESH_TIMEOUT_MS },
         );
-    });
+        const accessToken = data?.accessToken;
+        const nextRefreshToken = data?.refreshToken;
 
-    return promptSessionRenewalPromise.finally(() => {
-        promptSessionRenewalPromise = null;
-    });
+        if (
+            typeof accessToken !== 'string'
+            || typeof nextRefreshToken !== 'string'
+        ) {
+            throw new SessionRefreshError(true, new Error('Invalid refresh payload.'));
+        }
+
+        return { accessToken, refreshToken: nextRefreshToken };
+    } catch (error) {
+        if (error instanceof SessionRefreshError) {
+            throw error;
+        }
+        // Network errors, timeouts and 5xx are transient: never end the session for them.
+        throw new SessionRefreshError(!isRefreshRejection(error), error);
+    }
 }
 
-function refreshTokens(refreshToken: string): Promise<RefreshResponse> {
-    if (refreshTokensPromise) {
-        return refreshTokensPromise;
+/**
+ * Single shared in-flight refresh. Resolves with the new access token.
+ * The rotated refresh token is persisted (secure storage + store) before
+ * any waiting request is retried.
+ */
+function refreshSession(): Promise<string> {
+    if (refreshSessionPromise) {
+        return refreshSessionPromise;
     }
 
-    refreshTokensPromise = axios
-        .post(`${API_BASE_URL}/auth/refresh`, { refreshToken })
-        .then(({ data }) => {
-            const accessToken = data?.accessToken;
-            const nextRefreshToken = data?.refreshToken;
-
-            if (
-                typeof accessToken !== 'string' ||
-                typeof nextRefreshToken !== 'string'
-            ) {
-                throw new Error('Invalid refresh response payload.');
-            }
-
-            return {
-                accessToken,
-                refreshToken: nextRefreshToken,
-            };
-        })
-        .finally(() => {
-            refreshTokensPromise = null;
-        });
-
-    return refreshTokensPromise;
-}
-
-function notifyRenewalFailure() {
-    showGlobalAlert(
-        t('session.renewFailedTitle'),
-        t('session.renewFailedMessage'),
-        [{ text: t('common.ok') }],
-        { cancelable: false },
-    );
-}
-
-function renewSession(): Promise<SessionRenewalResult> {
-    if (renewSessionPromise) {
-        return renewSessionPromise;
-    }
-
-    const promise: Promise<SessionRenewalResult> = (async () => {
-        const { isAuthenticated } = useAuthStore.getState();
-        if (!isAuthenticated) {
-            return { kind: 'closed' } as const;
+    const promise = (async () => {
+        const currentRefreshToken = useAuthStore.getState().refreshToken;
+        if (!currentRefreshToken) {
+            throw new SessionRefreshError(false);
         }
 
-        const decision = await askSessionRenewal();
-        if (decision === 'close') {
-            useAuthStore.getState().logout();
-            return { kind: 'closed' } as const;
-        }
-
-        const latestRefreshToken = useAuthStore.getState().refreshToken;
-        if (!latestRefreshToken) {
-            useAuthStore.getState().logout();
-            return { kind: 'closed' } as const;
-        }
-
-        try {
-            const tokens = await refreshTokens(latestRefreshToken);
-            useAuthStore.getState().setTokens(
-                tokens.accessToken,
-                tokens.refreshToken,
-            );
-            return { kind: 'renewed', tokens } as const;
-        } catch {
-            notifyRenewalFailure();
-            useAuthStore.getState().logout();
-            return { kind: 'failed' } as const;
-        }
+        const tokens = await requestTokens(currentRefreshToken);
+        useAuthStore.getState().setTokens(
+            tokens.accessToken,
+            tokens.refreshToken,
+        );
+        return tokens.accessToken;
     })().finally(() => {
-        renewSessionPromise = null;
+        refreshSessionPromise = null;
     });
 
-    renewSessionPromise = promise;
+    refreshSessionPromise = promise;
     return promise;
+}
+
+function shouldOpenPaywall(config?: InternalAxiosRequestConfig | null): boolean {
+    if (config?.meta?.background) {
+        return false;
+    }
+
+    const now = Date.now();
+    if (now - lastPaywallOpenedAt < PAYWALL_DEDUPE_WINDOW_MS) {
+        return false;
+    }
+
+    lastPaywallOpenedAt = now;
+    return true;
 }
 
 apiClient.interceptors.request.use(
@@ -207,10 +184,13 @@ apiClient.interceptors.response.use(
     async (error: AxiosError) => {
         const originalRequest = error.config as (InternalAxiosRequestConfig & {
             _retry?: boolean;
-        }) | null;
-        const premiumError = extractPremiumRequiredError(error.response?.data);
+        }) | undefined;
 
-        if (premiumError) {
+        const premiumError = error.response?.status === 403
+            ? extractPremiumRequiredError(error.response?.data)
+            : null;
+
+        if (premiumError && shouldOpenPaywall(originalRequest)) {
             openPremiumPaywall(premiumError.feature);
         }
 
@@ -218,44 +198,42 @@ apiClient.interceptors.response.use(
             return Promise.reject(error);
         }
 
-        const { isAuthenticated } = useAuthStore.getState();
-        const requestUrl = String(originalRequest.url || '');
         const isUnauthorized = error.response?.status === 401;
-
         if (
-            isUnauthorized &&
-            originalRequest._retry &&
-            isAuthenticated &&
-            !isAuthRoute(requestUrl)
+            !isUnauthorized
+            || originalRequest._retry
+            || !useAuthStore.getState().isAuthenticated
+            || isAuthRoute(String(originalRequest.url || ''))
         ) {
-            notifyRenewalFailure();
-            useAuthStore.getState().logout();
             return Promise.reject(error);
         }
 
-        if (
-            isUnauthorized &&
-            !originalRequest._retry &&
-            isAuthenticated &&
-            !isAuthRoute(requestUrl)
-        ) {
-            originalRequest._retry = true;
+        originalRequest._retry = true;
 
-            if (!useAuthStore.getState().refreshToken) {
-                useAuthStore.getState().logout();
-                return Promise.reject(error);
-            }
+        const sentAuthorization = originalRequest.headers?.Authorization;
+        const currentAccessToken = useAuthStore.getState().accessToken;
 
-            const renewal = await renewSession();
-            if (renewal.kind !== 'renewed') {
-                return Promise.reject(error);
-            }
+        try {
+            // Another request may already have rotated the tokens while this one was in flight.
+            const accessToken =
+                currentAccessToken
+                && sentAuthorization !== `Bearer ${currentAccessToken}`
+                    ? currentAccessToken
+                    : await refreshSession();
 
-            originalRequest.headers.Authorization = `Bearer ${renewal.tokens.accessToken}`;
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
             return apiClient(originalRequest);
+        } catch (refreshError) {
+            if (
+                refreshError instanceof SessionRefreshError
+                && !refreshError.transient
+            ) {
+                useAuthStore.getState().logout();
+            }
+            return Promise.reject(
+                refreshError instanceof SessionRefreshError ? refreshError : error,
+            );
         }
-
-        return Promise.reject(error);
     },
 );
 
