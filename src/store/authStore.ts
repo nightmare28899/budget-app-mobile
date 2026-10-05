@@ -7,6 +7,7 @@ import { isLikelyInternalRemoteUri, isRemoteHttpUri } from '../utils/platform/me
 import { DEFAULT_CURRENCY } from '../utils/domain/currency';
 import { normalizeUserRecord } from '../utils/domain/user';
 import { clearAndroidBudgetWidget } from '../utils/platform/androidBudgetWidget';
+import { clearAndroidUpcomingPaymentsWidget } from '../utils/platform/androidUpcomingPaymentsWidget';
 
 const STORAGE_ID = 'auth-storage';
 const storage = createSecureStorage(STORAGE_ID);
@@ -277,6 +278,7 @@ export const useAuthStore = create<AuthState>(set => ({
 
   logout: () => {
     clearAndroidBudgetWidget();
+    clearAndroidUpcomingPaymentsWidget();
     storage.remove(AUTH_USER_KEY);
     storage.remove(ACCESS_TOKEN_KEY);
     storage.remove(REFRESH_TOKEN_KEY);
@@ -301,6 +303,7 @@ export const useAuthStore = create<AuthState>(set => ({
 
   clearAll: () => {
     clearAndroidBudgetWidget();
+    clearAndroidUpcomingPaymentsWidget();
     storage.getAllKeys().forEach(key => storage.remove(key));
     const guestUser = buildDefaultGuestUser();
 

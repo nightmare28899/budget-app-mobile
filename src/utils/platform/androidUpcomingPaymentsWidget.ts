@@ -32,6 +32,7 @@ type AndroidUpcomingPaymentsWidgetInput = {
 
 type UpcomingPaymentsWidgetNativeModule = {
     updateUpcomingSnapshot: (snapshot: AndroidUpcomingPaymentsWidgetSnapshot) => void;
+    clearSnapshot?: () => void;
 };
 
 const copy = {
@@ -183,5 +184,18 @@ export function syncAndroidUpcomingPaymentsWidget(
         getNativeModule()?.updateUpcomingSnapshot(snapshot);
     } catch {
         // Launcher data is best-effort and must never interrupt the app experience.
+    }
+}
+
+export function clearAndroidUpcomingPaymentsWidget(): void {
+    if (Platform.OS !== 'android') {
+        return;
+    }
+
+    try {
+        // The native clearSnapshot wipes both the budget and upcoming-payments widget stores.
+        getNativeModule()?.clearSnapshot?.();
+    } catch {
+        // Clearing launcher data is best-effort and must not block logout.
     }
 }
