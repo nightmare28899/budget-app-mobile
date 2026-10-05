@@ -50,7 +50,7 @@ export function CreditCardTile({
 }: CreditCardTileProps) {
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
-    const { t, language } = useI18n();
+    const { t, tPlural, language } = useI18n();
     const { scaleFont } = useResponsive();
     const locale = getCurrencyLocale(language);
     const [expanded, setExpanded] = useState(false);
@@ -308,8 +308,7 @@ export function CreditCardTile({
                         style={[styles.installmentsText, { fontSize: scaleFont(typography.fontSize.sm) }]}
                         numberOfLines={1}
                     >
-                        {t('cardInstallments.summaryLine', {
-                            count: installmentSummary.count,
+                        {tPlural('cardInstallments.summaryLine', installmentSummary.count, {
                             amount: formatCurrency(installmentTotal.monthly, installmentTotal.currency, locale),
                         })}
                     </Text>

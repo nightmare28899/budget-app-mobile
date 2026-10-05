@@ -1467,7 +1467,8 @@ const en = {
   'financingPlan.purchaseDateLabel': 'Purchase date',
   // card installment plans
   'cardInstallments.title': 'Installment purchases',
-  'cardInstallments.summaryLine': '{count} installment purchases · {amount}/mo',
+  'cardInstallments.summaryLine.one': '{count} installment purchase · {amount}/mo',
+  'cardInstallments.summaryLine.other': '{count} installment purchases · {amount}/mo',
   'cardInstallments.refinanced': 'Refinanced',
   'cardInstallments.unknownMerchant': 'Purchase',
   'cardInstallments.final': 'Last',
@@ -2969,7 +2970,8 @@ const es: Record<TranslationKeyInternal, string> = {
   'financingPlan.purchaseDateLabel': 'Fecha de compra',
   // card installment plans
   'cardInstallments.title': 'Compras a meses',
-  'cardInstallments.summaryLine': '{count} compras a meses · {amount}/mes',
+  'cardInstallments.summaryLine.one': '{count} compra a meses · {amount}/mes',
+  'cardInstallments.summaryLine.other': '{count} compras a meses · {amount}/mes',
   'cardInstallments.refinanced': 'Refinanciado',
   'cardInstallments.unknownMerchant': 'Compra',
   'cardInstallments.final': 'Última',
