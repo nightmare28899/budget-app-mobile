@@ -19,6 +19,8 @@ import {
     syncAndroidUpcomingPaymentsWidget,
 } from '../../utils/platform/androidUpcomingPaymentsWidget';
 
+import { usePaymentDueLiveUpdates } from './usePaymentDueLiveUpdates';
+
 const UPCOMING_WIDGET_DAYS = 7;
 
 type NavigationLike = {
@@ -43,6 +45,7 @@ export function useDashboardScreen({
     const { alert } = useAppAlert();
     const { t, language } = useI18n();
     const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+    usePaymentDueLiveUpdates();
 
     const viewModel = useHomeScreenViewModel({
         upcomingDays,

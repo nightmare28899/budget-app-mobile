@@ -3,6 +3,12 @@ import { statementImportsApi } from '../../api/resources/statementImports';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
 import { useI18n } from '../shared/useI18n';
 import { classifyStatementUploadError } from '../../modules/statements/statementFile';
+import {
+    endStatementImport,
+    stageForImportStatus,
+    startStatementImport,
+    updateStatementImport,
+} from '../../utils/platform/androidLiveUpdates';
 
 export function useStatementRetry() {
     const queryClient = useQueryClient();
@@ -10,7 +16,18 @@ export function useStatementRetry() {
     const { t } = useI18n();
 
     const mutation = useMutation({
-        mutationFn: (id: string) => statementImportsApi.process(id),
+        mutationFn: async (id: string) => {
+            await startStatementImport(id, t('statements.title')).catch(() => undefined);
+            updateStatementImport(id, 'parsing', undefined, id);
+            try {
+                const result = await statementImportsApi.process(id);
+                updateStatementImport(id, stageForImportStatus(result.status), 1, id);
+                return result;
+            } catch (error) {
+                endStatementImport(id);
+                throw error;
+            }
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['statementImports'] });
             queryClient.invalidateQueries({ queryKey: ['creditCards'] });

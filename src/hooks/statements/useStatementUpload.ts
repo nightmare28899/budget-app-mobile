@@ -9,6 +9,12 @@ import {
     classifyStatementUploadError,
     validateStatementFile,
 } from '../../modules/statements/statementFile';
+import {
+    endStatementImport,
+    stageForImportStatus,
+    startStatementImport,
+    updateStatementImport,
+} from '../../utils/platform/androidLiveUpdates';
 import type {
     StatementImportCreateResponse,
     StatementUploadFile,
@@ -40,11 +46,23 @@ export function useStatementUpload() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const mutation = useMutation({
-        mutationFn: ({ picked, creditCardId }: { picked: PickedStatementFile; creditCardId: string }) =>
+        mutationFn: ({
+            picked,
+            creditCardId,
+            importId,
+        }: {
+            picked: PickedStatementFile;
+            creditCardId: string;
+            importId: string;
+        }) =>
             statementImportsApi.upload(
                 { uri: picked.uri, name: picked.name, type: 'application/pdf' },
                 creditCardId,
-                setProgress,
+                fraction => {
+                    setProgress(fraction);
+                    // Parsing runs server-side inside the same request, after the bytes are sent.
+                    updateStatementImport(importId, fraction >= 1 ? 'parsing' : 'uploading', fraction);
+                },
             ),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['statementImports'] });
@@ -100,9 +118,14 @@ export function useStatementUpload() {
 
             setErrorMessage(null);
             setProgress(0);
+            const importId = `upload-${Date.now()}`;
+            await startStatementImport(importId, file.name).catch(() => undefined);
             try {
-                return await mutation.mutateAsync({ picked: file, creditCardId });
+                const result = await mutation.mutateAsync({ picked: file, creditCardId, importId });
+                updateStatementImport(importId, stageForImportStatus(result.status), 1, result.id);
+                return result;
             } catch (error) {
+                endStatementImport(importId);
                 const failure = classifyStatementUploadError(error);
                 // The axios interceptor already opens the paywall for premium errors.
                 if (failure.kind !== 'premium') {
