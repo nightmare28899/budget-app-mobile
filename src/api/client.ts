@@ -56,7 +56,11 @@ function isFormDataPayload(value: unknown): value is FormData {
     return typeof FormData !== 'undefined' && value instanceof FormData;
 }
 
-function removeContentTypeHeader(
+// React Native's native networking only builds a multipart body when the request
+// Content-Type is multipart/*; OkHttp then appends the boundary itself. Removing
+// the header is not enough: axios falls back to application/x-www-form-urlencoded
+// for POST/PUT/PATCH without a Content-Type, and the upload fails before sending.
+function setMultipartContentType(
     headers: InternalAxiosRequestConfig['headers'],
 ): void {
     if (!headers) {
@@ -64,13 +68,11 @@ function removeContentTypeHeader(
     }
 
     if (typeof headers.delete === 'function') {
-        headers.delete('Content-Type');
         headers.delete('content-type');
-        return;
+    } else {
+        delete headers['content-type'];
     }
-
-    delete headers['Content-Type'];
-    delete headers['content-type'];
+    headers['Content-Type'] = 'multipart/form-data';
 }
 
 function isRefreshRejection(error: unknown): boolean {
@@ -152,8 +154,7 @@ function shouldOpenPaywall(config?: InternalAxiosRequestConfig | null): boolean 
 apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         if (isFormDataPayload(config.data)) {
-            // Let React Native/Axios generate the multipart boundary correctly.
-            removeContentTypeHeader(config.headers);
+            setMultipartContentType(config.headers);
         }
 
         if (!__DEV__) {

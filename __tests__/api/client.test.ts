@@ -225,3 +225,17 @@ describe('premium 403 handling', () => {
         expect(openPremiumPaywall).not.toHaveBeenCalled();
     });
 });
+
+describe('multipart uploads', () => {
+    it('sends FormData with a multipart/form-data content type, not urlencoded', async () => {
+        handler = async () => ({ ok: true });
+        const formData = new FormData();
+        formData.append('creditCardId', 'card-1');
+
+        await apiClient.post('/statement-imports', formData);
+
+        const sent = adapterCalls[adapterCalls.length - 1];
+        const contentType = String(sent.headers['Content-Type'] ?? sent.headers['content-type']);
+        expect(contentType).toBe('multipart/form-data');
+    });
+});
