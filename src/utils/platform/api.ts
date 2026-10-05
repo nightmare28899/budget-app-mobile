@@ -175,6 +175,7 @@ function normalizePremiumFeature(value: unknown): PremiumFeature | null {
     if (
         normalized === 'installments'
         || normalized === 'installment'
+        || normalized === 'installment_expenses'
         || normalized === 'multiple_payments'
         || normalized === 'multi_payment'
         || normalized === 'months_based_expense'
