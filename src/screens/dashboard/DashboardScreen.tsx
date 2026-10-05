@@ -37,6 +37,7 @@ import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
 import { formatCreditCardLabel } from '../../utils/domain/creditCards';
+import { buildFinancingPlanLabel } from '../../utils/domain/financingPlan';
 import { getInstallmentProgress, isInstallmentExpense } from '../../utils/domain/installments';
 import { withAlpha } from '../../utils/domain/subscriptions';
 
@@ -657,6 +658,9 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                             count: installmentProgress.installmentCount,
                         })
                         : null;
+                    const financingLabel = item.type === 'expense' && !isInstallmentRecord
+                        ? buildFinancingPlanLabel(item.expense?.financingPlan, t)
+                        : null;
 
                     return (
                         <TouchableOpacity
@@ -721,6 +725,7 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                                                 ? t('history.installmentExpense')
                                                 : t('history.manualExpense'),
                                         installmentLabel,
+                                        financingLabel,
                                         formatDate(item.date, 'MMM D, YYYY'),
                                         creditCardLabel,
                                     ]

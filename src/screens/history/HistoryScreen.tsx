@@ -41,6 +41,7 @@ import { HistoryRecord, useHistory } from '../../hooks/history/useHistory';
 import { HomeBackground } from '../../components/ui/layout/HomeBackground';
 import { useBottomDockScrollVisibility } from '../../navigation/bottomDockVisibility';
 import { getMainTabListBottomPadding } from '../../navigation/mainTabLayout';
+import { buildFinancingPlanLabel } from '../../utils/domain/financingPlan';
 import { getInstallmentProgress, isInstallmentExpense } from '../../utils/domain/installments';
 
 const HEX_COLOR_PATTERN = /^#(?:[0-9A-F]{3}){1,2}$/i;
@@ -178,6 +179,9 @@ export function HistoryScreen({
                     count: installmentProgress.installmentCount,
                 })
                 : null;
+            const financingLabel = isExpense && !isInstallmentExpense(record.expense)
+                ? buildFinancingPlanLabel(record.expense.financingPlan, t)
+                : null;
             const paymentMethodOption = getPaymentMethodOption(paymentMethod);
             const paymentMethodIcon = paymentMethodOption?.icon ?? PAYMENT_METHOD_FALLBACK_ICON;
 
@@ -241,7 +245,7 @@ export function HistoryScreen({
                                 ]}
                                 numberOfLines={1}
                             >
-                                {[formatTime(sourceDate), typeLabel, installmentLabel, creditCardLabel]
+                                {[formatTime(sourceDate), typeLabel, installmentLabel, financingLabel, creditCardLabel]
                                     .filter(Boolean)
                                     .join(' • ')}
                             </Text>
