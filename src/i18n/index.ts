@@ -1282,6 +1282,13 @@ const en = {
   'statements.error.uploadFailed': 'Could not upload the statement. Try again.',
   'statements.error.pickFailed': 'Could not open the file picker.',
   'statements.error.retryFailed': 'Could not retry processing. Try again later.',
+  // session premium
+  'premium.featureGeneric': 'Premium',
+  'premium.genericTitle': 'Premium feature',
+  'premium.genericDescription':
+    'This feature is part of the premium plan. Upgrade to unlock it.',
+  'premium.genericEnabledDescription':
+    'Premium is active on your account. This feature is available to you.',
 } as const;
 
 type TranslationKeyInternal = keyof typeof en;
@@ -2591,6 +2598,13 @@ const es: Record<TranslationKeyInternal, string> = {
   'statements.error.pickFailed': 'No se pudo abrir el selector de archivos.',
   'statements.error.retryFailed':
     'No se pudo reintentar el procesamiento. Inténtalo más tarde.',
+  // session premium
+  'premium.featureGeneric': 'Premium',
+  'premium.genericTitle': 'Función premium',
+  'premium.genericDescription':
+    'Esta función es parte del plan premium. Mejora tu plan para desbloquearla.',
+  'premium.genericEnabledDescription':
+    'Premium está activo en tu cuenta. Esta función está disponible para ti.',
 };
 
 const translations = { en, es } as const;

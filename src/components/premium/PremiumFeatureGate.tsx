@@ -84,6 +84,19 @@ export function PremiumFeatureGate({
             };
         }
 
+        if (feature === 'generic') {
+            return {
+                icon: 'diamond-outline',
+                title: t('premium.genericTitle'),
+                description: hasPremium
+                    ? t('premium.genericEnabledDescription')
+                    : t('premium.genericDescription'),
+                bullets: [] as string[],
+                bulletIcons: [] as string[],
+                actionTitle: null,
+            };
+        }
+
         return {
             icon: 'albums-outline',
             title: t('premium.installmentsTitle'),

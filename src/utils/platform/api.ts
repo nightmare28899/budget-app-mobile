@@ -194,15 +194,11 @@ function normalizePremiumFeature(value: unknown): PremiumFeature | null {
         return 'statement_imports';
     }
 
-    if (normalized.includes('card')) {
+    if (normalized.includes('credit_card') || normalized.includes('credit-card')) {
         return 'credit_cards';
     }
 
-    if (
-        normalized.includes('installment')
-        || normalized.includes('month')
-        || normalized.includes('payment')
-    ) {
+    if (normalized.includes('installment')) {
         return 'installments';
     }
 
@@ -228,7 +224,7 @@ export function extractPremiumRequiredError(
         return null;
     }
 
-    const feature = normalizePremiumFeature(data.feature) ?? 'credit_cards';
+    const feature = normalizePremiumFeature(data.feature) ?? 'generic';
 
     return {
         code: 'PREMIUM_REQUIRED',
