@@ -197,7 +197,7 @@ describe('premium 403 handling', () => {
     it.each([
         ['credit_cards_catalog', 'credit_cards'],
         ['installment_expenses', 'installments'],
-        ['statement_imports', 'generic'],
+        ['statement_imports', 'statement_imports'],
         [undefined, 'generic'],
     ])('maps feature %s to %s', async (feature, expected) => {
         handler = premium403(feature);
