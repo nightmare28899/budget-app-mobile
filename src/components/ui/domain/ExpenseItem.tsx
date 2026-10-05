@@ -26,6 +26,7 @@ import {
     SemanticColors,
 } from '../../../theme/index';
 import { Expense } from '../../../types/index';
+import { FinancingPlanBadge } from './FinancingPlanBadge';
 import { useI18n } from '../../../hooks/shared/useI18n';
 import { SwipeableRef } from '../../../types/swipeable';
 import {
@@ -284,6 +285,12 @@ export function ExpenseItem({
                 >
                     {expenseMeta}
                 </Text>
+                {!isInstallmentRecord && expense.financingPlan ? (
+                    <FinancingPlanBadge
+                        plan={expense.financingPlan}
+                        currency={expense.currency}
+                    />
+                ) : null}
             </View>
             <View
                 style={[

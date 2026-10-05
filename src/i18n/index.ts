@@ -1449,6 +1449,22 @@ const en = {
   'creditCards.deletePermanentDone': 'Card deleted. {expenses} expenses and {subscriptions} subscriptions were unlinked.',
   'creditCards.deletePermanentHasStatements': 'This card has {count} imported statements. Delete them first.',
   'creditCards.deletePermanentFailed': 'Could not delete the card.',
+  // installment plans
+  'financingPlan.noInterest': 'MSI',
+  'financingPlan.interestBearing': 'With interest',
+  'financingPlan.interestBearingShort': 'Installments',
+  'financingPlan.withPosition': '{label} · {current}/{count}',
+  'financingPlan.perMonth': '{amount}/mo',
+  'financingPlan.sectionTitle': 'Installment purchase',
+  'financingPlan.typeLabel': 'Type',
+  'financingPlan.typeNoInterest': 'Interest-free installments (MSI)',
+  'financingPlan.typeInterestBearing': 'Installments with interest',
+  'financingPlan.progressLabel': 'Installment',
+  'financingPlan.progressValue': '{current} of {count}',
+  'financingPlan.monthlyAmountLabel': 'Monthly amount',
+  'financingPlan.originalAmountLabel': 'Original amount',
+  'financingPlan.remainingAmountLabel': 'Remaining',
+  'financingPlan.purchaseDateLabel': 'Purchase date',
 } as const;
 
 type TranslationKeyInternal = keyof typeof en;
@@ -2925,6 +2941,22 @@ const es: Record<TranslationKeyInternal, string> = {
   'creditCards.deletePermanentDone': 'Tarjeta eliminada. Se desvincularon {expenses} gastos y {subscriptions} suscripciones.',
   'creditCards.deletePermanentHasStatements': 'Esta tarjeta tiene {count} estados de cuenta importados. Elimínalos primero.',
   'creditCards.deletePermanentFailed': 'No se pudo eliminar la tarjeta.',
+  // installment plans
+  'financingPlan.noInterest': 'MSI',
+  'financingPlan.interestBearing': 'Con intereses',
+  'financingPlan.interestBearingShort': 'A meses',
+  'financingPlan.withPosition': '{label} · {current}/{count}',
+  'financingPlan.perMonth': '{amount}/mes',
+  'financingPlan.sectionTitle': 'Compra a meses',
+  'financingPlan.typeLabel': 'Tipo',
+  'financingPlan.typeNoInterest': 'Meses sin intereses (MSI)',
+  'financingPlan.typeInterestBearing': 'Meses con intereses',
+  'financingPlan.progressLabel': 'Mensualidad',
+  'financingPlan.progressValue': '{current} de {count}',
+  'financingPlan.monthlyAmountLabel': 'Monto mensual',
+  'financingPlan.originalAmountLabel': 'Monto original',
+  'financingPlan.remainingAmountLabel': 'Restante',
+  'financingPlan.purchaseDateLabel': 'Fecha de compra',
 };
 
 const translations = { en, es } as const;

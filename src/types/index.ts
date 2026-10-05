@@ -83,6 +83,18 @@ export interface CategoryBudgetOverview {
   items: CategoryBudgetStatus[];
 }
 
+export type FinancingPlanType = 'NO_INTEREST' | 'INTEREST_BEARING';
+
+export interface FinancingPlan {
+  type: FinancingPlanType;
+  installmentNumber: number | null;
+  installmentCount: number | null;
+  installmentAmount: number | null;
+  originalAmount: number | null;
+  remainingAmount: number | null;
+  purchaseDate: string | null;
+}
+
 export interface Expense {
   id: string;
   title: string;
@@ -99,6 +111,7 @@ export interface Expense {
   installmentFrequency?: InstallmentFrequency | null;
   installmentPurchaseDate?: string | null;
   installmentFirstPaymentDate?: string | null;
+  financingPlan?: FinancingPlan | null;
   isSubscription?: boolean;
   imageUrl?: string;
   imagePresignedUrl?: string;

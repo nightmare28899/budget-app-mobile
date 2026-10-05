@@ -21,6 +21,7 @@ import {
     normalizeInstallmentFrequency,
     splitAmountAcrossInstallments,
 } from '../../utils/domain/installments';
+import { normalizeFinancingPlan } from '../../utils/domain/financingPlan';
 import { parseDateOnly, toDateOnlyNoonUtcIso } from '../../utils/core/dateOnly';
 import { dateOnly } from '../../utils/core/filters';
 import { isLocalMode } from '../../modules/access/localMode';
@@ -95,6 +96,7 @@ export function normalizeExpense(expense: any): Expense {
             typeof expense?.installmentFirstPaymentDate === 'string'
                 ? expense.installmentFirstPaymentDate
                 : null,
+        financingPlan: normalizeFinancingPlan(expense?.financingPlan),
         paymentMethod: normalizePaymentMethod(expense?.paymentMethod),
         creditCardId:
             typeof expense?.creditCardId === 'string' ? expense.creditCardId : null,

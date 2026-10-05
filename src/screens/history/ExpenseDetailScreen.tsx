@@ -31,6 +31,8 @@ import {
     getPaymentMethodOption,
     PAYMENT_METHOD_FALLBACK_ICON,
 } from '../../utils/domain/paymentMethod';
+import { FinancingPlanBadge } from '../../components/ui/domain/FinancingPlanBadge';
+import { parseDateOnly } from '../../utils/core/dateOnly';
 import { getInstallmentProgress, isInstallmentExpense } from '../../utils/domain/installments';
 
 export function ExpenseDetailScreen({
@@ -72,6 +74,33 @@ export function ExpenseDetailScreen({
     const paymentMethodIcon = paymentMethodOption?.icon ?? PAYMENT_METHOD_FALLBACK_ICON;
     const installmentProgress = getInstallmentProgress(expense);
     const isInstallment = isInstallmentExpense(expense);
+    const financingPlan = expense?.financingPlan ?? null;
+    const formatPlanDate = (value: string | null) => {
+        const parsed = value ? parseDateOnly(value) : null;
+        return parsed ? formatDate(parsed, 'dddd, MMMM D, YYYY') : null;
+    };
+    const planMoney = (v: number | null) => (v != null ? formatCurrency(v, expense?.currency, locale) : null);
+    const planRows: Array<[string, string | null]> = financingPlan ? [
+        [
+            t('financingPlan.typeLabel'),
+            financingPlan.type === 'NO_INTEREST'
+                ? t('financingPlan.typeNoInterest')
+                : t('financingPlan.typeInterestBearing'),
+        ],
+        [
+            t('financingPlan.progressLabel'),
+            financingPlan.installmentNumber != null && financingPlan.installmentCount != null
+                ? t('financingPlan.progressValue', {
+                    current: financingPlan.installmentNumber,
+                    count: financingPlan.installmentCount,
+                })
+                : null,
+        ],
+        [t('financingPlan.monthlyAmountLabel'), planMoney(financingPlan.installmentAmount)],
+        [t('financingPlan.originalAmountLabel'), planMoney(financingPlan.originalAmount)],
+        [t('financingPlan.remainingAmountLabel'), planMoney(financingPlan.remainingAmount)],
+        [t('financingPlan.purchaseDateLabel'), formatPlanDate(financingPlan.purchaseDate)],
+    ] : [];
 
     if (isLoading || !expense) {
         return (
@@ -159,6 +188,9 @@ export function ExpenseDetailScreen({
                                 })}
                             </Text>
                         ) : null}
+                    {!isInstallment && financingPlan ? (
+                        <FinancingPlanBadge plan={financingPlan} currency={expense.currency} />
+                    ) : null}
                     {isInstallment ? (
                         <Text
                             style={[
@@ -228,6 +260,24 @@ export function ExpenseDetailScreen({
                             </View>
                         ) : null}
                     </View>
+
+                    {financingPlan ? (
+                        <View style={styles.planSection}>
+                            <Text style={[styles.planTitle, { fontSize: scaleFont(typography.fontSize.base) }]}>
+                                {t('financingPlan.sectionTitle')}
+                            </Text>
+                            {planRows.map(([label, value]) => (value ? (
+                                <View key={label} style={styles.planRow}>
+                                    <Text style={[styles.planLabel, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                        {label}
+                                    </Text>
+                                    <Text style={[styles.planValue, { fontSize: scaleFont(typography.fontSize.md) }]}>
+                                        {value}
+                                    </Text>
+                                </View>
+                            ) : null))}
+                        </View>
+                    ) : null}
 
                     {expense.note && (
                         <View style={styles.noteContainer}>
@@ -343,6 +393,32 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         fontWeight: typography.fontWeight.extrabold,
         color: colors.error,
         marginBottom: spacing.xl,
+    },
+    planSection: {
+        gap: spacing.xs,
+        marginBottom: spacing.base,
+        paddingTop: spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+    },
+    planTitle: {
+        fontWeight: typography.fontWeight.bold,
+        color: colors.textPrimary,
+        marginBottom: spacing.xs,
+    },
+    planRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: spacing.md,
+    },
+    planLabel: {
+        color: colors.textMuted,
+    },
+    planValue: {
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.medium,
+        flexShrink: 1,
+        textAlign: 'right',
     },
     metaContainer: {
         gap: spacing.sm,
