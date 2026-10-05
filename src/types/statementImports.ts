@@ -16,6 +16,28 @@ export type StatementPaymentTargetKind =
   | 'NO_INTEREST'
   | 'OTHER';
 
+export type StatementRowDecision = 'PENDING' | 'INCLUDE_EXPENSE' | 'EXCLUDE' | 'INFO_ONLY';
+
+export type StatementRowKind =
+  | 'CHARGE'
+  | 'PAYMENT'
+  | 'CREDIT'
+  | 'INTEREST'
+  | 'TAX'
+  | 'REFINANCED_PRINCIPAL'
+  | 'CFDI'
+  | 'UNKNOWN';
+
+export type StatementRowSection =
+  | 'RECONCILIATION'
+  | 'PAYMENT_TARGET'
+  | 'CURRENT_CHARGES'
+  | 'FINANCING_PLAN'
+  | 'CFDI'
+  | 'OTHER';
+
+export type StatementPaymentSource = 'MANUAL' | 'LEGACY_BACKFILL' | 'CORRECTION';
+
 export interface StatementPaymentSummary {
   currency: string | null;
   closingBalance: number | null;
@@ -24,6 +46,7 @@ export interface StatementPaymentSummary {
   isPaid: boolean;
   remainingStatement: number | null;
   noInterestTarget: number | null;
+  remainingNoInterest: number | null;
   currentPaymentDue: number | null;
   dueDate: string | null;
   overpaid: number;
@@ -67,7 +90,12 @@ export interface StatementImportCreateResponse {
 
 export interface StatementReconciliationSummary {
   currency: string;
+  openingBalance: number;
+  chargesTotal: number;
+  paymentsTotal: number;
+  creditsTotal: number;
   closingBalance: number;
+  difference: number;
   status: StatementReconciliationStatus;
   message: string | null;
 }
@@ -90,7 +118,115 @@ export interface StatementCardSummary {
   currency: string;
 }
 
-/** Read-only detail used by the Phase B summary screen (rows are only counted). */
+export interface StatementRowCategory {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+}
+
+export interface StatementRowLinkedCard {
+  id: string;
+  name: string;
+  bank: string;
+  last4: string;
+}
+
+export interface StatementMatchedExpense {
+  id: string;
+  title: string;
+  cost: number;
+  date: string | null;
+}
+
+export interface StatementRow {
+  id: string;
+  section: StatementRowSection;
+  position: number;
+  /** ISO instant as sent by the API; read the calendar day with parseDateOnly. */
+  transactionDate: string | null;
+  parsedTransactionDate: string | null;
+  description: string;
+  merchantName: string | null;
+  amount: number;
+  parsedAmount: number;
+  currency: string;
+  parsedCurrency: string;
+  kind: StatementRowKind;
+  parsedKind: StatementRowKind;
+  decision: StatementRowDecision;
+  categoryId: string | null;
+  category: StatementRowCategory | null;
+  linkedCreditCardId: string | null;
+  linkedCreditCard: StatementRowLinkedCard | null;
+  warningCodes: string[];
+  decisionNote: string | null;
+  isAdjusted: boolean;
+  matchedExpenseId: string | null;
+  matchedExpense: StatementMatchedExpense | null;
+}
+
+export interface StatementPayment {
+  id: string;
+  amount: number;
+  currency: string;
+  paidAt: string;
+  note: string | null;
+  source: StatementPaymentSource;
+  supersedesId: string | null;
+  voidedAt: string | null;
+  voidReason: string | null;
+  createdAt: string | null;
+}
+
+export interface StatementPaymentMutationResult {
+  paymentVersion: number;
+  summary: StatementPaymentSummary;
+  history: StatementPayment[];
+}
+
+export interface StatementConfirmResult {
+  statement: StatementImportDetail;
+  createdExpenseCount: number;
+  alreadyConfirmed: boolean;
+  sourceDeletionPending: boolean;
+}
+
+export interface StatementRevertResult {
+  statement: StatementImportDetail;
+  deletedExpenseCount: number;
+  alreadyReverted: boolean;
+}
+
+/** Fields accepted by PATCH /statement-imports/:id/rows (whitelisted, never add others). */
+export interface StatementRowPatch {
+  id: string;
+  decision?: StatementRowDecision;
+  transactionDate?: string;
+  description?: string;
+  merchantName?: string | null;
+  amount?: number;
+  categoryId?: string | null;
+  linkedCreditCardId?: string | null;
+  decisionNote?: string | null;
+}
+
+export interface StatementPaymentWritePayload {
+  amount: number;
+  currency: string;
+  paidAt: string;
+  note?: string;
+  expectedVersion: number;
+  idempotencyKey: string;
+}
+
+export type StatementCorrectPaymentPayload = StatementPaymentWritePayload & { reason: string };
+
+export interface StatementVoidPaymentPayload {
+  expectedVersion: number;
+  reason: string;
+}
+
 export interface StatementImportDetail extends StatementImportListItem {
   sourceMimeType: string | null;
   sourceSizeBytes: number | null;
@@ -102,6 +238,9 @@ export interface StatementImportDetail extends StatementImportListItem {
   rowCount: number;
   adjustmentCount: number;
   warningCodes: string[];
+  paymentVersion: number;
+  rows: StatementRow[];
+  paymentHistory: StatementPayment[];
 }
 
 export interface StatementImportsQuery {

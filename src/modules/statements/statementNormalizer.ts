@@ -5,7 +5,17 @@ import type {
     StatementImportDetail,
     StatementImportListItem,
     StatementImportListResponse,
+    StatementConfirmResult,
+    StatementMatchedExpense,
+    StatementPayment,
+    StatementPaymentMutationResult,
+    StatementPaymentSource,
     StatementPaymentSummary,
+    StatementRevertResult,
+    StatementRow,
+    StatementRowDecision,
+    StatementRowKind,
+    StatementRowSection,
     StatementPaymentTargetKind,
     StatementPaymentTargetSummary,
     StatementReconciliationStatus,
@@ -42,6 +52,7 @@ function normalizePaymentSummary(value: unknown): StatementPaymentSummary {
         isPaid: summary.isPaid === true,
         remainingStatement: toNullableNumber(summary.remainingStatement),
         noInterestTarget: toNullableNumber(summary.noInterestTarget),
+        remainingNoInterest: toNullableNumber(summary.remainingNoInterest),
         currentPaymentDue: toNullableNumber(summary.currentPaymentDue),
         dueDate: toNullableString(summary.dueDate),
         overpaid: toNum(summary.overpaid),
@@ -109,7 +120,12 @@ function normalizeReconciliation(value: unknown): StatementReconciliationSummary
     const data = toApiRecord(value);
     return {
         currency: String(data.currency ?? ''),
+        openingBalance: toNum(data.openingBalance),
+        chargesTotal: toNum(data.chargesTotal),
+        paymentsTotal: toNum(data.paymentsTotal),
+        creditsTotal: toNum(data.creditsTotal),
         closingBalance: toNum(data.closingBalance),
+        difference: toNum(data.difference),
         status: toReconciliationStatus(data.status),
         message: toNullableString(data.message),
     };
@@ -150,15 +166,158 @@ function normalizeCard(value: unknown): StatementCardSummary | null {
     };
 }
 
+const ROW_DECISIONS: readonly StatementRowDecision[] = [
+    'PENDING',
+    'INCLUDE_EXPENSE',
+    'EXCLUDE',
+    'INFO_ONLY',
+];
+const ROW_KINDS: readonly StatementRowKind[] = [
+    'CHARGE',
+    'PAYMENT',
+    'CREDIT',
+    'INTEREST',
+    'TAX',
+    'REFINANCED_PRINCIPAL',
+    'CFDI',
+    'UNKNOWN',
+];
+const ROW_SECTIONS: readonly StatementRowSection[] = [
+    'RECONCILIATION',
+    'PAYMENT_TARGET',
+    'CURRENT_CHARGES',
+    'FINANCING_PLAN',
+    'CFDI',
+    'OTHER',
+];
+
+function pickEnum<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
+    return typeof value === 'string' && (allowed as readonly string[]).includes(value)
+        ? (value as T)
+        : fallback;
+}
+
+function normalizeMatchedExpense(value: unknown): StatementMatchedExpense | null {
+    if (value == null || typeof value !== 'object') {
+        return null;
+    }
+    const data = toApiRecord(value);
+    return {
+        id: String(data.id ?? ''),
+        title: String(data.title ?? ''),
+        cost: toNum(data.cost),
+        date: toNullableString(data.date),
+    };
+}
+
+export function normalizeStatementRow(value: unknown): StatementRow {
+    const row = toApiRecord(value);
+    const category = row.category && typeof row.category === 'object' ? toApiRecord(row.category) : null;
+    const card =
+        row.linkedCreditCard && typeof row.linkedCreditCard === 'object'
+            ? toApiRecord(row.linkedCreditCard)
+            : null;
+    const kind = pickEnum(row.kind, ROW_KINDS, 'UNKNOWN');
+    const currency = typeof row.currency === 'string' && row.currency ? row.currency : 'MXN';
+
+    return {
+        id: String(row.id ?? ''),
+        section: pickEnum(row.section, ROW_SECTIONS, 'OTHER'),
+        position: toNum(row.position),
+        transactionDate: toNullableString(row.transactionDate),
+        parsedTransactionDate: toNullableString(row.parsedTransactionDate),
+        description: String(row.description ?? ''),
+        merchantName: toNullableString(row.merchantName),
+        amount: toNum(row.amount),
+        parsedAmount: row.parsedAmount == null ? toNum(row.amount) : toNum(row.parsedAmount),
+        currency,
+        parsedCurrency: toNullableString(row.parsedCurrency) ?? currency,
+        kind,
+        parsedKind: pickEnum(row.parsedKind, ROW_KINDS, kind),
+        decision: pickEnum(row.decision, ROW_DECISIONS, 'PENDING'),
+        categoryId: toNullableString(row.categoryId),
+        category: category
+            ? {
+                id: String(category.id ?? ''),
+                name: String(category.name ?? ''),
+                icon: toNullableString(category.icon),
+                color: toNullableString(category.color),
+            }
+            : null,
+        linkedCreditCardId: toNullableString(row.linkedCreditCardId),
+        linkedCreditCard: card
+            ? {
+                id: String(card.id ?? ''),
+                name: String(card.name ?? ''),
+                bank: String(card.bank ?? ''),
+                last4: String(card.last4 ?? ''),
+            }
+            : null,
+        warningCodes: toApiArray(row.warningCodes).filter(
+            (code): code is string => typeof code === 'string' && code.length > 0,
+        ),
+        decisionNote: toNullableString(row.decisionNote),
+        isAdjusted: row.isAdjusted === true,
+        matchedExpenseId: toNullableString(row.matchedExpenseId),
+        matchedExpense: normalizeMatchedExpense(row.matchedExpense),
+    };
+}
+
+export function normalizeStatementPayment(value: unknown): StatementPayment {
+    const data = toApiRecord(value);
+    return {
+        id: String(data.id ?? ''),
+        amount: toNum(data.amount),
+        currency: String(data.currency ?? ''),
+        paidAt: String(data.paidAt ?? ''),
+        note: toNullableString(data.note),
+        source: pickEnum<StatementPaymentSource>(
+            data.source,
+            ['MANUAL', 'LEGACY_BACKFILL', 'CORRECTION'],
+            'MANUAL',
+        ),
+        supersedesId: toNullableString(data.supersedesId),
+        voidedAt: toNullableString(data.voidedAt),
+        voidReason: toNullableString(data.voidReason),
+        createdAt: toNullableString(data.createdAt),
+    };
+}
+
+export function normalizeStatementPaymentMutation(value: unknown): StatementPaymentMutationResult {
+    const data = toApiRecord(value);
+    return {
+        paymentVersion: toNum(data.paymentVersion),
+        summary: normalizePaymentSummary(data.summary),
+        history: toApiArray(data.history).map(normalizeStatementPayment),
+    };
+}
+
+export function normalizeStatementConfirm(value: unknown): StatementConfirmResult {
+    const data = toApiRecord(value);
+    return {
+        statement: normalizeStatementDetail(data.import),
+        createdExpenseCount: toNum(data.createdExpenseCount),
+        alreadyConfirmed: data.alreadyConfirmed === true,
+        sourceDeletionPending: data.sourceDeletionPending === true,
+    };
+}
+
+export function normalizeStatementRevert(value: unknown): StatementRevertResult {
+    const data = toApiRecord(value);
+    return {
+        statement: normalizeStatementDetail(data.import),
+        deletedExpenseCount: toNum(data.deletedExpenseCount),
+        alreadyReverted: data.alreadyReverted === true,
+    };
+}
+
 export function normalizeStatementDetail(value: unknown): StatementImportDetail {
     const data = toApiRecord(value);
-    const rows = toApiArray(data.rows);
+    const rows = toApiArray(data.rows).map(normalizeStatementRow);
     const warningCodes = new Set<string>();
     for (const row of rows) {
-        for (const code of toApiArray(toApiRecord(row).warningCodes)) {
-            if (typeof code === 'string' && code) {
-                warningCodes.add(code);
-            }
+        for (const code of row.warningCodes) {
+            warningCodes.add(code);
         }
     }
 
@@ -179,5 +338,8 @@ export function normalizeStatementDetail(value: unknown): StatementImportDetail 
         rowCount: rows.length,
         adjustmentCount: toNum(data.adjustmentCount),
         warningCodes: Array.from(warningCodes),
+        paymentVersion: toNum(data.paymentVersion),
+        rows,
+        paymentHistory: toApiArray(data.paymentHistory).map(normalizeStatementPayment),
     };
 }

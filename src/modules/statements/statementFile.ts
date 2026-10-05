@@ -34,6 +34,7 @@ export function validateStatementFile(file: StatementFileCandidate): StatementFi
 
 export type StatementUploadErrorKind =
     | 'duplicate'
+    | 'cycleConflict'
     | 'tooLarge'
     | 'invalid'
     | 'throttled'
@@ -64,6 +65,9 @@ export function classifyStatementUploadError(error: unknown): StatementUploadErr
     }
 
     const message = extractApiMessage(response.data);
+    if (isApiRecord(response.data) && response.data.code === 'STATEMENT_CYCLE_CONFLICT') {
+        return { kind: 'cycleConflict', message };
+    }
     switch (response.status) {
         case 409:
             return { kind: 'duplicate', message };

@@ -1,5 +1,12 @@
 import apiClient from '../client';
 import {
+    StatementConfirmResult,
+    StatementCorrectPaymentPayload,
+    StatementPaymentMutationResult,
+    StatementPaymentWritePayload,
+    StatementRevertResult,
+    StatementRowPatch,
+    StatementVoidPaymentPayload,
     StatementImportCreateResponse,
     StatementImportDetail,
     StatementImportListResponse,
@@ -7,6 +14,9 @@ import {
     StatementUploadFile,
 } from '../../types/statementImports';
 import {
+    normalizeStatementConfirm,
+    normalizeStatementPaymentMutation,
+    normalizeStatementRevert,
     normalizeStatementCreateResponse,
     normalizeStatementDetail,
     normalizeStatementListResponse,
@@ -58,5 +68,61 @@ export const statementImportsApi = {
     process: async (id: string): Promise<StatementImportDetail> => {
         const { data } = await apiClient.post(`/statement-imports/${id}/process`);
         return normalizeStatementDetail(data);
+    },
+
+    /** Saves reviewed rows; `version` must be the import's current version. */
+    updateRows: async (
+        id: string,
+        version: number,
+        rows: StatementRowPatch[],
+    ): Promise<StatementImportDetail> => {
+        const { data } = await apiClient.patch(`/statement-imports/${id}/rows`, { version, rows });
+        return normalizeStatementDetail(data);
+    },
+
+    confirm: async (id: string, version: number): Promise<StatementConfirmResult> => {
+        const { data } = await apiClient.post(`/statement-imports/${id}/confirm`, { version });
+        return normalizeStatementConfirm(data);
+    },
+
+    revert: async (id: string, version: number): Promise<StatementRevertResult> => {
+        const { data } = await apiClient.post(`/statement-imports/${id}/revert`, { version });
+        return normalizeStatementRevert(data);
+    },
+
+    resume: async (id: string, version: number): Promise<StatementImportDetail> => {
+        const { data } = await apiClient.post(`/statement-imports/${id}/resume`, { version });
+        return normalizeStatementDetail(data);
+    },
+
+    remove: async (id: string): Promise<void> => {
+        await apiClient.delete(`/statement-imports/${id}`);
+    },
+
+    createPayment: async (
+        id: string,
+        payload: StatementPaymentWritePayload,
+    ): Promise<StatementPaymentMutationResult> => {
+        const { data } = await apiClient.post(`/statement-imports/${id}/payments`, payload);
+        return normalizeStatementPaymentMutation(data);
+    },
+
+    correctPayment: async (
+        paymentId: string,
+        payload: StatementCorrectPaymentPayload,
+    ): Promise<StatementPaymentMutationResult> => {
+        const { data } = await apiClient.post(
+            `/statement-payments/${paymentId}/corrections`,
+            payload,
+        );
+        return normalizeStatementPaymentMutation(data);
+    },
+
+    voidPayment: async (
+        paymentId: string,
+        payload: StatementVoidPaymentPayload,
+    ): Promise<StatementPaymentMutationResult> => {
+        const { data } = await apiClient.post(`/statement-payments/${paymentId}/void`, payload);
+        return normalizeStatementPaymentMutation(data);
     },
 };
