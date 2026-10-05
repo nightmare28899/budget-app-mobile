@@ -24,6 +24,7 @@ export type PickedStatementFile = StatementUploadFile & { size: number | null };
 
 const ERROR_KEYS: Record<Exclude<StatementUploadErrorKind, 'premium'>, TranslationKey> = {
     duplicate: 'statements.error.duplicate',
+    cycleConflict: 'statements.error.cycleConflict',
     tooLarge: 'statements.tooLarge',
     invalid: 'statements.error.invalid',
     throttled: 'statements.error.throttled',
