@@ -1441,6 +1441,14 @@ const en = {
   'statements.payments.state.active': 'Active',
   'statements.payments.state.corrected': 'Corrected',
   'statements.payments.state.voided': 'Voided',
+  // credit card delete
+  'creditCards.deletePermanent': 'Delete permanently',
+  'creditCards.deletePermanentTitle': 'Delete this card permanently?',
+  'creditCards.deletePermanentMessage': 'The card will be removed for good. Linked expenses and subscriptions are kept but unlinked from this card. This cannot be undone.',
+  'creditCards.deletePermanentDoneTitle': 'Card deleted',
+  'creditCards.deletePermanentDone': 'Card deleted. {expenses} expenses and {subscriptions} subscriptions were unlinked.',
+  'creditCards.deletePermanentHasStatements': 'This card has {count} imported statements. Delete them first.',
+  'creditCards.deletePermanentFailed': 'Could not delete the card.',
 } as const;
 
 type TranslationKeyInternal = keyof typeof en;
@@ -2909,6 +2917,14 @@ const es: Record<TranslationKeyInternal, string> = {
   'statements.payments.state.active': 'Activo',
   'statements.payments.state.corrected': 'Corregido',
   'statements.payments.state.voided': 'Anulado',
+  // credit card delete
+  'creditCards.deletePermanent': 'Eliminar permanentemente',
+  'creditCards.deletePermanentTitle': '¿Eliminar esta tarjeta permanentemente?',
+  'creditCards.deletePermanentMessage': 'La tarjeta se eliminará por completo. Los gastos y suscripciones vinculados se conservan pero se desvinculan de esta tarjeta. Esta acción no se puede deshacer.',
+  'creditCards.deletePermanentDoneTitle': 'Tarjeta eliminada',
+  'creditCards.deletePermanentDone': 'Tarjeta eliminada. Se desvincularon {expenses} gastos y {subscriptions} suscripciones.',
+  'creditCards.deletePermanentHasStatements': 'Esta tarjeta tiene {count} estados de cuenta importados. Elimínalos primero.',
+  'creditCards.deletePermanentFailed': 'No se pudo eliminar la tarjeta.',
 };
 
 const translations = { en, es } as const;

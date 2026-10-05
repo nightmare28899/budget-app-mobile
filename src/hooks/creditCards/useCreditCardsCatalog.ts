@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { creditCardsApi } from '../../api/resources/creditCards';
+import { creditCardsApi, CreditCardPermanentDeleteResult } from '../../api/resources/creditCards';
 import {
     CreateCreditCardPayload,
     UpdateCreditCardPayload,
@@ -11,6 +11,8 @@ import {
     extractPremiumRequiredError,
     getApiErrorData,
 } from '../../utils/platform/api';
+import { getCreditCardHasStatementsCount } from '../../utils/domain/creditCards';
+import { clearPaymentDue } from '../../utils/platform/androidLiveUpdates';
 
 type UseCreditCardsCatalogOptions = {
     includeInactive?: boolean;
@@ -75,6 +77,32 @@ export function useCreditCardsCatalog(options?: UseCreditCardsCatalogOptions) {
         },
     });
 
+    const deletePermanentlyMutation = useMutation({
+        mutationFn: (id: string) => creditCardsApi.removePermanently(id),
+        onSuccess: (result: CreditCardPermanentDeleteResult) => {
+            clearPaymentDue(result.id);
+            invalidateCards();
+            queryClient.invalidateQueries({ queryKey: ['expenses'] });
+            queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+            queryClient.invalidateQueries({ queryKey: ['history'] });
+            queryClient.invalidateQueries({ queryKey: ['analytics'] });
+        },
+        onError: (error: unknown) => {
+            const statementCount = getCreditCardHasStatementsCount(error);
+            if (statementCount !== null) {
+                alert(
+                    t('common.error'),
+                    t('creditCards.deletePermanentHasStatements', { count: statementCount }),
+                );
+                return;
+            }
+            handleMutationError(
+                getApiErrorData(error),
+                t('creditCards.deletePermanentFailed'),
+            );
+        },
+    });
+
     return {
         cards: query.data ?? [],
         isLoading: query.isLoading,
@@ -84,6 +112,8 @@ export function useCreditCardsCatalog(options?: UseCreditCardsCatalogOptions) {
         updateCard: (id: string, payload: UpdateCreditCardPayload) =>
             updateMutation.mutateAsync({ id, payload }),
         deactivateCard: (id: string) => deactivateMutation.mutateAsync(id),
+        deleteCardPermanently: (id: string) => deletePermanentlyMutation.mutateAsync(id),
+        isDeletingPermanently: deletePermanentlyMutation.isPending,
         isCreating: createMutation.isPending,
         isUpdating: updateMutation.isPending,
         isRemoving: deactivateMutation.isPending,

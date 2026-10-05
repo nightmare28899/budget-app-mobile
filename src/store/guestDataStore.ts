@@ -56,6 +56,9 @@ interface GuestDataState {
     addCreditCard: (card: CreditCard) => CreditCard;
     updateCreditCard: (id: string, updater: (card: CreditCard) => CreditCard) => CreditCard | null;
     removeCreditCard: (id: string) => CreditCard | null;
+    removeCreditCardPermanently: (
+        id: string,
+    ) => { unlinkedExpenses: number; unlinkedSubscriptions: number } | null;
     addSavingsGoal: (goal: SavingsGoal) => SavingsGoal;
     updateSavingsGoal: (id: string, updater: (goal: SavingsGoal) => SavingsGoal) => SavingsGoal | null;
     removeSavingsGoal: (id: string) => boolean;
@@ -438,6 +441,41 @@ export const useGuestDataStore = create<GuestDataState>((set, get) => ({
         persistSnapshot(snapshot);
         set({ creditCards: next });
         return existingCard;
+    },
+
+    removeCreditCardPermanently: (id) => {
+        const state = get();
+        if (!state.creditCards.some((card) => card.id === id)) {
+            return null;
+        }
+
+        let unlinkedExpenses = 0;
+        let unlinkedSubscriptions = 0;
+        const creditCards = state.creditCards.filter((card) => card.id !== id);
+        const expenses = state.expenses.map((expense) => {
+            if (expense.creditCardId !== id) {
+                return expense;
+            }
+            unlinkedExpenses += 1;
+            return { ...expense, creditCardId: null };
+        });
+        const subscriptions = state.subscriptions.map((subscription) => {
+            if (subscription.creditCardId !== id) {
+                return subscription;
+            }
+            unlinkedSubscriptions += 1;
+            return { ...subscription, creditCardId: null };
+        });
+
+        const snapshot = buildSnapshotFromState({
+            ...state,
+            creditCards,
+            expenses,
+            subscriptions,
+        });
+        persistSnapshot(snapshot);
+        set({ creditCards, expenses, subscriptions });
+        return { unlinkedExpenses, unlinkedSubscriptions };
     },
 
     addSavingsGoal: (goal) => {

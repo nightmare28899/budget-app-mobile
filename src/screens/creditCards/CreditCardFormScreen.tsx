@@ -64,6 +64,8 @@ export function CreditCardFormScreen({
         updateCard,
         isCreating,
         isUpdating,
+        deleteCardPermanently,
+        isDeletingPermanently,
     } = useCreditCardsCatalog({ includeInactive: true, enabled: false });
 
     const editingCard = route.params?.card;
@@ -167,6 +169,40 @@ export function CreditCardFormScreen({
         } catch {
             return;
         }
+    };
+
+    const onDeletePermanently = () => {
+        if (!editingCard?.id) {
+            return;
+        }
+        const cardId = editingCard.id;
+
+        alert(
+            t('creditCards.deletePermanentTitle'),
+            t('creditCards.deletePermanentMessage'),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                    text: t('creditCards.deletePermanent'),
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const result = await deleteCardPermanently(cardId);
+                            navigation.goBack();
+                            alert(
+                                t('creditCards.deletePermanentDoneTitle'),
+                                t('creditCards.deletePermanentDone', {
+                                    expenses: result.unlinkedExpenses,
+                                    subscriptions: result.unlinkedSubscriptions,
+                                }),
+                            );
+                        } catch {
+                            return;
+                        }
+                    },
+                },
+            ],
+        );
     };
 
     return (
@@ -449,6 +485,25 @@ export function CreditCardFormScreen({
                         loading={isCreating || isUpdating}
                         containerStyle={styles.saveButton}
                     />
+
+                    {isEditMode ? (
+                        <TouchableOpacity
+                            style={styles.dangerButton}
+                            activeOpacity={0.84}
+                            disabled={isDeletingPermanently}
+                            onPress={onDeletePermanently}
+                            accessibilityRole="button"
+                        >
+                            <Text
+                                style={[
+                                    styles.dangerButtonText,
+                                    { fontSize: scaleFont(typography.fontSize.md) },
+                                ]}
+                            >
+                                {t('creditCards.deletePermanent')}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : null}
                 </ScrollView>
             </AnimatedScreen>
         </KeyboardAvoidingView>
@@ -578,5 +633,17 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     saveButton: {
         marginTop: spacing.base,
+    },
+    dangerButton: {
+        marginTop: spacing.lg,
+        paddingVertical: spacing.md,
+        alignItems: 'center',
+        borderRadius: borderRadius.xl,
+        borderWidth: 1,
+        borderColor: colors.error,
+    },
+    dangerButtonText: {
+        color: colors.error,
+        fontWeight: typography.fontWeight.semibold,
     },
 });

@@ -9,7 +9,15 @@ import { normalizeCreditCard } from '../../utils/domain/creditCards';
 import { isLocalMode } from '../../modules/access/localMode';
 import { ensureGuestDataHydrated } from '../../store/guestDataStore';
 import { buildCreditCardsOverview } from '../../modules/creditCards/creditCardOverview';
+import { createApiError } from '../../utils/platform/api';
 import { normalizeOverviewResponse } from '../../modules/creditCards/overviewNormalizer';
+
+export type CreditCardPermanentDeleteResult = {
+    id: string;
+    deleted: true;
+    unlinkedExpenses: number;
+    unlinkedSubscriptions: number;
+};
 
 export const creditCardsApi = {
     getAll: async (options?: { includeInactive?: boolean }) => {
@@ -121,5 +129,27 @@ export const creditCardsApi = {
 
         const { data } = await apiClient.delete<CreditCard>(`/credit-cards/${id}`);
         return normalizeCreditCard(data);
+    },
+
+    removePermanently: async (id: string): Promise<CreditCardPermanentDeleteResult> => {
+        if (isLocalMode()) {
+            const state = ensureGuestDataHydrated();
+            const result = state.removeCreditCardPermanently(id);
+            if (!result) {
+                throw createApiError(404, { message: 'Credit card not found' }, 'Credit card not found');
+            }
+
+            return { id, deleted: true, ...result };
+        }
+
+        const { data } = await apiClient.delete<Partial<CreditCardPermanentDeleteResult>>(
+            `/credit-cards/${id}/permanent`,
+        );
+        return {
+            id: typeof data?.id === 'string' ? data.id : id,
+            deleted: true,
+            unlinkedExpenses: Number(data?.unlinkedExpenses) || 0,
+            unlinkedSubscriptions: Number(data?.unlinkedSubscriptions) || 0,
+        };
     },
 };

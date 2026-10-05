@@ -95,3 +95,31 @@ export function formatCreditCardSummary(
 
     return parts.length ? parts.join(' • ') : null;
 }
+
+export const CREDIT_CARD_HAS_STATEMENTS_CODE = 'CREDIT_CARD_HAS_STATEMENTS';
+export const CREDIT_CARD_HAS_STATEMENTS_MESSAGE = 'creditCardHasStatements';
+
+/**
+ * Returns the statement count when DELETE /credit-cards/:id/permanent was
+ * rejected because the card still has imported statements, otherwise null.
+ */
+export function getCreditCardHasStatementsCount(error: unknown): number | null {
+    const response = (error as { response?: { status?: unknown; data?: unknown } } | null)
+        ?.response;
+    if (!response || response.status !== 409) {
+        return null;
+    }
+
+    const data = response.data as
+        | { code?: unknown; message?: unknown; statementCount?: unknown }
+        | undefined;
+    if (
+        data?.code !== CREDIT_CARD_HAS_STATEMENTS_CODE &&
+        data?.message !== CREDIT_CARD_HAS_STATEMENTS_MESSAGE
+    ) {
+        return null;
+    }
+
+    const count = Number(data?.statementCount);
+    return Number.isFinite(count) && count >= 0 ? count : 0;
+}
