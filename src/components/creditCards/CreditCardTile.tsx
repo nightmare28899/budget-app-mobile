@@ -18,6 +18,7 @@ import {
     useThemedStyles,
 } from '../../theme/index';
 import { summarizeInstallmentPlans } from '../../modules/creditCards/installmentPlans';
+import { CardPaymentProgress } from './CardPaymentProgress';
 import { CreditCardFace } from './CreditCardFace';
 import { formatCardShortDate } from './creditCardFormat';
 
@@ -30,6 +31,7 @@ type CreditCardTileProps = {
     onOpenStatements?: () => void;
     onOpenInstallmentPlans?: () => void;
     onViewStatement?: (statementImportId: string) => void;
+    onRegisterPayment?: (statementImportId: string) => void;
     isRemoving?: boolean;
     isUpdating?: boolean;
 };
@@ -45,6 +47,7 @@ export function CreditCardTile({
     onOpenStatements,
     onOpenInstallmentPlans,
     onViewStatement,
+    onRegisterPayment,
     isRemoving,
     isUpdating,
 }: CreditCardTileProps) {
@@ -314,6 +317,16 @@ export function CreditCardTile({
                     </Text>
                     <Text style={styles.installmentsChevron}>{'›'}</Text>
                 </TouchableOpacity>
+            ) : null}
+
+            {hasStatement && summary && onRegisterPayment ? (
+                <CardPaymentProgress
+                    summary={summary}
+                    currency={currency}
+                    barColor={theme.bar}
+                    onRegister={() => onRegisterPayment(summary.statementImportId as string)}
+                    onViewAll={() => onViewStatement?.(summary.statementImportId as string)}
+                />
             ) : null}
 
             {primaryRows.length ? <View style={styles.rows}>{primaryRows.map(renderRow)}</View> : null}

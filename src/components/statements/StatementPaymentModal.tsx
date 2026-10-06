@@ -7,6 +7,7 @@ import {
     ScrollView,
     StyleSheet,
     Text,
+    TouchableOpacity,
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +19,7 @@ import { formatStatementDate } from '../../modules/statements/statementFormat';
 import { parseDateOnly } from '../../modules/creditCards/cardPaymentSchedule';
 import { parseMoneyInput } from '../../modules/statements/statementReview';
 import { isPaymentFormValid, toPaidAtIso } from '../../modules/statements/statementPayments';
+import { formatCurrency } from '../../utils/core/format';
 import { getCurrencyLocale } from '../../utils/domain/currency';
 import {
     borderRadius,
@@ -26,6 +28,8 @@ import {
     typography,
     useThemedStyles,
 } from '../../theme/index';
+
+export type PaymentQuickChip = { key: string; label: string; amount: number };
 
 export type PaymentModalSubmit = {
     amount: number;
@@ -45,6 +49,8 @@ type StatementPaymentModalProps = {
     correction: boolean;
     loading: boolean;
     errorMessage: string | null;
+    /** Optional one-tap amounts (remaining / minimum / no-interest). */
+    quickAmounts?: PaymentQuickChip[];
     onClose: () => void;
     onSubmit: (value: PaymentModalSubmit) => void;
 };
@@ -64,6 +70,7 @@ function OpenModal({
     correction,
     loading,
     errorMessage,
+    quickAmounts,
     onClose,
     onSubmit,
 }: StatementPaymentModalProps) {
@@ -125,6 +132,22 @@ function OpenModal({
                             keyboardType="decimal-pad"
                             placeholder="0.00"
                         />
+                        {quickAmounts?.length ? (
+                            <View style={styles.chips}>
+                                {quickAmounts.map(chip => (
+                                    <TouchableOpacity
+                                        key={chip.key}
+                                        style={styles.chip}
+                                        onPress={() => setAmountText(chip.amount.toFixed(2))}
+                                        accessibilityRole="button"
+                                    >
+                                        <Text style={styles.chipText}>
+                                            {`${chip.label}: ${formatCurrency(chip.amount, currency || undefined, locale)}`}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        ) : null}
                         <StatementDateField
                             label={t('statements.payments.date')}
                             value={paidDay}
@@ -198,6 +221,23 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     error: {
         color: colors.error,
+        fontSize: typography.fontSize.sm,
+    },
+    chips: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: spacing.sm,
+    },
+    chip: {
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.full,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.xs,
+    },
+    chipText: {
+        color: colors.textPrimary,
         fontSize: typography.fontSize.sm,
     },
     actions: {

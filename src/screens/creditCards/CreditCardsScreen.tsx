@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     ScrollView,
@@ -31,6 +31,7 @@ import {
 import { usePremiumAccess } from '../../hooks/access/usePremiumAccess';
 import { CreditCardKpiSection } from '../../components/creditCards/CreditCardKpiSection';
 import { CreditCardTile } from '../../components/creditCards/CreditCardTile';
+import { CardStatementPaymentSheet } from '../../components/creditCards/CardStatementPaymentSheet';
 import { PaymentReminderBanner } from '../../components/creditCards/PaymentReminderBanner';
 
 export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditCards'>) {
@@ -56,6 +57,8 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
         includeInactive: true,
         enabled: hasPremium,
     });
+
+    const [payTarget, setPayTarget] = useState<{ statementId: string; cardId: string } | null>(null);
 
     const overviewById = useMemo(() => {
         return new Map((overview?.cards ?? []).map((card) => [card.id, card]));
@@ -230,6 +233,9 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                                         navigation.navigate('CardInstallmentPlans', { creditCardId: card.id })
                                     }
                                     onViewStatement={id => navigation.navigate('StatementDetail', { id })}
+                                    onRegisterPayment={statementId =>
+                                        setPayTarget({ statementId, cardId: card.id })
+                                    }
                                     isRemoving={isRemoving}
                                     isUpdating={isUpdating}
                                 />
@@ -238,6 +244,19 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                     )}
                 </ScrollView>
             </AnimatedScreen>
+            <CardStatementPaymentSheet
+                target={payTarget}
+                onClose={() => setPayTarget(null)}
+                onReviewStatement={statement => {
+                    setPayTarget(null);
+                    navigation.navigate(
+                        statement.status === 'NEEDS_REVIEW' || statement.status === 'PARSED'
+                            ? 'StatementReview'
+                            : 'StatementDetail',
+                        { id: statement.id },
+                    );
+                }}
+            />
         </View>
     );
 }
