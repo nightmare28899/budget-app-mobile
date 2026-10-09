@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { Platform, StatusBar, StyleSheet, View } from 'react-native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AppState, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { focusManager, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootNavigator } from './navigation/RootNavigator';
@@ -35,6 +35,16 @@ export default function App() {
         hydratePreferences();
         hydrateGuestData();
     }, [hydrateGuestData, hydratePreferences]);
+
+    // React Native has no window focus: map app foreground to React Query focus
+    // so data written by other clients (e.g. the watch) refetches on resume.
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (status) => {
+            focusManager.setFocused(status === 'active');
+        });
+
+        return () => subscription.remove();
+    }, []);
 
     return (
         <ErrorBoundary>

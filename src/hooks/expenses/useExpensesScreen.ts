@@ -28,6 +28,7 @@ type UseExpensesScreenParams = {
 };
 
 const DEFAULT_LIMIT = 20;
+const EXPENSES_STALE_TIME = 30_000;
 
 function normalizeFilters(filters: ExpensesFilters): ExpensesFilters {
     const normalized: ExpensesFilters = {
@@ -176,7 +177,7 @@ export function useExpensesScreen({
             lastPage.pagination.hasNext
                 ? lastPage.pagination.page + 1
                 : undefined,
-        staleTime: 30_000,
+        staleTime: EXPENSES_STALE_TIME,
         gcTime: 5 * 60_000,
     });
 
@@ -201,12 +202,24 @@ export function useExpensesScreen({
             activeSwipeableRef.current = null;
             activeSwipeableIdRef.current = null;
 
+            // Tab screens stay mounted: refetch stale data on focus so expenses
+            // created by other clients (e.g. the watch) show up.
+            const state = queryClient.getQueryState(queryKey);
+            if (
+                state
+                && state.fetchStatus === 'idle'
+                && Date.now() - state.dataUpdatedAt > EXPENSES_STALE_TIME
+            ) {
+                resetCachedPagesToFirst();
+                refetch();
+            }
+
             return () => {
                 activeSwipeableRef.current?.close?.();
                 activeSwipeableRef.current = null;
                 activeSwipeableIdRef.current = null;
             };
-        }, []),
+        }, [queryClient, queryKey, refetch, resetCachedPagesToFirst]),
     );
 
     const items = useMemo(
