@@ -1,5 +1,5 @@
 import React, { ReactNode, useEffect, useMemo, useState } from 'react';
-import { LayoutChangeEvent, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
     useAnimatedStyle,
@@ -14,8 +14,6 @@ import {
     afterFanTap,
     expandedHeight,
     expandedLayout,
-    fanViewport,
-    isExpanded,
     nextIndex,
     previousIndex,
     toggleExpanded,
@@ -50,7 +48,7 @@ const cardShadow = (elevation: number) => ({
  * accessibility actions to change card, tap to expand); expanded it fans out every card in a scrollable column where a tap selects.
  */
 export function CardStackCarousel(props: CardStackCarouselProps) {
-    const { count, expanded } = props;
+    const { count } = props;
     const [width, setWidth] = useState(0);
     const onLayout = (event: LayoutChangeEvent) => {
         const next = Math.round(event.nativeEvent.layout.width);
@@ -64,7 +62,8 @@ export function CardStackCarousel(props: CardStackCarouselProps) {
     }
 
     const cardHeight = width / CARD_STACK.aspectRatio;
-    const fanOpen = isExpanded(expanded, count);
+    // Always fanned: cards flow vertically with the page; no horizontal swipe, no nested scroller.
+    const fanOpen = true;
 
     return (
         <View style={styles.root} onLayout={onLayout}>
@@ -94,7 +93,6 @@ function CardFan({
     const { t } = useI18n();
     const slots = useMemo(() => expandedLayout(count, selected), [count, selected]);
     const contentHeight = expandedHeight(count, cardHeight);
-    const viewport = fanViewport(contentHeight);
 
     const collapse = () => onExpandedChange(false);
     const tapped = (index: number) => {
@@ -110,11 +108,7 @@ function CardFan({
             accessibilityActions={[{ name: 'collapse', label: t('creditCards.stackCollapse') }]}
             onAccessibilityAction={collapse}
         >
-            <ScrollView
-                style={{ maxHeight: viewport }}
-                nestedScrollEnabled
-                showsVerticalScrollIndicator={false}
-            >
+            <View>
                 <View style={{ height: contentHeight }}>
                     {slots.map(slot => (
                         <FanCard
@@ -134,7 +128,7 @@ function CardFan({
                         </FanCard>
                     ))}
                 </View>
-            </ScrollView>
+            </View>
         </View>
     );
 }
