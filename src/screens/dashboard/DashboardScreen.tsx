@@ -790,6 +790,15 @@ export function DashboardScreen({ route, navigation }: MainTabScreenProps<'Dashb
                     <View style={styles.headerActions}>
                         <TouchableOpacity
                             style={styles.notificationButton}
+                            onPress={() => navigation.navigate('Search')}
+                            activeOpacity={0.84}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('navigation.openSearch')}
+                        >
+                            <Icon name="search-outline" size={20} color={colors.textPrimary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.notificationButton}
                             onPress={onOpenNotifications}
                             activeOpacity={0.84}
                             accessibilityRole="button"

@@ -1,3 +1,4 @@
+import { useEntitlements } from '../../hooks/access/useEntitlements';
 import React, { useMemo } from 'react';
 import {
     ScrollView,
@@ -43,6 +44,7 @@ export function PremiumFeatureGate({
     const insets = useSafeAreaInsets();
     const { t } = useI18n();
     const { hasPremium, isGuest } = usePremiumAccess();
+    const entitlements = useEntitlements();
     const {
         horizontalPadding,
         contentMaxWidth,
@@ -148,6 +150,12 @@ export function PremiumFeatureGate({
                         </TouchableOpacity>
                     ) : null}
 
+                    {!isGuest ? (
+                        <View>
+                            {entitlements.isError ? <Text style={{ color: colors.error }}>{t('premium.refreshFailed')}</Text> : null}
+                            <Button title={t('premium.refreshAccess')} loading={entitlements.isFetching} onPress={() => { entitlements.refetch(); }} />
+                        </View>
+                    ) : null}
                     <View
                         style={[
                             styles.heroCard,

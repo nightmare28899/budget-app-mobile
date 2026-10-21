@@ -84,6 +84,13 @@ export function openNotificationDestination(
         return true;
     }
 
+    if (readString(data.targetScreen) === 'CreditCards') {
+        rootNavigationRef.navigate('Main', {
+            screen: 'CreditCards',
+        });
+        return true;
+    }
+
     if (
         readString(data.targetScreen) === 'Notifications'
         || readString(data.type) === 'financial_insight'

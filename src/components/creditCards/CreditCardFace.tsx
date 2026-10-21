@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { CARD_STACK } from '../../modules/creditCards/cardStack';
 import { creditCardTheme } from '../../modules/creditCards/creditCardVisuals';
 import { CreditCard } from '../../types/index';
 import { borderRadius, spacing, typography, useResponsive } from '../../theme/index';
@@ -10,6 +11,9 @@ type CreditCardFaceProps = {
     statusLabel?: string | null;
     statusColor?: string;
     inactiveLabel?: string;
+    /** Fixes the art to a width / height ratio (carousel pages); the content spreads over the height. */
+    aspectRatio?: number;
+    accessibilityLabel?: string;
 };
 
 /** Solid-color card artwork themed per bank (no gradient library in the app). */
@@ -18,14 +22,19 @@ export function CreditCardFace({
     statusLabel,
     statusColor,
     inactiveLabel,
+    aspectRatio,
+    accessibilityLabel,
 }: CreditCardFaceProps) {
     const { scaleFont } = useResponsive();
     const theme = creditCardTheme(card);
 
     return (
         <View
+            accessible={accessibilityLabel ? true : undefined}
+            accessibilityLabel={accessibilityLabel}
             style={[
                 styles.face,
+                aspectRatio ? [styles.faceFixed, { aspectRatio }] : null,
                 {
                     backgroundColor: theme.background,
                     borderColor: theme.border,
@@ -85,6 +94,10 @@ const styles = StyleSheet.create({
         padding: spacing.base,
         gap: spacing.sm,
         overflow: 'hidden',
+    },
+    faceFixed: {
+        justifyContent: 'space-between',
+        borderRadius: CARD_STACK.cornerRadius,
     },
     accentStrip: {
         position: 'absolute',

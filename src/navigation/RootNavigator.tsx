@@ -12,6 +12,8 @@ import { AddExpenseScreen } from '../screens/addExpense/AddExpenseScreen';
 import { AddIncomeScreen } from '../screens/addExpense/AddIncomeScreen';
 import { AddSubscriptionScreen } from '../screens/addExpense/AddSubscriptionScreen';
 import { PlanOverviewScreen } from '../screens/profile/PlanOverviewScreen';
+import { SearchScreen } from '../screens/search/SearchScreen';
+import { CsvImportScreen } from '../screens/csvImport/CsvImportScreen';
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { SavingsGoalDetailScreen } from '../screens/savings/SavingsGoalDetailScreen';
 import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
@@ -44,6 +46,7 @@ import {
     rootNavigationRef,
 } from './navigationBridge';
 import { useAndroidWidgetLinks } from '../hooks/shared/useAndroidWidgetLinks';
+import { useReminders } from '../hooks/reminders/useReminders';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const MIN_SPLASH_MS = 1200;
@@ -78,6 +81,7 @@ export function RootNavigator() {
         || !splashReady;
 
     useAndroidWidgetLinks(hasCompletedOnboarding && !shouldShowSplash);
+    useReminders(hasCompletedOnboarding && !shouldShowSplash);
 
     if (shouldShowSplash) {
         return <AppSplashScreen />;
@@ -120,6 +124,22 @@ export function RootNavigator() {
                                 headerShown: false,
                                 animation: 'slide_from_right',
                                 gestureEnabled: false,
+                            }}
+                        />
+                        <Stack.Screen
+                            name="Search"
+                            component={SearchScreen}
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_right',
+                            }}
+                        />
+                        <Stack.Screen
+                            name="CsvImport"
+                            component={CsvImportScreen}
+                            options={{
+                                headerShown: false,
+                                animation: 'slide_from_right',
                             }}
                         />
                         <Stack.Screen

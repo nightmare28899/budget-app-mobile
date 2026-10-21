@@ -1,3 +1,4 @@
+import { useQuickAddForm } from '../quickAdd/quickAddLifecycleContext';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 import { DateTimePickerAndroid, DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -97,6 +98,8 @@ export function useSubscriptionForm({
     const [billingCycle, setBillingCycle] = useState<SubscriptionBillingCycle>(
         editingSubscription?.billingCycle ?? 'MONTHLY',
     );
+    const lifecycle = useQuickAddForm({ name, cost, currency, paymentMethod, selectedCreditCardId,
+        selectedCategoryId, chargeDate, serviceColor, serviceIcon, billingCycle }, isCreating || isUpdating || isRemoving);
     const [showIosPicker, setShowIosPicker] = useState(false);
 
     const includeInactiveCards = Boolean(editingSubscription?.id);
@@ -250,6 +253,7 @@ export function useSubscriptionForm({
 
         action
             .then(() => {
+                lifecycle?.saved();
                 setName('');
                 setCost('');
                 setCurrency(defaultCurrency);
@@ -286,6 +290,7 @@ export function useSubscriptionForm({
             });
     }, [
         alert,
+        lifecycle,
         billingCycle,
         chargeDate,
         cost,

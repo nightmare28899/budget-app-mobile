@@ -106,7 +106,7 @@ export function useSubscriptionsScreen({
                 }
             }
 
-            if (!matchedSubscription) {
+            if (!matchedSubscription && !explicitId) {
                 const candidateMatches = storedSubscriptions.filter((subscription) => {
                     if (usedIds.has(subscription.id)) {
                         return false;
@@ -118,12 +118,14 @@ export function useSubscriptionsScreen({
                 });
 
                 if (candidateMatches.length) {
-                    const exactDateMatch = candidateMatches.find((subscription) => {
+                    const exactDateMatches = candidateMatches.filter((subscription) => {
                         const subscriptionDate =
                             subscription.chargeDate || toDateOnly(subscription.nextPaymentDate);
                         return subscriptionDate === chargeDate;
                     });
-                    matchedSubscription = exactDateMatch || candidateMatches[0];
+                    matchedSubscription = exactDateMatches.length === 1
+                        ? exactDateMatches[0]
+                        : candidateMatches.length === 1 ? candidateMatches[0] : undefined;
                 }
             }
 
@@ -131,6 +133,12 @@ export function useSubscriptionsScreen({
                 usedIds.add(matchedSubscription.id);
                 return {
                     ...matchedSubscription,
+                    cost: item.amount,
+                    currency: item.currency || matchedSubscription.currency,
+                    paymentMethod: item.paymentMethod ?? matchedSubscription.paymentMethod,
+                    creditCardId: item.creditCardId ?? matchedSubscription.creditCardId,
+                    creditCard: item.creditCard ?? matchedSubscription.creditCard,
+                    hexColor: item.hexColor ?? matchedSubscription.hexColor,
                     chargeDate,
                     nextPaymentDate:
                         matchedSubscription.nextPaymentDate ||
@@ -139,7 +147,7 @@ export function useSubscriptionsScreen({
             }
 
             return {
-                id: `upcoming-${item.name}-${item.amount}-${item.daysRemaining}-${index}`,
+                id: explicitId || `upcoming-${item.name}-${item.amount}-${item.daysRemaining}-${index}`,
                 name: item.name,
                 cost: item.amount,
                 currency: item.currency || user?.currency || 'MXN',
@@ -148,7 +156,10 @@ export function useSubscriptionsScreen({
                 reminderDays: upcomingDays,
                 isActive: true,
                 logoUrl: null,
-                hexColor: null,
+                hexColor: item.hexColor ?? null,
+                paymentMethod: item.paymentMethod,
+                creditCardId: item.creditCardId,
+                creditCard: item.creditCard,
                 userId: user?.id,
                 chargeDate,
                 color: inferSubscriptionColor(item.name),
@@ -284,6 +295,7 @@ export function useSubscriptionsScreen({
         activeSwipeableRef,
         activeSwipeableIdRef,
         goHomeOnBack,
+        canEditSubscription: (id: string) => storedSubscriptions.some(item => item.id === id),
         onEditSubscription,
         onDeleteSubscription,
     };

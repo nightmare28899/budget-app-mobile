@@ -1,3 +1,4 @@
+import { normalizeEntitlements } from '../../modules/access/entitlements';
 import apiClient from '../client';
 import { BudgetPeriod, User } from '../../types/index';
 import { isLocalMode } from '../../modules/access/localMode';
@@ -21,6 +22,11 @@ function normalizeUser(data: unknown): User {
 }
 
 export const usersApi = {
+  getEntitlements: async () => {
+    if (isLocalMode()) { return normalizeEntitlements({ account: null }); }
+    const { data } = await apiClient.get('/users/me/entitlements', { meta: { background: true } });
+    return normalizeEntitlements(data);
+  },
   getMe: async () => {
     if (isLocalMode()) {
       const user = useAuthStore.getState().user;

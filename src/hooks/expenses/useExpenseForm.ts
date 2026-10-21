@@ -1,3 +1,4 @@
+import { useQuickAddForm } from '../quickAdd/quickAddLifecycleContext';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
@@ -223,6 +224,10 @@ export function useExpenseForm(expenseId?: string) {
         );
     }, [cost, isInstallment, parsedInstallmentCount]);
 
+    const lifecycle = useQuickAddForm({ title, cost, currency, isInstallment, installmentCount,
+        firstPaymentDate, note, merchantName, locationLabel, paymentMethod, selectedCreditCardId,
+        selectedCategory, date }, isPending);
+
     const saveExpense = async (
         onSuccessCallback: () => void,
         options?: { image?: ExpenseUploadImage | null },
@@ -294,11 +299,11 @@ export function useExpenseForm(expenseId?: string) {
         };
 
         if (expenseId) {
-            updateMutation.mutate(payload, { onSuccess: onSuccessCallback });
+            updateMutation.mutate(payload, { onSuccess: () => { lifecycle?.saved(); onSuccessCallback(); } });
         } else {
             createMutation.mutate(
                 { payload, image: options?.image },
-                { onSuccess: onSuccessCallback },
+                { onSuccess: () => { lifecycle?.saved(); onSuccessCallback(); } },
             );
         }
 

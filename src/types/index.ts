@@ -416,6 +416,7 @@ export interface UpcomingSubscriptionCharge {
   creditCard?: CreditCard | null;
   chargeDate?: string | null;
   nextPaymentDate?: string | null;
+  hexColor?: string | null;
 }
 
 export type SavingsTransactionType = 'DEPOSIT' | 'WITHDRAW';

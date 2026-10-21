@@ -21,7 +21,7 @@ interface PreferencesState {
     hasCompletedOnboarding: boolean;
     manualPremiumByUser: Record<string, boolean>;
     isHydrated: boolean;
-    setLanguage: (language: AppLanguage) => void;
+    setLanguage: (language: AppLanguage, source?: LanguagePreferenceSource) => void;
     setThemeMode: (mode: ThemeMode) => void;
     markOnboardingCompleted: (user?: PreferenceScopedUser | string) => void;
     resetOnboarding: (user?: PreferenceScopedUser | string) => void;
@@ -173,10 +173,10 @@ export const usePreferencesStore = create<PreferencesState>((set) => ({
     ...initialPreferences,
     isHydrated: false,
 
-    setLanguage: (language) => {
+    setLanguage: (language, source = 'manual') => {
         storage.set(LANGUAGE_KEY, language);
-        storage.set(LANGUAGE_SOURCE_KEY, 'manual');
-        set({ language, languageSource: 'manual' });
+        storage.set(LANGUAGE_SOURCE_KEY, source);
+        set({ language, languageSource: source });
     },
 
     setThemeMode: (themeMode) => {

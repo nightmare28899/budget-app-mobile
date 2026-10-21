@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Pressable,
     ScrollView,
     StyleSheet,
     Text,
@@ -33,6 +34,13 @@ import { CreditCardKpiSection } from '../../components/creditCards/CreditCardKpi
 import { CreditCardTile } from '../../components/creditCards/CreditCardTile';
 import { CardStatementPaymentSheet } from '../../components/creditCards/CardStatementPaymentSheet';
 import { PaymentReminderBanner } from '../../components/creditCards/PaymentReminderBanner';
+import { CardPagerIndicator } from '../../components/creditCards/CardPagerIndicator';
+import { CardStackCarousel } from '../../components/creditCards/CardStackCarousel';
+import { CreditCardFace } from '../../components/creditCards/CreditCardFace';
+import { cardBadgeColor, cardBadgeLabel, dueLabelText } from '../../components/creditCards/cardLabels';
+import { formatCardDisplayName } from '../../components/creditCards/creditCardFormat';
+import { CARD_STACK, afterDismiss, resolveSelection } from '../../modules/creditCards/cardStack';
+import { dueLabelOf, overviewCardStatus } from '../../modules/creditCards/cardStatus';
 
 export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditCards'>) {
     const { colors } = useTheme();
@@ -59,10 +67,32 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
     });
 
     const [payTarget, setPayTarget] = useState<{ statementId: string; cardId: string } | null>(null);
+    // Selection is tracked by id so refreshes and list changes keep (or sensibly move) the selected card.
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const lastIndex = useRef(0);
+    const [fanExpanded, setFanExpanded] = useState(false);
 
     const overviewById = useMemo(() => {
         return new Map((overview?.cards ?? []).map((card) => [card.id, card]));
     }, [overview?.cards]);
+    const cardIds = useMemo(() => cards.map(card => card.id), [cards]);
+    const selectedIndex = resolveSelection(cardIds, selectedId, lastIndex.current);
+    useEffect(() => {
+        if (selectedIndex >= 0) {
+            lastIndex.current = selectedIndex;
+        }
+    }, [selectedIndex]);
+    const selectCard = useCallback(
+        (index: number) => {
+            const target = cards[index];
+            if (target) {
+                lastIndex.current = index;
+                setSelectedId(target.id);
+            }
+        },
+        [cards],
+    );
+    const selectedCard = selectedIndex >= 0 ? cards[selectedIndex] : null;
     const transactionCount = useMemo(() => {
         return (overview?.cards ?? [])
             .filter((card) => card.isActive)
@@ -114,6 +144,41 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
 
     const handleEditCard = (card: typeof cards[number]) => {
         navigation.navigate('CreditCardForm', { card });
+    };
+
+    /** One carousel page: the card art with its merged screen-reader description. */
+    const renderCardArt = (card: typeof cards[number]) => {
+        const overviewCard = overviewById.get(card.id);
+        const status = overviewCard ? overviewCardStatus(overviewCard) : null;
+        const badge = status?.badge ?? 'NONE';
+        const badgeText = cardBadgeLabel(badge, t);
+        const dueText =
+            card.isActive && overviewCard
+                ? dueLabelText(dueLabelOf(overviewCard.schedule.daysUntilPaymentDue), t)
+                : null;
+        const details = [
+            card.brand || null,
+            card.isActive ? null : t('creditCards.inactive'),
+            badgeText,
+            dueText ? t('creditCards.faceDueCd', { when: dueText }) : null,
+        ]
+            .filter(Boolean)
+            .join(', ');
+
+        return (
+            <CreditCardFace
+                card={card}
+                statusLabel={badgeText}
+                statusColor={cardBadgeColor(badge)}
+                inactiveLabel={t('creditCards.inactive')}
+                aspectRatio={CARD_STACK.aspectRatio}
+                accessibilityLabel={t('creditCards.faceCd', {
+                    name: formatCardDisplayName(card),
+                    last4: card.last4,
+                    details,
+                })}
+            />
+        );
     };
 
     return (
@@ -207,7 +272,14 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                             />
                         </View>
                     ) : (
-                        <View style={styles.list}>
+                        <Pressable
+                            style={styles.list}
+                            // Pressable is accessible by default, which would merge the whole screen into one
+                            // VoiceOver element; it is only a tap-away layer, so its children stay individually reachable.
+                            accessible={false}
+                            disabled={!fanExpanded}
+                            onPress={() => setFanExpanded(afterDismiss(cards.length, 0).expanded)}
+                        >
                             {overview ? (
                                 <>
                                     <PaymentReminderBanner cards={overview.cards} />
@@ -218,29 +290,49 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                                 </>
                             ) : null}
 
-                            {cards.map((card) => (
+                            <View style={styles.carousel}>
+                                <CardStackCarousel
+                                    count={cards.length}
+                                    selected={Math.max(selectedIndex, 0)}
+                                    keyOf={index => cards[index].id}
+                                    onSelect={selectCard}
+                                    expanded={fanExpanded}
+                                    onExpandedChange={setFanExpanded}
+                                    labelOf={index =>
+                                        t('creditCards.fanItemCd', {
+                                            name: formatCardDisplayName(cards[index]),
+                                            last4: cards[index].last4,
+                                        })
+                                    }
+                                    renderCard={index => renderCardArt(cards[index])}
+                                />
+                                <CardPagerIndicator count={cards.length} current={Math.max(selectedIndex, 0)} />
+                            </View>
+
+                            {selectedCard ? (
                                 <CreditCardTile
-                                    key={card.id}
-                                    card={card}
-                                    overview={overviewById.get(card.id)}
-                                    onEdit={() => handleEditCard(card)}
-                                    onDeactivate={() => handleDeactivate(card.id, card.name)}
-                                    onActivate={() => handleActivate(card.id)}
+                                    key={selectedCard.id}
+                                    card={selectedCard}
+                                    overview={overviewById.get(selectedCard.id)}
+                                    hideFace
+                                    onEdit={() => handleEditCard(selectedCard)}
+                                    onDeactivate={() => handleDeactivate(selectedCard.id, selectedCard.name)}
+                                    onActivate={() => handleActivate(selectedCard.id)}
                                     onOpenStatements={() =>
-                                        navigation.navigate('Statements', { creditCardId: card.id })
+                                        navigation.navigate('Statements', { creditCardId: selectedCard.id })
                                     }
                                     onOpenInstallmentPlans={() =>
-                                        navigation.navigate('CardInstallmentPlans', { creditCardId: card.id })
+                                        navigation.navigate('CardInstallmentPlans', { creditCardId: selectedCard.id })
                                     }
                                     onViewStatement={id => navigation.navigate('StatementDetail', { id })}
                                     onRegisterPayment={statementId =>
-                                        setPayTarget({ statementId, cardId: card.id })
+                                        setPayTarget({ statementId, cardId: selectedCard.id })
                                     }
                                     isRemoving={isRemoving}
                                     isUpdating={isUpdating}
                                 />
-                            ))}
-                        </View>
+                            ) : null}
+                        </Pressable>
                     )}
                 </ScrollView>
             </AnimatedScreen>
@@ -346,5 +438,8 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
     },
     list: {
         gap: spacing.base,
+    },
+    carousel: {
+        gap: spacing.xs,
     },
 });

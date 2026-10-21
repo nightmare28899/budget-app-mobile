@@ -16,6 +16,7 @@ const AUTH_USER_KEY = 'authUser';
 const GUEST_USER_KEY = 'guestUser';
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
+let sessionRevision = 0;
 
 export type SessionMode = 'guest' | 'authenticated';
 
@@ -155,6 +156,7 @@ function persistAvatar(user: User) {
 }
 
 interface AuthState {
+  sessionRevision: number;
   user: User | null;
   guestUser: User;
   accessToken: string | null;
@@ -194,6 +196,7 @@ function readStoredUser(key: string): User | null {
 }
 
 export const useAuthStore = create<AuthState>(set => ({
+  sessionRevision: 0,
   user: null,
   guestUser: buildDefaultGuestUser(),
   accessToken: null,
@@ -213,6 +216,7 @@ export const useAuthStore = create<AuthState>(set => ({
 
     set({
       user: userWithAvatar,
+      sessionRevision: ++sessionRevision,
       sessionMode: 'authenticated',
       accessToken,
       refreshToken,
@@ -292,6 +296,7 @@ export const useAuthStore = create<AuthState>(set => ({
       guestUser,
       accessToken: null,
       refreshToken: null,
+      sessionRevision: ++sessionRevision,
       sessionMode: 'guest',
       isAuthenticated: false,
       isGuest: true,
@@ -312,6 +317,7 @@ export const useAuthStore = create<AuthState>(set => ({
       guestUser,
       accessToken: null,
       refreshToken: null,
+      sessionRevision: ++sessionRevision,
       sessionMode: 'guest',
       isAuthenticated: false,
       isGuest: true,
@@ -339,6 +345,7 @@ export const useAuthStore = create<AuthState>(set => ({
           guestUser,
           accessToken,
           refreshToken,
+          sessionRevision: ++sessionRevision,
           sessionMode: 'authenticated',
           isAuthenticated: true,
           isGuest: false,
@@ -350,6 +357,7 @@ export const useAuthStore = create<AuthState>(set => ({
           guestUser,
           accessToken: null,
           refreshToken: null,
+          sessionRevision: ++sessionRevision,
           sessionMode: 'guest',
           isAuthenticated: false,
           isGuest: true,
@@ -364,6 +372,7 @@ export const useAuthStore = create<AuthState>(set => ({
         guestUser,
         accessToken: null,
         refreshToken: null,
+        sessionRevision: ++sessionRevision,
         sessionMode: 'guest',
         isAuthenticated: false,
         isGuest: true,

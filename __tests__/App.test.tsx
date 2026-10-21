@@ -36,6 +36,10 @@ jest.mock('../src/navigation/RootNavigator', () => {
     };
 });
 
+jest.mock('../src/components/appLock/AppLockGate', () => ({
+    AppLockGate: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('../src/components/alerts/AlertProvider', () => ({
     AlertProvider: ({ children }: { children: React.ReactNode }) => children,
 }));

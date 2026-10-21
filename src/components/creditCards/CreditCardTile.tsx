@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../ui/primitives/Button';
-import { daysUntilDueDate } from '../../modules/creditCards/cardPaymentSchedule';
+import { daysUntilDueDate, parseDateOnly } from '../../modules/creditCards/cardPaymentSchedule';
+import { formatCardPercent, utilizationToneOf } from '../../modules/creditCards/cardPercent';
+import {
+    dueLabelOf,
+    overviewCardStatus,
+} from '../../modules/creditCards/cardStatus';
+import { buildCycleTimeline, inferToday } from '../../modules/creditCards/cycleTimeline';
 import { creditCardTheme } from '../../modules/creditCards/creditCardVisuals';
 import { useI18n } from '../../hooks/shared/useI18n';
 import { CreditCard, CreditCardOverviewCard } from '../../types/index';
@@ -18,7 +24,9 @@ import {
     useThemedStyles,
 } from '../../theme/index';
 import { summarizeInstallmentPlans } from '../../modules/creditCards/installmentPlans';
+import { CardCycleTimeline } from './CardCycleTimeline';
 import { CardPaymentProgress } from './CardPaymentProgress';
+import { cardBadgeColor, cardBadgeLabel, dueLabelText, utilizationToneLabel } from './cardLabels';
 import { CreditCardFace } from './CreditCardFace';
 import { formatCardShortDate } from './creditCardFormat';
 
@@ -34,6 +42,8 @@ type CreditCardTileProps = {
     onRegisterPayment?: (statementImportId: string) => void;
     isRemoving?: boolean;
     isUpdating?: boolean;
+    /** The card art lives in the carousel above; show only the details. */
+    hideFace?: boolean;
 };
 
 type Row = { key: string; label: string; value: string; hint?: string | null };
@@ -50,6 +60,7 @@ export function CreditCardTile({
     onRegisterPayment,
     isRemoving,
     isUpdating,
+    hideFace,
 }: CreditCardTileProps) {
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
@@ -63,36 +74,11 @@ export function CreditCardTile({
     const hasStatement = summary?.statementImportId != null;
 
     const money = (amount: number) => formatCurrency(amount, currency, locale);
-    const timeline = (days: number | null | undefined) => {
-        if (days == null) {
-            return null;
-        }
-        if (days < 0) {
-            return t('creditCards.overdueDays', { count: Math.abs(days) });
-        }
-        if (days === 0) {
-            return t('creditCards.today');
-        }
-        if (days === 1) {
-            return t('creditCards.tomorrow');
-        }
-        return t('creditCards.inDays', { count: days });
-    };
+    const timeline = (days: number | null | undefined) => dueLabelText(dueLabelOf(days), t);
 
-    let statusLabel: string | null = null;
-    let statusColor: string | undefined;
-    if (hasStatement && summary) {
-        if (summary.paymentStatus === 'PAID') {
-            statusLabel = t('creditCards.statementPaid');
-            statusColor = '#34D399';
-        } else if (summary.paymentStatus === 'PARTIAL') {
-            statusLabel = t('creditCards.statementPartial');
-            statusColor = '#FBBF24';
-        } else {
-            statusLabel = t('creditCards.statementPending');
-            statusColor = '#FCA5A5';
-        }
-    }
+    const status = overview ? overviewCardStatus(overview) : null;
+    const statusLabel = status ? cardBadgeLabel(status.badge, t) : null;
+    const statusColor = status ? cardBadgeColor(status.badge) : undefined;
 
     const dueDate = overview?.nextPayment?.dueDate ?? summary?.dueDate ?? null;
     const dueDays = dueDate ? daysUntilDueDate(dueDate) : null;
@@ -100,12 +86,9 @@ export function CreditCardTile({
     const showPaymentBlock = hasStatement && summary?.paymentStatus !== 'PAID';
 
     const utilization = overview?.creditStatus.utilizationPercent ?? null;
+    const tone = utilizationToneOf(utilization);
+    const toneColor = tone === 'HIGH' ? colors.error : tone === 'CAUTION' ? colors.warning : colors.success;
     const barWidth = `${Math.max(0, Math.min(100, utilization ?? 0))}%` as const;
-    const barColor = overview?.flags.overLimit
-        ? colors.error
-        : overview?.flags.highUtilization
-            ? colors.warning
-            : theme.bar;
 
     const signals: Array<{ key: string; label: string; color: string }> = [];
     if (overview) {
@@ -114,11 +97,15 @@ export function CreditCardTile({
         } else if (overview.flags.highUtilization) {
             signals.push({ key: 'high', label: t('creditCards.highUsage'), color: colors.warning });
         }
-        if (overview.flags.paymentDueSoon) {
-            signals.push({ key: 'due', label: t('creditCards.dueSoon'), color: colors.warning });
+        if (status?.overdueDays != null) {
+            signals.push({
+                key: 'overdue',
+                label: t('creditCards.overdueDays', { count: status.overdueDays }),
+                color: colors.error,
+            });
         }
-        if (overview.flags.closingSoon) {
-            signals.push({ key: 'close', label: t('creditCards.closesSoon'), color: colors.textMuted });
+        if (overview.flags.paymentDueSoon && status?.badge === 'DUE_SOON') {
+            signals.push({ key: 'due', label: t('creditCards.dueSoon'), color: colors.warning });
         }
         if (overview.flags.missingLimit) {
             signals.push({ key: 'limit', label: t('creditCards.limitMissing'), color: colors.textMuted });
@@ -131,6 +118,28 @@ export function CreditCardTile({
             });
         }
     }
+
+    const closingDate = overview?.schedule.nextClosingDate
+        ? parseDateOnly(overview.schedule.nextClosingDate)
+        : null;
+    const nextDue = overview?.schedule.nextPaymentDueDate
+        ? parseDateOnly(overview.schedule.nextPaymentDueDate)
+        : null;
+    const cycleTimeline = overview
+        ? buildCycleTimeline(
+            inferToday(
+                closingDate,
+                overview.schedule.daysUntilClosing,
+                nextDue,
+                overview.schedule.daysUntilPaymentDue,
+                new Date(),
+            ),
+            closingDate,
+            nextDue,
+            card.closingDay,
+        )
+        : null;
+    const hasDueSchedule = nextDue != null;
 
     const primaryRows: Row[] = [];
     if (showPaymentBlock && noInterest != null) {
@@ -258,18 +267,52 @@ export function CreditCardTile({
 
     return (
         <View style={[styles.tile, { borderColor: withAlpha(theme.background, 0.45) }]}>
-            <CreditCardFace
-                card={card}
-                statusLabel={statusLabel}
-                statusColor={statusColor}
-                inactiveLabel={t('creditCards.inactive')}
-            />
+            {hideFace ? null : (
+                <CreditCardFace
+                    card={card}
+                    statusLabel={statusLabel}
+                    statusColor={statusColor}
+                    inactiveLabel={t('creditCards.inactive')}
+                />
+            )}
 
             {overview?.creditStatus.limit != null ? (
-                <View style={styles.barTrack}>
-                    <View
-                        style={[styles.barFill, { width: barWidth, backgroundColor: barColor }]}
-                    />
+                <View
+                    style={styles.utilization}
+                    accessible
+                    accessibilityLabel={t('creditCards.utilizationCd', {
+                        percent: formatCardPercent(utilization),
+                        tone: utilizationToneLabel(tone, t),
+                    })}
+                >
+                    <View style={styles.utilizationHeader}>
+                        <Text
+                            style={[styles.utilizationTitle, { fontSize: scaleFont(typography.fontSize.md) }]}
+                        >
+                            {t('creditCards.utilOfLimit', { percent: formatCardPercent(utilization) })}
+                        </Text>
+                        <Text
+                            style={[
+                                styles.utilizationTone,
+                                { color: toneColor, fontSize: scaleFont(typography.fontSize.xs) },
+                            ]}
+                        >
+                            {utilizationToneLabel(tone, t)}
+                        </Text>
+                    </View>
+                    <View style={styles.barTrack}>
+                        <View
+                            style={[styles.barFill, { width: barWidth, backgroundColor: toneColor }]}
+                        />
+                    </View>
+                    <Text style={[styles.rowHint, { fontSize: scaleFont(typography.fontSize.xs) }]}>
+                        {overview.creditStatus.availableCredit != null
+                            ? t('creditCards.utilizationUsedAvailable', {
+                                used: money(overview.creditStatus.owedBalance ?? 0),
+                                available: money(overview.creditStatus.availableCredit),
+                            })
+                            : money(overview.creditStatus.owedBalance ?? 0)}
+                    </Text>
                 </View>
             ) : null}
 
@@ -297,6 +340,20 @@ export function CreditCardTile({
                         </View>
                     ))}
                 </View>
+            ) : null}
+
+            {overview && cycleTimeline ? (
+                <CardCycleTimeline
+                    timeline={cycleTimeline}
+                    daysUntilClosing={overview.schedule.daysUntilClosing}
+                    daysUntilDue={overview.schedule.daysUntilPaymentDue}
+                    statementPaid={status?.paid ?? false}
+                />
+            ) : null}
+            {overview && !hasDueSchedule && !showPaymentBlock ? (
+                <Text style={[styles.rowHint, { fontSize: scaleFont(typography.fontSize.sm) }]}>
+                    {t('creditCards.nextPaymentNone')}
+                </Text>
             ) : null}
 
             {installmentSummary.count > 0 && installmentTotal ? (
@@ -421,6 +478,23 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         borderWidth: 1,
         padding: spacing.base,
         gap: spacing.sm,
+    },
+    utilization: {
+        gap: spacing.sm,
+    },
+    utilizationHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: spacing.sm,
+    },
+    utilizationTitle: {
+        flex: 1,
+        color: colors.textPrimary,
+        fontWeight: typography.fontWeight.semibold,
+    },
+    utilizationTone: {
+        fontWeight: typography.fontWeight.semibold,
     },
     barTrack: {
         height: 6,

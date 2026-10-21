@@ -5,7 +5,7 @@ export function useAppAccess() {
     const sessionMode = useAuthStore((s) => s.sessionMode);
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
     const isGuest = useAuthStore((s) => s.isGuest);
-    const hasAccountPremium = user?.isPremium === true;
+    const hasAccountPremium = isAuthenticated && user?.isPremium === true;
     const hasPremium = hasAccountPremium;
 
     return {

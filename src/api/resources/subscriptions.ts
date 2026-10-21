@@ -1,3 +1,4 @@
+import { decodeUpcomingCharges } from '../../modules/subscriptions/upcomingDecoder';
 import apiClient from '../client';
 import { toLocalDateString } from '../../utils/core/dateOnly';
 import { dateOnly } from '../../utils/core/filters';
@@ -124,28 +125,6 @@ function normalizeProjection(data: any): SubscriptionProjection {
     };
 }
 
-function normalizeUpcomingCharge(item: any): UpcomingSubscriptionCharge {
-    return {
-        id: item?.id != null ? String(item.id) : undefined,
-        subscriptionId:
-            item?.subscriptionId != null ? String(item.subscriptionId) : undefined,
-        name: typeof item?.name === 'string' ? item.name : '',
-        amount: toNum(item?.amount),
-        currency: typeof item?.currency === 'string' ? item.currency : undefined,
-        daysRemaining: toNum(item?.daysRemaining),
-        paymentMethod: normalizePaymentMethod(item?.paymentMethod),
-        creditCardId:
-            typeof item?.creditCardId === 'string' ? item.creditCardId : null,
-        creditCard:
-            item?.creditCard && typeof item.creditCard === 'object'
-                ? normalizeCreditCard(item.creditCard)
-                : null,
-        chargeDate:
-            typeof item?.chargeDate === 'string' ? item.chargeDate : null,
-        nextPaymentDate:
-            typeof item?.nextPaymentDate === 'string' ? item.nextPaymentDate : null,
-    };
-}
 
 export const subscriptionsApi = {
     getAll: async () => {
@@ -185,17 +164,17 @@ export const subscriptionsApi = {
         return normalizeProjection(data);
     },
 
-    getUpcoming: async (days = 3) => {
+    getUpcoming: async (days = 3): Promise<UpcomingSubscriptionCharge[]> => {
         if (isLocalMode()) {
             const { subscriptions } = ensureGuestDataHydrated();
             return buildUpcomingSubscriptions(subscriptions, days);
         }
 
-        const { data } = await apiClient.get<UpcomingSubscriptionCharge[]>(
+        const { data } = await apiClient.get<unknown>(
             '/subscriptions/upcoming',
             { params: { days } },
         );
-        return Array.isArray(data) ? data.map(normalizeUpcomingCharge) : [];
+        return decodeUpcomingCharges(data);
     },
 
     processSubscriptions: async () => {

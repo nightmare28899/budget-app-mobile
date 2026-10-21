@@ -1,3 +1,5 @@
+import { useAppAlert } from '../alerts/AlertProvider';
+import { overpaidBy } from '../../modules/creditCards/cardStatementPayments';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../ui/primitives/Button';
@@ -38,10 +40,11 @@ type ModalState =
 export function StatementPaymentsSection({ statement }: StatementPaymentsSectionProps) {
     const styles = useThemedStyles(createStyles);
     const { t, language } = useI18n();
+    const { alert } = useAppAlert();
     const { scaleFont } = useResponsive();
     const locale = getCurrencyLocale(language);
     const describeError = useStatementErrorMessage();
-    const { addPayment, correctPayment, voidPayment, isWorking } = useStatementPayments(
+    const { addPayment, correctPayment, voidPayment, isWorking, resetIntent } = useStatementPayments(
         statement.id,
         statement.paymentVersion,
     );
@@ -55,13 +58,18 @@ export function StatementPaymentsSection({ statement }: StatementPaymentsSection
     const states = classifyPaymentHistory(statement.paymentHistory);
     const canPay = !summary.isPaid && Boolean(currency);
     const closeModal = () => {
+        resetIntent();
         setModal({ kind: 'none' });
         setError(null);
     };
     const fail = (failure: StatementError) =>
         setError(describeError(failure, 'statements.payments.failed'));
 
-    const submitPayment = async (value: PaymentModalSubmit) => {
+    const savePayment = async (value: PaymentModalSubmit) => {
+        if (modal.kind === 'correct' && states[modal.payment.id] !== 'active') {
+            fail({ kind: 'staleVersion', message: null });
+            return;
+        }
         setError(null);
         const base = {
             amount: value.amount,
@@ -80,8 +88,18 @@ export function StatementPaymentsSection({ statement }: StatementPaymentsSection
         }
     };
 
+    const submitPayment = (value: PaymentModalSubmit) => {
+        const excess = modal.kind === 'add' ? overpaidBy(value.amount, summary) : 0;
+        if (excess > 0) {
+            alert(t('cardPayments.overpayTitle'), t('cardPayments.overpayMessage', { amount: money(excess) }), [
+                { text: t('common.cancel'), style: 'cancel' },
+                { text: t('cardPayments.overpayConfirm'), onPress: () => { savePayment(value); } },
+            ]);
+        } else { savePayment(value); }
+    };
+
     const submitVoid = async (reason: string) => {
-        if (modal.kind !== 'void') {
+        if (modal.kind !== 'void' || states[modal.payment.id] !== 'active') {
             return;
         }
         setError(null);
@@ -155,7 +173,7 @@ export function StatementPaymentsSection({ statement }: StatementPaymentsSection
                                     {t('statements.payments.voidReasonLabel', { reason: payment.voidReason })}
                                 </Text>
                             ) : null}
-                            {!payment.voidedAt ? (
+                            {active ? (
                                 <View style={styles.paymentActions}>
                                     <TouchableOpacity
                                         onPress={() => setModal({ kind: 'correct', payment })}
@@ -182,7 +200,7 @@ export function StatementPaymentsSection({ statement }: StatementPaymentsSection
 
             <StatementPaymentModal
                 visible={modal.kind === 'add' || modal.kind === 'correct'}
-                currency={currency}
+                currency={modal.kind === 'correct' ? modal.payment.currency || currency : currency}
                 initialAmount={
                     modal.kind === 'correct' ? modal.payment.amount : suggestedPaymentAmount(summary)
                 }

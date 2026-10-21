@@ -1,3 +1,5 @@
+import { useEntitlements, currentAccountSession } from '../access/useEntitlements';
+import { applyEntitlements, sameAccountSession } from '../../modules/access/entitlements';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
@@ -12,10 +14,13 @@ import {
 export function useProfileSync() {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const isLoading = useAuthStore((state) => state.isLoading);
+    const userId = useAuthStore(state => state.user?.id);
+    const sessionRevision = useAuthStore(state => state.sessionRevision);
+    const entitlements = useEntitlements();
     const setUser = useAuthStore((state) => state.setUser);
 
     const profileQuery = useQuery({
-        queryKey: ['users', 'me'],
+        queryKey: ['users', 'me', userId, sessionRevision],
         queryFn: () => usersApi.getMe(),
         enabled: isAuthenticated && !isLoading,
         staleTime: 1000 * 60,
@@ -25,7 +30,9 @@ export function useProfileSync() {
     const profile = profileQuery.data;
 
     useEffect(() => {
-        if (!profile) {
+        if (!profile || profile.id !== userId || !sameAccountSession(
+            { userId, sessionRevision, isAuthenticated }, currentAccountSession(),
+        )) {
             return;
         }
 
@@ -56,9 +63,9 @@ export function useProfileSync() {
         }
 
         setUser({
-            ...profile,
+            ...applyEntitlements(profile, entitlements.data),
             avatarUrl: resolvedAvatarUrl,
             avatarUri: resolvedAvatarUri,
         });
-    }, [profile, setUser]);
+    }, [profile, setUser, entitlements.data, userId, sessionRevision, isAuthenticated]);
 }

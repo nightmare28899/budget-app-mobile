@@ -1,3 +1,4 @@
+import { useQuickAddForm } from '../quickAdd/quickAddLifecycleContext';
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAppAlert } from '../../components/alerts/AlertProvider';
@@ -93,6 +94,7 @@ export function useIncomeForm(editingIncome?: Income | null) {
         },
     });
 
+    const lifecycle = useQuickAddForm({ title, amount, currency, note, date }, createMutation.isPending || updateMutation.isPending);
     const saveIncome = async (onSuccess: () => void) => {
         const parsedAmount = Number.parseFloat(amount);
         const nextErrors: IncomeFormErrors = {};
@@ -129,11 +131,11 @@ export function useIncomeForm(editingIncome?: Income | null) {
         };
 
         if (editingIncome?.id) {
-            updateMutation.mutate(payload, { onSuccess });
+            updateMutation.mutate(payload, { onSuccess: () => { lifecycle?.saved(); onSuccess(); } });
             return { valid: true as const };
         }
 
-        createMutation.mutate(payload, { onSuccess });
+        createMutation.mutate(payload, { onSuccess: () => { lifecycle?.saved(); onSuccess(); } });
         return { valid: true as const };
     };
 

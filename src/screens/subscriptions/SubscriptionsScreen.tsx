@@ -84,6 +84,7 @@ export function SubscriptionsScreen({
         activeSwipeableRef,
         activeSwipeableIdRef,
         goHomeOnBack,
+        canEditSubscription,
         onEditSubscription,
         onDeleteSubscription,
     } = useSubscriptionsScreen({
@@ -289,7 +290,7 @@ export function SubscriptionsScreen({
                                                   <SubscriptionItem
                                                       subscription={subscription}
                                                       locale={locale}
-                                                      onPress={onEditSubscription}
+                                                      onPress={canEditSubscription(subscription.id) ? onEditSubscription : undefined}
                                                       onEdit={undefined}
                                                       onDelete={undefined}
                                                       activeSwipeableRef={activeSwipeableRef}

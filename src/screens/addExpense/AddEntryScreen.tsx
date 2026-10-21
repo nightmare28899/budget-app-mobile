@@ -1,8 +1,8 @@
+import { QuickAddLifecycleContext, useQuickAddLifecycle } from '../../hooks/quickAdd/useQuickAddLifecycle';
 import React, { useMemo, useState } from 'react';
 import {
     Animated,
     Dimensions,
-    Easing,
     PanResponder,
     Platform,
     StyleSheet,
@@ -31,6 +31,7 @@ type AddEntryTab = 'expense' | 'income' | 'subscription';
 
 export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'>) {
     const { t } = useI18n();
+    const lifecycle = useQuickAddLifecycle(navigation);
     const { colors } = useTheme();
     const styles = useThemedStyles(createStyles);
     const insets = useSafeAreaInsets();
@@ -88,18 +89,15 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                     const nextOffset = Math.max(0, gestureState.dy * 0.92);
                     translateY.setValue(nextOffset);
                 },
+                onPanResponderTerminate: () => translateY.setValue(0),
                 onPanResponderRelease: (_evt, gestureState) => {
                     if (!canDragSheet) {
                         return;
                     }
                     const shouldClose = gestureState.dy > (isIos ? 72 : 88) || gestureState.vy > 1;
                     if (shouldClose) {
-                        Animated.timing(translateY, {
-                            toValue: screenHeight,
-                            duration: 220,
-                            easing: Easing.out(Easing.cubic),
-                            useNativeDriver: true,
-                        }).start(() => navigation.goBack());
+                        translateY.setValue(0);
+                        lifecycle.request(() => navigation.goBack());
                         return;
                     }
 
@@ -111,7 +109,7 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                     }).start();
                 },
             }),
-        [canDragSheet, isIos, navigation, screenHeight, translateY],
+        [canDragSheet, isIos, navigation, translateY, lifecycle],
     );
     const expenseRoute: RootScreenProps<'AddExpense'>['route'] = {
         key: 'AddExpenseEmbedded',
@@ -137,6 +135,7 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
     };
 
     return (
+        <QuickAddLifecycleContext.Provider value={lifecycle.channel}>
         <Animated.View
             style={[
                 styles.container,
@@ -162,6 +161,11 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                             <View style={styles.sheetHandle} />
                         </View>
                     ) : null}
+                    <TouchableOpacity accessibilityRole="button" accessibilityLabel={t('quickAdd.close')}
+                        onPress={() => lifecycle.request(() => navigation.goBack())}
+                        style={styles.closeButton}>
+                        <Icon name="close-outline" size={24} color={colors.textPrimary} />
+                    </TouchableOpacity>
                     <View style={styles.headerRow}>
                         <View style={styles.segmentedControl}>
                             <TouchableOpacity
@@ -170,7 +174,7 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                                     styles.segmentButton,
                                     activeTab === 'expense' ? styles.segmentButtonActive : null,
                                 ]}
-                                onPress={() => setActiveTab('expense')}
+                                onPress={() => { if (activeTab !== 'expense') { lifecycle.request(() => { lifecycle.startForm(); setActiveTab('expense'); }); } }}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: activeTab === 'expense' }}
                             >
@@ -194,7 +198,7 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                                     styles.segmentButton,
                                     activeTab === 'income' ? styles.segmentButtonActive : null,
                                 ]}
-                                onPress={() => setActiveTab('income')}
+                                onPress={() => { if (activeTab !== 'income') { lifecycle.request(() => { lifecycle.startForm(); setActiveTab('income'); }); } }}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: activeTab === 'income' }}
                             >
@@ -218,7 +222,7 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                                     styles.segmentButton,
                                     activeTab === 'subscription' ? styles.segmentButtonActive : null,
                                 ]}
-                                onPress={() => setActiveTab('subscription')}
+                                onPress={() => { if (activeTab !== 'subscription') { lifecycle.request(() => { lifecycle.startForm(); setActiveTab('subscription'); }); } }}
                                 accessibilityRole="button"
                                 accessibilityState={{ selected: activeTab === 'subscription' }}
                             >
@@ -246,17 +250,17 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
 
                 <View style={styles.formContainer}>
                     {activeTab === 'expense' ? (
-                        <AddExpenseScreen
+                        <AddExpenseScreen key="AddExpenseScreen"
                             navigation={navigation as RootScreenProps<'AddExpense'>['navigation']}
                             route={expenseRoute}
                         />
                     ) : activeTab === 'income' ? (
-                        <AddIncomeScreen
+                        <AddIncomeScreen key="AddIncomeScreen"
                             navigation={navigation as RootScreenProps<'AddIncome'>['navigation']}
                             route={incomeRoute}
                         />
                     ) : (
-                        <AddSubscriptionScreen
+                        <AddSubscriptionScreen key="AddSubscriptionScreen"
                             navigation={navigation as RootScreenProps<'AddSubscription'>['navigation']}
                             route={subscriptionRoute}
                         />
@@ -264,6 +268,7 @@ export function AddEntryScreen({ route, navigation }: RootScreenProps<'AddEntry'
                 </View>
             </View>
         </Animated.View>
+        </QuickAddLifecycleContext.Provider>
     );
 }
 
@@ -276,6 +281,7 @@ const createStyles = (colors: SemanticColors) => StyleSheet.create({
         flex: 1,
         backgroundColor: colors.background,
     },
+    closeButton: { alignSelf: 'flex-end', minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
     tabHeader: {
         paddingBottom: spacing.md,
     },

@@ -1,4 +1,5 @@
 import React from 'react';
+import { BackupSection } from '../../components/backup/BackupSection';
 import {
   Image,
   KeyboardAvoidingView,
@@ -14,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { PlanAccessSection } from '../../components/profile/PlanAccessSection';
 import { DeleteAccountConfirmationModal } from '../../components/profile/DeleteAccountConfirmationModal';
+import { AppLockSettingsRow } from '../../components/appLock/AppLockSettingsRow';
+import { RemindersSettingsRow } from '../../components/reminders/RemindersSettingsRow';
 import { AnimatedScreen } from '../../components/ui/primitives/AnimatedScreen';
 import { Button } from '../../components/ui/primitives/Button';
 import { HeroHeader } from '../../components/ui/layout/HeroHeader';
@@ -190,6 +193,7 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
     navigation.navigate('PremiumPaywall', { feature: 'credit_cards' });
   const openCreditCards = () =>
     navigation.navigate('Main', { screen: 'CreditCards' });
+  const openCsvImport = () => navigation.navigate('CsvImport');
   const openTerms = () => navigation.navigate('TermsAndConditions');
   const openPrivacyPolicy = () => navigation.navigate('PrivacyPolicy');
   const openPlanOverview = () => navigation.navigate('PlanOverview');
@@ -722,6 +726,43 @@ export function SettingsScreen({ navigation }: RootScreenProps<'Settings'>) {
         </View>
 
         <ThemeLivePreviewCard onPress={onSelectTheme} />
+
+        <AppLockSettingsRow />
+
+        <RemindersSettingsRow />
+
+        <BackupSection />
+
+        <TouchableOpacity
+          style={styles.actionRow}
+          onPress={openCsvImport}
+          activeOpacity={0.7}
+        >
+          <Icon
+            name="cloud-upload-outline"
+            size={22}
+            color={colors.primaryLight}
+          />
+          <View style={styles.actionInfo}>
+            <Text
+              style={[
+                styles.actionText,
+                { fontSize: scaleFont(typography.fontSize.base) },
+              ]}
+            >
+              {t('csvImport.settingsOpen')}
+            </Text>
+            <Text
+              style={[
+                styles.actionSubtext,
+                { fontSize: scaleFont(typography.fontSize.xs) },
+              ]}
+            >
+              {t('csvImport.settingsDescription')}
+            </Text>
+          </View>
+          <Icon name="chevron-forward" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.actionRow}

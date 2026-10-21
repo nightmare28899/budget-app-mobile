@@ -20,6 +20,7 @@ const SCHEMA_VERSION = 2;
 
 type GuestDataSnapshot = {
     schemaVersion: number;
+    backupDynamicColor?: boolean | null;
     categories: Category[];
     expenses: Expense[];
     incomes: Income[];
@@ -30,6 +31,7 @@ type GuestDataSnapshot = {
 
 interface GuestDataState {
     isHydrated: boolean;
+    backupDynamicColor?: boolean | null;
     categories: Category[];
     expenses: Expense[];
     incomes: Income[];
@@ -38,6 +40,7 @@ interface GuestDataState {
     savingsGoals: SavingsGoal[];
     hydrate: () => void;
     reset: () => void;
+    restoreSnapshot: (rows: Omit<GuestDataSnapshot, 'schemaVersion'>) => void;
     addCategory: (category: Category) => Category;
     updateCategory: (id: string, updater: (category: Category) => Category) => Category | null;
     removeCategory: (id: string) => boolean;
@@ -104,8 +107,9 @@ function normalizeSnapshot(value?: Partial<GuestDataSnapshot> | null): GuestData
 
     return {
         schemaVersion: SCHEMA_VERSION,
+        backupDynamicColor: typeof value.backupDynamicColor === 'boolean' ? value.backupDynamicColor : null,
         categories:
-            Array.isArray(value.categories) && value.categories.length > 0
+            Array.isArray(value.categories)
                 ? value.categories
                 : base.categories,
         expenses: Array.isArray(value.expenses) ? value.expenses : [],
@@ -141,9 +145,11 @@ function buildSnapshotFromState(state: Pick<
     | 'subscriptions'
     | 'creditCards'
     | 'savingsGoals'
+    | 'backupDynamicColor'
 >): GuestDataSnapshot {
     return {
         schemaVersion: SCHEMA_VERSION,
+        backupDynamicColor: state.backupDynamicColor,
         categories: state.categories,
         expenses: state.expenses,
         incomes: state.incomes,
@@ -167,6 +173,7 @@ export const useGuestDataStore = create<GuestDataState>((set, get) => ({
         persistSnapshot(snapshot);
         set({
             isHydrated: true,
+            backupDynamicColor: snapshot.backupDynamicColor,
             categories: snapshot.categories,
             expenses: snapshot.expenses,
             incomes: snapshot.incomes,
@@ -176,11 +183,19 @@ export const useGuestDataStore = create<GuestDataState>((set, get) => ({
         });
     },
 
+    restoreSnapshot: rows => {
+        const snapshot = { ...rows, schemaVersion: SCHEMA_VERSION };
+        // One MMKV write: publish only after persistence succeeds.
+        persistSnapshot(snapshot);
+        set({ ...rows, isHydrated: true });
+    },
+
     reset: () => {
         const snapshot = buildInitialSnapshot();
         persistSnapshot(snapshot);
         set({
             isHydrated: true,
+            backupDynamicColor: snapshot.backupDynamicColor,
             categories: snapshot.categories,
             expenses: snapshot.expenses,
             incomes: snapshot.incomes,
