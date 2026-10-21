@@ -1,5 +1,6 @@
 import React, { ReactNode, useEffect, useMemo, useState } from 'react';
 import { LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
     useAnimatedStyle,
     useSharedValue,
@@ -21,6 +22,7 @@ import {
 } from '../../modules/creditCards/cardStack';
 import { useTheme } from '../../theme/index';
 
+const SWIPE_THRESHOLD = 40;
 const MOTION = { duration: 260 };
 
 type CardStackCarouselProps = {
@@ -30,6 +32,8 @@ type CardStackCarouselProps = {
     onSelect: (index: number) => void;
     expanded: boolean;
     onExpandedChange: (expanded: boolean) => void;
+    /** True while a finger is down on the collapsed stack, so the host can freeze its page scroll. */
+    onTouchingChange?: (touching: boolean) => void;
     labelOf: (index: number) => string;
     renderCard: (index: number) => ReactNode;
 };
@@ -190,6 +194,7 @@ function CardStackPeek({
     keyOf,
     onSelect,
     onExpandedChange,
+    onTouchingChange,
     renderCard,
     cardHeight,
 }: LayoutProps) {
@@ -223,6 +228,9 @@ function CardStackPeek({
                         cardHeight={cardHeight}
                         front={front}
                         canNavigate={count > 1}
+                        onSwipeNext={goNext}
+                        onSwipePrevious={goPrevious}
+                        onTouchingChange={onTouchingChange}
                         onTapFront={() => count > 1 && expand()}
                         onTapBehind={() => onSelect(slot.index)}
                         onAction={onAction}
@@ -248,6 +256,9 @@ type StackedCardProps = {
     cardHeight: number;
     front: boolean;
     canNavigate: boolean;
+    onSwipeNext: () => void;
+    onSwipePrevious: () => void;
+    onTouchingChange?: (touching: boolean) => void;
     onTapFront: () => void;
     onTapBehind: () => void;
     onAction: (name: string) => void;
@@ -263,6 +274,9 @@ function StackedCard({
     cardHeight,
     front,
     canNavigate,
+    onSwipeNext,
+    onSwipePrevious,
+    onTouchingChange,
     onTapFront,
     onTapBehind,
     onAction,
@@ -287,6 +301,26 @@ function StackedCard({
     }));
 
     const onPress = front ? onTapFront : onTapBehind;
+
+    // Vertical drag on the front card steps through the cards: up = next, down = previous.
+    const swipe = useMemo(
+        () =>
+            Gesture.Pan()
+                .runOnJS(true)
+                .enabled(front && canNavigate)
+                .activeOffsetY([-10, 10])
+                .failOffsetX([-24, 24])
+                .onBegin(() => onTouchingChange?.(true))
+                .onEnd(event => {
+                    if (event.translationY <= -SWIPE_THRESHOLD) {
+                        onSwipeNext();
+                    } else if (event.translationY >= SWIPE_THRESHOLD) {
+                        onSwipePrevious();
+                    }
+                })
+                .onFinalize(() => onTouchingChange?.(false)),
+        [front, canNavigate, onSwipeNext, onSwipePrevious, onTouchingChange],
+    );
 
     const actions = front && canNavigate
         ? [
@@ -317,9 +351,11 @@ function StackedCard({
                 event.nativeEvent.actionName === 'select' ? onTapBehind() : onAction(event.nativeEvent.actionName)
             }
         >
-            <Pressable style={styles.fill} onPress={onPress} accessible={false}>
-                {children}
-            </Pressable>
+            <GestureDetector gesture={swipe}>
+                <Pressable style={styles.fill} onPress={onPress} accessible={false}>
+                    {children}
+                </Pressable>
+            </GestureDetector>
         </Reanimated.View>
     );
 }

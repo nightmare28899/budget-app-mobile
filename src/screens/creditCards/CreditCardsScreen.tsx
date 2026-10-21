@@ -71,6 +71,7 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const lastIndex = useRef(0);
     const [fanExpanded, setFanExpanded] = useState(false);
+    const [stackTouched, setStackTouched] = useState(false);
 
     const overviewById = useMemo(() => {
         return new Map((overview?.cards ?? []).map((card) => [card.id, card]));
@@ -238,6 +239,7 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                         contentMaxWidthStyle,
                     ]}
                     showsVerticalScrollIndicator={false}
+                    scrollEnabled={!stackTouched}
                 >
                     {isLoading && cards.length === 0 ? (
                         <View style={styles.loadingState}>
@@ -298,6 +300,7 @@ export function CreditCardsScreen({ navigation }: MainDrawerScreenProps<'CreditC
                                     onSelect={selectCard}
                                     expanded={fanExpanded}
                                     onExpandedChange={setFanExpanded}
+                                    onTouchingChange={setStackTouched}
                                     labelOf={index =>
                                         t('creditCards.fanItemCd', {
                                             name: formatCardDisplayName(cards[index]),
