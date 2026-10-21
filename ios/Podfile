@@ -38,6 +38,11 @@ target 'BudgetApp' do
         build_config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         build_config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
 
+        current_target = build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if current_target.nil? || current_target.to_f < 15.0
+          build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        end
+
         ['OTHER_CFLAGS', 'OTHER_CPLUSPLUSFLAGS', 'WARNING_CFLAGS'].each do |flag_key|
           current_flags = build_config.build_settings[flag_key]
           next if current_flags.nil?

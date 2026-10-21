@@ -46,6 +46,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>BudgetApp uses the camera to attach receipt or profile images.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>BudgetApp uses Face ID to unlock the app and protect your finances.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>BudgetApp uses your photo library to select receipt or profile images.</string>
 	<key>RCTNewArchEnabled</key>
@@ -54,6 +56,23 @@
 	<array>
 		<string>Ionicons.ttf</string>
 	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
