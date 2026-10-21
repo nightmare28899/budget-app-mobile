@@ -1,6 +1,5 @@
 import React, { ReactNode, useEffect, useMemo, useState } from 'react';
-import { LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Reanimated, {
     useAnimatedStyle,
     useSharedValue,
@@ -14,6 +13,7 @@ import {
     afterFanTap,
     expandedHeight,
     expandedLayout,
+    isExpanded,
     nextIndex,
     previousIndex,
     toggleExpanded,
@@ -21,7 +21,6 @@ import {
 } from '../../modules/creditCards/cardStack';
 import { useTheme } from '../../theme/index';
 
-const SWIPE_THRESHOLD = 40;
 const MOTION = { duration: 260 };
 
 type CardStackCarouselProps = {
@@ -48,7 +47,7 @@ const cardShadow = (elevation: number) => ({
  * accessibility actions to change card, tap to expand); expanded it fans out every card in a scrollable column where a tap selects.
  */
 export function CardStackCarousel(props: CardStackCarouselProps) {
-    const { count } = props;
+    const { count, expanded } = props;
     const [width, setWidth] = useState(0);
     const onLayout = (event: LayoutChangeEvent) => {
         const next = Math.round(event.nativeEvent.layout.width);
@@ -62,8 +61,7 @@ export function CardStackCarousel(props: CardStackCarouselProps) {
     }
 
     const cardHeight = width / CARD_STACK.aspectRatio;
-    // Always fanned: cards flow vertically with the page; no horizontal swipe, no nested scroller.
-    const fanOpen = true;
+    const fanOpen = isExpanded(expanded, count);
 
     return (
         <View style={styles.root} onLayout={onLayout}>
@@ -178,15 +176,11 @@ function FanCard({ slot, cardHeight, label, stateText, actionLabel, onTap, child
 }
 
 function Tappable({ onTap, children }: { onTap: () => void; children: ReactNode }) {
-    const gesture = useMemo(() => Gesture.Tap().runOnJS(true).onEnd((_event, success) => {
-        if (success) {
-            onTap();
-        }
-    }), [onTap]);
+    // Native Pressable (not an RNGH detector) so vertical drags still reach the page ScrollView.
     return (
-        <GestureDetector gesture={gesture}>
-            <View style={styles.fill}>{children}</View>
-        </GestureDetector>
+        <Pressable style={styles.fill} onPress={onTap} accessible={false}>
+            {children}
+        </Pressable>
     );
 }
 
@@ -229,8 +223,6 @@ function CardStackPeek({
                         cardHeight={cardHeight}
                         front={front}
                         canNavigate={count > 1}
-                        onSwipeNext={goNext}
-                        onSwipePrevious={goPrevious}
                         onTapFront={() => count > 1 && expand()}
                         onTapBehind={() => onSelect(slot.index)}
                         onAction={onAction}
@@ -256,8 +248,6 @@ type StackedCardProps = {
     cardHeight: number;
     front: boolean;
     canNavigate: boolean;
-    onSwipeNext: () => void;
-    onSwipePrevious: () => void;
     onTapFront: () => void;
     onTapBehind: () => void;
     onAction: (name: string) => void;
@@ -273,8 +263,6 @@ function StackedCard({
     cardHeight,
     front,
     canNavigate,
-    onSwipeNext,
-    onSwipePrevious,
     onTapFront,
     onTapBehind,
     onAction,
@@ -298,32 +286,7 @@ function StackedCard({
         transform: [{ translateY: -offset.value }, { scale: scale.value }],
     }));
 
-    const gesture = useMemo(() => {
-        if (!front) {
-            return Gesture.Tap().runOnJS(true).onEnd((_event, success) => {
-                if (success) {
-                    onTapBehind();
-                }
-            });
-        }
-        const pan = Gesture.Pan()
-            .runOnJS(true)
-            .activeOffsetX([-12, 12])
-            .failOffsetY([-12, 12])
-            .onEnd(event => {
-                if (event.translationX <= -SWIPE_THRESHOLD) {
-                    onSwipeNext();
-                } else if (event.translationX >= SWIPE_THRESHOLD) {
-                    onSwipePrevious();
-                }
-            });
-        const tap = Gesture.Tap().runOnJS(true).onEnd((_event, success) => {
-            if (success) {
-                onTapFront();
-            }
-        });
-        return Gesture.Race(pan, tap);
-    }, [front, onSwipeNext, onSwipePrevious, onTapFront, onTapBehind]);
+    const onPress = front ? onTapFront : onTapBehind;
 
     const actions = front && canNavigate
         ? [
@@ -354,9 +317,9 @@ function StackedCard({
                 event.nativeEvent.actionName === 'select' ? onTapBehind() : onAction(event.nativeEvent.actionName)
             }
         >
-            <GestureDetector gesture={gesture}>
-                <View style={styles.fill}>{children}</View>
-            </GestureDetector>
+            <Pressable style={styles.fill} onPress={onPress} accessible={false}>
+                {children}
+            </Pressable>
         </Reanimated.View>
     );
 }
