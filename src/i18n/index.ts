@@ -977,6 +977,8 @@ const en = {
   'paymentMethod.transfer': 'Transfer',
 
   'creditCards.title': 'Credit Cards',
+  'creditCards.drawerCount.one': '{count} registered card',
+  'creditCards.drawerCount.other': '{count} registered cards',
   'creditCards.subtitle':
     'Save your cards once and reuse them in expenses and subscriptions.',
   'creditCards.label': 'Credit Card',
@@ -2736,6 +2738,8 @@ const es: Record<TranslationKeyInternal, string> = {
   'paymentMethod.transfer': 'Transferencia',
 
   'creditCards.title': 'Tarjetas de crédito',
+  'creditCards.drawerCount.one': '{count} tarjeta registrada',
+  'creditCards.drawerCount.other': '{count} tarjetas registradas',
   'creditCards.subtitle':
     'Guarda tus tarjetas una vez y reutilízalas en gastos y suscripciones.',
   'creditCards.label': 'Tarjeta de crédito',

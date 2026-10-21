@@ -25,6 +25,8 @@ import { spacing, typography, useTheme } from '../theme/index';
 import { useI18n } from '../hooks/shared/useI18n';
 import { useAuthStore } from '../store/authStore';
 import { withAlpha } from '../utils/domain/subscriptions';
+import { formatDrawerBadge } from '../utils/domain/drawerBadge';
+import { useActiveCardCount } from '../hooks/creditCards/useActiveCardCount';
 
 const Drawer = createDrawerNavigator<MainDrawerParamList>();
 const DRAWER_ICONS: Record<keyof MainDrawerParamList, string> = {
@@ -67,6 +69,7 @@ type AppDrawerContentProps = DrawerContentComponentProps & {
   plannerLabel: string;
   categoryBudgetsLabel: string;
   creditCardsLabel: string;
+  creditCardsCountLabel: (count: number) => string;
   statementsLabel: string;
   savingsLabel: string;
   homeLabel: string;
@@ -86,6 +89,7 @@ function AppDrawerContent({
   plannerLabel,
   categoryBudgetsLabel,
   creditCardsLabel,
+  creditCardsCountLabel,
   statementsLabel,
   savingsLabel,
   homeLabel,
@@ -104,6 +108,7 @@ function AppDrawerContent({
   const styles = createStyles(colors);
   const user = useAuthStore(s => s.user);
   const isGuest = useAuthStore(s => s.isGuest);
+  const activeCardCount = useActiveCardCount();
 
   const drawerItems: Array<{
     route: keyof MainDrawerParamList;
@@ -167,6 +172,8 @@ function AppDrawerContent({
         <View style={styles.menuGroup}>
           {drawerItems.map(item => {
             const isFocused = item.route === activeRouteName;
+            const badgeText =
+              item.route === 'CreditCards' ? formatDrawerBadge(activeCardCount) : null;
             return (
               <TouchableOpacity
                 key={item.route}
@@ -177,7 +184,9 @@ function AppDrawerContent({
                   navigation.closeDrawer();
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={item.label}
+                accessibilityLabel={
+                  badgeText ? `${item.label}, ${creditCardsCountLabel(activeCardCount)}` : item.label
+                }
                 accessibilityState={{ selected: isFocused }}
               >
                 <View style={[styles.menuIconWrap, isFocused ? styles.menuIconWrapActive : null]}>
@@ -190,6 +199,11 @@ function AppDrawerContent({
                 <Text style={[styles.menuLabel, isFocused ? styles.menuLabelActive : null]}>
                   {item.label}
                 </Text>
+                {badgeText ? (
+                  <View style={styles.countBadge}>
+                    <Text style={styles.countBadgeText}>{badgeText}</Text>
+                  </View>
+                ) : null}
                 {isFocused ? (
                   <View style={styles.focusBadge}>
                     <Icon name="chevron-forward" size={16} color={colors.primaryAction} />
@@ -227,7 +241,7 @@ function AppDrawerContent({
 }
 
 export function MainDrawerNavigator() {
-  const { t } = useI18n();
+  const { t, tPlural } = useI18n();
   const { colors } = useTheme();
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const onOpenSettings = React.useCallback(() => {
@@ -241,6 +255,7 @@ export function MainDrawerNavigator() {
       plannerLabel={t('planner.title')}
       categoryBudgetsLabel={t('categoryBudgets.title')}
       creditCardsLabel={t('creditCards.title')}
+      creditCardsCountLabel={count => tPlural('creditCards.drawerCount', count)}
       statementsLabel={t('statements.title')}
       savingsLabel={t('savings.title')}
       homeLabel={t('tab.home')}
@@ -253,7 +268,7 @@ export function MainDrawerNavigator() {
       onOpenSettings={onOpenSettings}
       colors={colors as Record<string, string>}
     />
-  ), [colors, onOpenSettings, t]);
+  ), [colors, onOpenSettings, t, tPlural]);
 
   return (
     <Drawer.Navigator
@@ -516,6 +531,20 @@ const createStyles = (colors: Record<string, string>) =>
     },
     menuLabelActive: {
       color: colors.textPrimary,
+    },
+    countBadge: {
+      minWidth: 24,
+      height: 24,
+      paddingHorizontal: spacing.xs,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: withAlpha(colors.primaryAction, 0.16),
+    },
+    countBadgeText: {
+      fontSize: typography.fontSize.sm,
+      fontWeight: typography.fontWeight.bold,
+      color: colors.primaryAction,
     },
     focusBadge: {
       width: 28,
